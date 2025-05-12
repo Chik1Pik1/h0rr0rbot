@@ -44,7 +44,9 @@ body::after {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0 auto; /* Усиливаем центрирование */
+  margin: 0 auto;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 /* Полноэкранный чат */
@@ -96,9 +98,9 @@ body::after {
   100% { opacity: 1; }
 }
 
-/* Анимация взлома */
+/* Полноэкранная анимация взлома */
 .hack-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -107,18 +109,59 @@ body::after {
   color: #00FF00;
   font-size: 1rem;
   overflow: hidden;
-  z-index: 10;
+  z-index: 1000;
 }
 
+/* Эффект цифрового дождя */
+.matrix-rain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 255, 0, 0.2) 0%,
+    rgba(0, 255, 0, 0.05) 100%
+  );
+  animation: matrix-rain 10s linear infinite;
+}
+
+@keyframes matrix-rain {
+  0% { transform: translateY(100vh); }
+  100% { transform: translateY(-100vh); }
+}
+
+/* Анимация кода с glitch-эффектом */
 .hack-code {
   position: absolute;
   white-space: nowrap;
   animation: hack-scroll linear infinite;
 }
 
+.hack-code::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==') repeat;
+  opacity: 0.2;
+  animation: glitch 0.5s infinite;
+}
+
 @keyframes hack-scroll {
   0% { transform: translateY(100%); }
   100% { transform: translateY(-100%); }
+}
+
+@keyframes glitch {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-5px, 5px); }
+  40% { transform: translate(5px, -5px); }
+  60% { transform: translate(-5px, -5px); }
+  80% { transform: translate(5px, 5px); }
 }
 
 @keyframes scanline {
@@ -191,15 +234,11 @@ button:disabled {
 /* Адаптивность для мобильных */
 @media (max-width: 600px) {
   .crt-window {
-    width: 85%;
+    width: 95%;
     padding: 10px;
     min-height: 50vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
     left: 50%;
-    transform: translateX(-50%); /* Гарантируем центрирование */
+    transform: translateX(-50%);
   }
 
   .chat-fullscreen {
