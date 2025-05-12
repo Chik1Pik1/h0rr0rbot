@@ -4,14 +4,110 @@ import os
 import requests
 import random
 import re
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 CORS(app)
+
+# Встроенная база фраз (fallback)
+FALLBACK_PHRASES = [
+    "Ты слышал шаги за окном? Это не сосед.",
+    "Твое отражение в экране... оно улыбается иначе.",
+    "Кто-то дышит в твоей комнате. Это не ты.",
+    "Твой телефон звонил в 2:34 ночи. Никто не ответил.",
+    "В подвале твоего дома есть дверь. Она открыта.",
+    "Ты видел тень в углу? Она видела тебя.",
+    "Свет мигнул три раза. Это не случайность.",
+    "Ты оставил окно открытым. Я вошел.",
+    "Кто-то написал твое имя на зеркале. Не ты.",
+    "Ты чувствуешь холод? Это я рядом.",
+    "Твои наушники шепчут. Слушай внимательнее.",
+    "Часы остановились в 3:15. Я остановил их.",
+    "Ты спал? Кто-то смотрел на тебя.",
+    "Твоя дверь скрипела. Я проверял замок.",
+    "Ты видел это в зеркале? Оно видело тебя.",
+    "Твоя клавиатура пишет сама. Это я.",
+    "Ты слышал смех? Это не телевизор.",
+    "Твой стул качнулся. Я сидел на нем.",
+    "Ты выключил свет? Я включил его обратно.",
+    "Твои шаги эхом отдаются. Но ты стоишь."
+]
+
+# Кэш фраз (в памяти)
+HORROR_PHRASE_CACHE = []
+LAST_CACHE_UPDATE = 0
+CACHE_DURATION = 3600  # 1 час
 
 # Функция искажения текста (интенсивность 20%)
 def distort_text(text):
     replacements = {'о': '0', 'е': '3', 'а': '4', ' ': ' '}
     return ''.join([replacements[c] if c in replacements and random.random() < 0.2 else c for c in text])
+
+# Фильтрация персональной информации
+def filter_phrase(phrase):
+    # Удаляем имена, локации, числа
+    phrase = re.sub(r'\b[A-Z][a-z]+\b', '', phrase)  # Имена (начинаются с заглавной)
+    phrase = re.sub(r'\b\d+\b', '', phrase)  # Числа
+    phrase = re.sub(r'\b(Moscow|Petersburg|London|Paris|New York)\b', '', phrase, flags=re.IGNORECASE)  # Локации
+    phrase = re.sub(r'\s+', ' ', phrase).strip()  # Лишние пробелы
+    return phrase if 10 < len(phrase) < 100 else None
+
+# Получение фразы из Reddit (r/nosleep)
+def get_horror_phrase():
+    try:
+        response = requests.get(
+            "https://api.reddit.com/r/nosleep/top?limit=10",
+            headers={"User-Agent": "HorrorBot/1.0"}
+        )
+        response.raise_for_status()
+        posts = response.json()['data']['children']
+        random_post = random.choice(posts)
+        text = random_post['data']['selftext']
+        sentences = re.split(r'[.!?]', text)
+        valid_sentences = [s.strip() for s in sentences if 10 < len(s) < 100]
+        if valid_sentences:
+            phrase = random.choice(valid_sentences)
+            filtered = filter_phrase(phrase)
+            if filtered:
+                return f"{filtered} (Источник: r/nosleep)"
+        return None
+    except:
+        return None
+
+# Парсинг Creepypasta
+def scrape_creepypasta():
+    try:
+        response = requests.get("https://www.creepypasta.com/random/")
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        content = soup.find('div', class_='entry-content')
+        if not content:
+            return None
+        text = content.text
+        sentences = re.split(r'[.!?]', text)
+        valid_sentences = [s.strip() for s in sentences if 10 < len(s) < 100]
+        if valid_sentences:
+            phrase = random.choice(valid_sentences)
+            filtered = filter_phrase(phrase)
+            if filtered:
+                return f"{filtered} (Источник: Creepypasta)"
+        return None
+    except:
+        return None
+
+# Обновление кэша
+def update_horror_cache():
+    global HORROR_PHRASE_CACHE, LAST_CACHE_UPDATE
+    current_time = time.time()
+    if current_time - LAST_CACHE_UPDATE < CACHE_DURATION:
+        return
+    new_phrases = []
+    for _ in range(50):  # Пытаемся собрать 50 фраз
+        phrase = get_horror_phrase() or scrape_creepypasta()
+        if phrase and phrase not in new_phrases:
+            new_phrases.append(phrase)
+    HORROR_PHRASE_CACHE = new_phrases
+    LAST_CACHE_UPDATE = current_time
 
 # Генератор стандартных угроз
 def generate_threat():
@@ -36,6 +132,47 @@ def analyze_message(message):
         if pattern.search(message):
             return key
     return None
+
+# Генерация ответа демона
+def generate_demon_reply(user_message):
+    # Обновляем кэш
+    update_horror_cache()
+    
+    # 30% шанс использовать внешнюю фразу
+    if random.random() < 0.3 and HORROR_PHRASE_CACHE:
+        external_phrase = random.choice(HORROR_PHRASE_CACHE)
+        return f"{external_phrase}... Это взято из твоих худших кошмаров."
+    
+    # Динамические угрозы на основе триггеров
+    trigger = analyze_message(user_message)
+    if trigger and random.random() > 0.5:
+        threats = {
+            'ip': [
+                "Твой IP: 192.168.{}.{}. Уверен, ты не хочешь его публикации?",
+                "Сети WiFi вокруг тебя: {}. Выбери, какую я взломаю."
+            ],
+            'камера': [
+                "Я вижу, как ты поправил волосы. Камера твоего {} работает отлично.",
+                "Перестань кривляться перед камерой. Это последнее, что ты делаешь?"
+            ],
+            'страх': [
+                "Сердцебиение: {} уд/мин. Тебе пора остановиться.",
+                "Ты дрожишь. Это я через датчики телефона чувствую."
+            ]
+        }
+        threat_template = random.choice(threats[trigger])
+        device = random.choice(['ноутбука', 'смартфона', 'планшета'])
+        reply = threat_template.format(
+            random.randint(1, 99), random.randint(1, 99),
+            ', '.join(['HomeWiFi', 'Public']),
+            device,
+            random.randint(80, 120)
+        )
+    else:
+        # Локальная угроза
+        reply = generate_threat()
+    
+    return reply
 
 # Промты для 7 демонов
 DEMON_PROMPTS = {
@@ -109,34 +246,9 @@ def chat_handler():
                 "unlocked": True
             })
 
-        # Анализ сообщения для демона #7
+        # Ответ для демона #7
         if demon_id == 7:
-            trigger = analyze_message(message)
-            if trigger and random.random() > 0.5:
-                threats = {
-                    'ip': [
-                        "Твой IP: 192.168.{}.{}. Уверен, ты не хочешь его публикации?",
-                        "Сети WiFi вокруг тебя: {}. Выбери, какую я взломаю."
-                    ],
-                    'камера': [
-                        "Я вижу, как ты поправил волосы. Камера твоего {} работает отлично.",
-                        "Перестань кривляться перед камерой. Это последнее, что ты делаешь?"
-                    ],
-                    'страх': [
-                        "Сердцебиение: {} уд/мин. Тебе пора остановиться.",
-                        "Ты дрожишь. Это я через датчики телефона чувствую."
-                    ]
-                }
-                threat_template = random.choice(threats[trigger])
-                device = random.choice(['ноутбука', 'смартфона', 'планшета'])
-                reply = threat_template.format(
-                    random.randint(1, 99), random.randint(1, 99),
-                    ', '.join(['HomeWiFi', 'Public']),
-                    device,
-                    random.randint(80, 120)
-                )
-            else:
-                reply = generate_threat()
+            reply = generate_demon_reply(message)
             reply = distort_text(reply)
             return jsonify({"reply": reply, "unlocked": False})
 
