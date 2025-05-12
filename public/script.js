@@ -17,6 +17,36 @@ const App = () => {
   );
 };
 
+const SecurityOverlay = () => {
+  const [accessLogs, setAccessLogs] = useState([]);
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const response = await fetch('/api/security/logs');
+        const logs = await response.json();
+        setAccessLogs(logs);
+      } catch (error) {
+        console.error('Failed to fetch security logs:', error);
+      }
+    };
+    fetchLogs();
+    const interval = setInterval(fetchLogs, 10000); // Обновление каждые 10 секунд
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="security-overlay text-demon text-sm mb-4" style={{ maxHeight: '100px', overflowY: 'auto' }}>
+      <h3>🔒 Система мониторинга:</h3>
+      {accessLogs.map((log, index) => (
+        <div key={index} className="log-entry">
+          [{log.timestamp}] {log.message}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const AccessScreen = ({ onAccessGranted }) => {
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
@@ -72,7 +102,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           className="hack-code"
           style={{
             top: `${top}%`,
-            left: `${left}%`,
+            left: `${top}%`,
             animationDuration: `${duration}s`,
             animationDelay: `${delay}s`
           }}
@@ -300,6 +330,7 @@ const ChatScreen = () => {
 
   return (
     <div className="flex flex-col h-full p-4 relative">
+      <SecurityOverlay />
       <div id="status" className="text-demon text-xl mb-4">
         {modelStatus.length > 0 && (
           <div className="model-status">
