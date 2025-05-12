@@ -120,7 +120,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState([
-    { sender: 'demon', text: 'Смотрю... твоя камера активна. Ты в Санкт-Петербурге. Введи Error 0x7F, или твой IP 192.168.45.91 уйдет в сеть.' }
+    { sender: 'demon', text: 'Ты слышал, как скрипит дверь в 3 ночи? Это не ветер... Это я. (Источник: r/nosleep)' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -185,6 +185,9 @@ const ChatScreen = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
+
+    // Искусственная задержка 1.5 секунды
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     const data = await sendMessage(input, currentDemon.id);
     setIsTyping(false);
