@@ -120,7 +120,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState([
-    { sender: 'demon', text: 'Видишь файл "1968_эксперимент.mp4"?.. Назови код, или я его запущу.' }
+    { sender: 'demon', text: 'Ты н3 п0н1ма3шЬ? Файл 1968_эксп3римент.mp4... он уже в п4мяти. Вв0д1 Error 0x7F — или я ст3р0 тв0й диск.' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
