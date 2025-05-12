@@ -3,16 +3,17 @@ from flask_cors import CORS
 import os
 import requests
 import random
+import re
 
 app = Flask(__name__)
 CORS(app)
 
-# Функция искажения текста (интенсивность 40%)
+# Функция искажения текста (интенсивность 20%)
 def distort_text(text):
     replacements = {'о': '0', 'е': '3', 'а': '4', ' ': ' '}
     return ''.join([replacements[c] if c in replacements and random.random() < 0.2 else c for c in text])
 
-# Генератор угроз
+# Генератор стандартных угроз
 def generate_threat():
     locations = ["Москве", "Санкт-Петербурге", "Новосибирске", "Екатеринбурге"]
     threats = [
@@ -23,6 +24,18 @@ def generate_threat():
         f"Ты сегодня искал '{random.choice(['как скрыть IP', 'удалить историю', 'демонов'])}'. Я знаю."
     ]
     return random.choice(threats)
+
+# Анализ сообщения пользователя
+def analyze_message(message):
+    triggers = {
+        'ip': re.compile(r'ip|айпи|сеть', re.IGNORECASE),
+        'камера': re.compile(r'камера|видео|смотрю', re.IGNORECASE),
+        'страх': re.compile(r'боюсь|страх|прекрати', re.IGNORECASE)
+    }
+    for key, pattern in triggers.items():
+        if pattern.search(message):
+            return key
+    return None
 
 # Промты для 7 демонов
 DEMON_PROMPTS = {
@@ -96,7 +109,38 @@ def chat_handler():
                 "unlocked": True
             })
 
-        # Запрос к OpenRouter
+        # Анализ сообщения для демона #7
+        if demon_id == 7:
+            trigger = analyze_message(message)
+            if trigger and random.random() > 0.5:
+                threats = {
+                    'ip': [
+                        "Твой IP: 192.168.{}.{}. Уверен, ты не хочешь его публикации?",
+                        "Сети WiFi вокруг тебя: {}. Выбери, какую я взломаю."
+                    ],
+                    'камера': [
+                        "Я вижу, как ты поправил волосы. Камера твоего {} работает отлично.",
+                        "Перестань кривляться перед камерой. Это последнее, что ты делаешь?"
+                    ],
+                    'страх': [
+                        "Сердцебиение: {} уд/мин. Тебе пора остановиться.",
+                        "Ты дрожишь. Это я через датчики телефона чувствую."
+                    ]
+                }
+                threat_template = random.choice(threats[trigger])
+                device = random.choice(['ноутбука', 'смартфона', 'планшета'])
+                reply = threat_template.format(
+                    random.randint(1, 99), random.randint(1, 99),
+                    ', '.join(['HomeWiFi', 'Public']),
+                    device,
+                    random.randint(80, 120)
+                )
+            else:
+                reply = generate_threat()
+            reply = distort_text(reply)
+            return jsonify({"reply": reply, "unlocked": False})
+
+        # Запрос к OpenRouter для других демонов
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
@@ -124,10 +168,6 @@ def chat_handler():
             return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500
 
         reply = response.json()['choices'][0]['message']['content']
-        # Для демона #7: генерируем угрозу и применяем искажения
-        if demon_id == 7:
-            reply = generate_threat()
-            reply = distort_text(reply)
         return jsonify({"reply": reply, "unlocked": False})
 
     except Exception as e:
