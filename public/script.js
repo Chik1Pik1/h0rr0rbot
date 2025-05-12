@@ -1,7 +1,5 @@
+```javascript
 const { useState, useEffect } = React;
-
-// Generate a simple session ID
-const sessionId = Math.random().toString(36).substring(2);
 
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
@@ -41,11 +39,12 @@ const AccessScreen = ({ onAccessGranted }) => {
           setShowHackOverlay(false);
           setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
           setTimeout(() => onAccessGranted(), 2000);
-        }, 4000);
-      }, 3000);
-    }, 3000);
+        }, 4000); // Длительность анимации взлома
+      }, 3000); // Длительность анимации ошибки
+    }, 3000); // Задержка перед анимацией
   };
 
+  // Генерация случайных кусков кода для анимации взлома
   const generateHackCode = () => {
     const snippets = [
       'INITIALIZE BACKDOOR: 0xDEADBEEF',
@@ -63,8 +62,8 @@ const AccessScreen = ({ onAccessGranted }) => {
     for (let i = 0; i < 30; i++) {
       const top = Math.random() * 100;
       const left = Math.random() * 100;
-      const duration = 1 + Math.random() * 2;
-      const delay = Math.random() * 2;
+      const duration = 1 + Math.random() * 2; // 1–3 секунды
+      const delay = Math.random() * 2; // Случайная задержка
       codes.push(
         <div
           key={i}
@@ -135,12 +134,103 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
+  // Проверка prefers-reduced-motion
+  const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Эффекты касания
+  useEffect(() => {
+    if (isReducedMotion) return;
+
+    let touchTimer;
+    const messageElements = document.querySelectorAll('.message');
+
+    const handleTouchStart = function(e) {
+      touchTimer = setTimeout(() => {
+        this.classList.add('glitch');
+        addScratches();
+      }, 1500);
+    };
+
+    const handleTouchEnd = function() {
+      clearTimeout(touchTimer);
+      this.classList.remove('glitch');
+    };
+
+    messageElements.forEach(msg => {
+      msg.addEventListener('touchstart', handleTouchStart);
+      msg.addEventListener('touchend', handleTouchEnd);
+    });
+
+    return () => {
+      messageElements.forEach(msg => {
+        msg.removeEventListener('touchstart', handleTouchStart);
+        msg.removeEventListener('touchend', handleTouchEnd);
+      });
+    };
+  }, [messages]);
+
+  // Шлейфы при скролле
+  useEffect(() => {
+    if (isReducedMotion) return;
+
+    let lastScroll = 0;
+    const handleScroll = () => {
+      const now = Date.now();
+      if (now - lastScroll > 100) {
+        const lastMessage = document.querySelector('.message:last-child');
+        if (lastMessage) {
+          const trail = document.createElement('div');
+          trail.className = 'shadow-trail';
+          lastMessage.appendChild(trail);
+          setTimeout(() => trail.remove(), 700);
+        }
+        lastScroll = now;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Случайные силуэты (1 раз за сессию)
+  useEffect(() => {
+    if (isReducedMotion) return;
+
+    let hasSilhouetteAppeared = false;
+    if (!hasSilhouetteAppeared) {
+      const timeout = setTimeout(() => {
+        const ghost = document.createElement('div');
+        ghost.className = 'silhouette';
+        ghost.style.top = `${Math.random() * 80}vh`;
+        ghost.style.left = `${Math.random() * 80}vw`;
+        document.body.appendChild(ghost);
+        setTimeout(() => ghost.remove(), 500);
+        hasSilhouetteAppeared = true;
+      }, 120000); // Через 2 минуты
+      return () => clearTimeout(timeout);
+    }
+  }, []);
+
+  const addScratches = () => {
+    if (isReducedMotion) return;
+
+    const scratches = document.createElement('div');
+    scratches.innerHTML = `
+      <div class="scratch top"></div>
+      <div class="scratch right"></div>
+      <div class="scratch bottom"></div>
+    `;
+    scratches.className = 'scratches';
+    document.body.appendChild(scratches);
+    setTimeout(() => scratches.remove(), 500);
+  };
+
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, session_id: sessionId })
+        body: JSON.stringify({ message })
       });
       const data = await response.json();
       return data.reply;
@@ -169,7 +259,7 @@ const ChatScreen = () => {
         {messages.map((msg, index) => (
           <p
             key={index}
-            className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'}`}
+            className={`text-xl mb-2 message ${msg.sender === 'user' ? 'text-user' : 'text-demon'}`}
           >
             {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{msg.text}
           </p>
@@ -198,3 +288,4 @@ const ChatScreen = () => {
 };
 
 ReactDOM.render(<App />, document.getElementById('root'));
+```
