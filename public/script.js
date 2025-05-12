@@ -34,17 +34,21 @@ const AccessScreen = ({ onAccessGranted }) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center">
-      <h1 className="text-3xl text-demon mb-4">ПРОЕКТ ЗЕРКАЛО-1</h1>
-      <p className="text-xl text-demon mb-4">ГРИФ: СОВЕРШЕННО СЕКРЕТНО</p>
+      <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
+      <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
+      <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
       <form onSubmit={handleSubmit} className="w-full max-w-sm">
-        <input
-          type="text"
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          className="w-full text-user text-xl p-2 mb-4 border focus:outline-none"
-          placeholder="Введите ключ доступа"
-          disabled={isLoading}
-        />
+        <div className="flex items-center mb-4">
+          <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
+          <input
+            type="text"
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            className="flex-1 text-user text-xl p-2 border focus:outline-none"
+            placeholder="_________"
+            disabled={isLoading}
+          />
+        </div>
         <button
           type="submit"
           className="w-full text-user text-xl border px-4 py-2"
@@ -53,8 +57,10 @@ const AccessScreen = ({ onAccessGranted }) => {
           Подтвердить
         </button>
       </form>
-      {error && (
+      {error ? (
         <p className="text-demon text-xl mt-4 blink">{error}</p>
+      ) : (
+        <p className="text-demon text-xl mt-4">(ЛЮБОЙ ВВОД → ОШИБКА)</p>
       )}
     </div>
   );
