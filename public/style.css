@@ -56,6 +56,55 @@ body::after {
   pointer-events: none;
 }
 
+/* Анимация ошибки */
+.error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #FF0000;
+  font-size: 3rem;
+  text-align: center;
+  animation: error-blink 0.5s infinite;
+  z-index: 10;
+}
+
+@keyframes error-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Анимация взлома */
+.hack-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  color: #00FF00;
+  font-size: 1rem;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.hack-code {
+  position: absolute;
+  white-space: nowrap;
+  animation: hack-scroll linear infinite;
+}
+
+@keyframes hack-scroll {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(-100%); }
+}
+
 @keyframes scanline {
   0% { background-position: 0 0; }
   100% { background-position: 0 1000px; }
@@ -132,5 +181,9 @@ button:disabled {
 
   h1, p, input, button {
     font-size: 1rem;
+  }
+
+  .error-overlay {
+    font-size: 1.5rem;
   }
 }
