@@ -1,5 +1,8 @@
 const { useState, useEffect } = React;
 
+// Глобальная переменная для хранения времени сброса лимита
+let rateLimitReset = 0;
+
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
@@ -136,6 +139,21 @@ const ChatScreen = () => {
   // Проверка prefers-reduced-motion
   const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Проверка лимитов
+  const checkRateLimit = () => {
+    if (Date.now() < rateLimitReset) {
+      showTimer(rateLimitReset);
+      return false;
+    }
+    return true;
+  };
+
+  // Отображение таймера восстановления лимита
+  const showTimer = (resetTime) => {
+    const seconds = Math.ceil((resetTime - Date.now()) / 1000);
+    alert(`Лимит восстановится через ${seconds} секунд`);
+  };
+
   // Эффекты касания
   useEffect(() => {
     if (isReducedMotion) return;
@@ -232,6 +250,16 @@ const ChatScreen = () => {
         body: JSON.stringify({ message })
       });
       const data = await response.json();
+
+      if (response.status === 429) {
+        // Извлечение времени сброса лимита из заголовков
+        const resetTime = response.headers.get('X-RateLimit-Reset');
+        if (resetTime) {
+          rateLimitReset = parseInt(resetTime) * 1000; // Конвертация в миллисекунды
+        }
+        return data.reply || 'Я всё ещё здесь... Попробуй снова.';
+      }
+
       return data.reply;
     } catch (error) {
       return 'Я всё ещё здесь... Попробуй снова.';
@@ -241,6 +269,9 @@ const ChatScreen = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
+
+    // Проверка лимитов перед отправкой
+    if (!checkRateLimit()) return;
 
     const userMessage = { sender: 'user', text: input };
     setMessages([...messages, userMessage]);
@@ -287,4 +318,3 @@ const ChatScreen = () => {
 };
 
 ReactDOM.render(<App />, document.getElementById('root'));
-
