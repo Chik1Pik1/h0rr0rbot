@@ -6,7 +6,6 @@ import time
 import random
 from datetime import datetime
 from flask import Flask, request, jsonify
-import schedule
 
 app = Flask(__name__)
 
@@ -93,15 +92,6 @@ def distort_text(text):
             distorted += char
     return distorted
 
-def reset_main_account():
-    """Сброс лимитов для основного аккаунта."""
-    for model, config in MODEL_CONFIG.items():
-        if "MAIN" in config['account_id']:
-            config['remaining'] = 50
-            config['reset_time'] = None
-            logger.info(f"Reset limits for {config['account_id']}")
-    return schedule.CancelJob
-
 def select_model():
     """Выбор модели с доступными запросами, сортировка по приоритету."""
     now = time.time()
@@ -183,10 +173,6 @@ def chat():
             logger.error(f"Account {config['account_id']} LOCKED until {datetime.fromtimestamp(reset_timestamp)}")
             config['remaining'] = 0
             config['reset_time'] = reset_timestamp
-
-            # Автоматический перезапуск через 5 минут для основного аккаунта
-            if "MAIN" in config['account_id']:
-                schedule.every(5).minutes.do(reset_main_account)
 
             return jsonify({
                 "reply": "Слишком много вопрошающих...",
