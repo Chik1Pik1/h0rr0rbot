@@ -155,7 +155,7 @@ const ChatScreen = () => {
   };
 
   return (
-    <div className="flex flex-col h-full p-4">
+    <div className="flex flex-col h-full p-4 relative">
       <div className="chat-container">
         {messages.map((msg, index) => (
           <p
@@ -169,7 +169,7 @@ const ChatScreen = () => {
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-      <form onSubmit={handleSubmit} className="flex mt-auto w-full">
+      <form onSubmit={handleSubmit} className="chat-input-form flex">
         <input
           type="text"
           value={input}
