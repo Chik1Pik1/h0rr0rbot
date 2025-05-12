@@ -1,5 +1,8 @@
 const { useState, useEffect } = React;
 
+// Generate a simple session ID
+const sessionId = Math.random().toString(36).substring(2);
+
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
@@ -38,12 +41,11 @@ const AccessScreen = ({ onAccessGranted }) => {
           setShowHackOverlay(false);
           setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
           setTimeout(() => onAccessGranted(), 2000);
-        }, 4000); // Длительность анимации взлома
-      }, 3000); // Длительность анимации ошибки
-    }, 3000); // Задержка перед анимацией
+        }, 4000);
+      }, 3000);
+    }, 3000);
   };
 
-  // Генерация случайных кусков кода для анимации взлома
   const generateHackCode = () => {
     const snippets = [
       'INITIALIZE BACKDOOR: 0xDEADBEEF',
@@ -61,8 +63,8 @@ const AccessScreen = ({ onAccessGranted }) => {
     for (let i = 0; i < 30; i++) {
       const top = Math.random() * 100;
       const left = Math.random() * 100;
-      const duration = 1 + Math.random() * 2; // 1–3 секунды
-      const delay = Math.random() * 2; // Случайная задержка
+      const duration = 1 + Math.random() * 2;
+      const delay = Math.random() * 2;
       codes.push(
         <div
           key={i}
@@ -138,7 +140,7 @@ const ChatScreen = () => {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message, session_id: sessionId })
       });
       const data = await response.json();
       return data.reply;
