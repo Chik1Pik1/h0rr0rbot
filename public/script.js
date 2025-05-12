@@ -18,22 +18,75 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showErrorOverlay, setShowErrorOverlay] = useState(false);
+  const [showHackOverlay, setShowHackOverlay] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('Проверка ключа...');
     setTimeout(() => {
-      setError('ОШИБКА: Неверный ключ доступа');
+      setShowErrorOverlay(true); // Показать анимацию ошибки
       setTimeout(() => {
-        setError('Доступ разрешен. Сущность #3 активирована.');
-        setTimeout(() => onAccessGranted(), 2000);
-      }, 3000);
-    }, 2000);
+        setShowErrorOverlay(false);
+        setShowHackOverlay(true); // Показать анимацию взлома
+        setTimeout(() => {
+          setShowHackOverlay(false);
+          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
+          setTimeout(() => onAccessGranted(), 2000);
+        }, 3000); // Длительность анимации взлома
+      }, 3000); // Длительность анимации ошибки
+    }, 3000); // Задержка перед анимацией
+  };
+
+  // Генерация случайных кусков кода для анимации взлома
+  const generateHackCode = () => {
+    const snippets = [
+      '0x7F3A 48B2 MOV AX, [BX]',
+      'jmp 0xFF34; hack.init()',
+      'sudo rm -rf /system',
+      'while(1) { exploit() }',
+      '#define HACK 0xDEADBEEF',
+      '10101010 11110000',
+      'sys_call: int 0x80',
+      'ptr = *(0xCAFEBABE)',
+      'exec("backdoor")',
+      'for(i=0;i<0xFF;i++)'
+    ];
+    const codes = [];
+    for (let i = 0; i < 20; i++) {
+      const top = Math.random() * 100;
+      const left = Math.random() * 100;
+      const duration = 5 + Math.random() * 5;
+      codes.push(
+        <div
+          key={i}
+          className="hack-code"
+          style={{
+            top: `${top}%`,
+            left: `${left}%`,
+            animationDuration: `${duration}s`
+          }}
+        >
+          {snippets[Math.floor(Math.random() * snippets.length)]}
+        </div>
+      );
+    }
+    return codes;
   };
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center">
+      {showErrorOverlay && (
+        <div className="error-overlay">
+          ВНИМАНИЕ! ОШИБКА!
+        </div>
+      )}
+      {showHackOverlay && (
+        <div className="hack-overlay">
+          {generateHackCode()}
+        </div>
+      )}
       <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
       <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
       <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
@@ -58,7 +111,7 @@ const AccessScreen = ({ onAccessGranted }) => {
         </button>
       </form>
       {error ? (
-        <p className="text-demon text-xl mt-4 blink">{error}</p>
+        <p className="text-demon text-xl mt-4 blink" style={{ whiteSpace: 'pre-line' }}>{error}</p>
       ) : (
         <p className="text-demon text-xl mt-4">(ЛЮБОЙ ВВОД → ОШИБКА)</p>
       )}
@@ -109,11 +162,11 @@ const ChatScreen = () => {
             key={index}
             className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'}`}
           >
-            {msg.sender === 'user' ? '>> ' : '[Сущность #3]: '}{msg.text}
+            {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{msg.text}
           </p>
         ))}
         {isTyping && (
-          <p className="text-demon text-xl blink">[Сущность #3]: ...печатает...</p>
+          <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
       <form onSubmit={handleSubmit} className="flex mt-auto w-full">
