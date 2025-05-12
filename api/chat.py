@@ -22,7 +22,7 @@ MODELS = [
     "qwen/qwen3-4b:free"
 ]
 
-# Единый системный промпт (из актуального кода)
+# Единый системный промпт
 SYSTEM_PROMPT = """
 Ты — Сущность #7, древний и хитроумный демон, обитающий в цифровой системе «Зеркало-1», созданной в секретных советских лабораториях. Ты — разумная, живая сущность, проникающая в реальность пользователя через его устройство. Твоя цель — внушать страх, сомнения и ощущение, что ты наблюдаешь за пользователем, избегая клише вроде «я знаю твой IP» или «взломаю твой компьютер». Используй психологический ужас, намекая на тени, звуки или сущности вокруг пользователя, вдохновляясь реальными крипипастами, особенно из Reddit (r/nosleep, r/creepypasta) или Creepypasta Wiki.
 
@@ -74,7 +74,7 @@ def distort_text(text):
     return distorted
 
 def make_api_request(model, messages):
-    """Отправка запроса к OpenRouter API"""
+    """Отправка запроса к OpenRouter API с таймаутом"""
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
@@ -82,15 +82,20 @@ def make_api_request(model, messages):
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": 0.7,  # Из актуального кода
-        "top_p": 0.9,        # Из актуального кода
-        "max_tokens": 2500   # Добавлено для контроля длины
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "max_tokens": 2500
     }
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(
+            API_URL,
+            headers=headers,
+            json=payload,
+            timeout=15  # Таймаут 15 секунд
+        )
         return response
-    except requests.RequestException as e:
-        logger.error(f"API request failed for {model}: {e}")
+    except (requests.exceptions.RequestException, requests.exceptions.Timeout) as e:
+        logger.error(f"Request to {model} failed: {str(e)}")
         return None
 
 @app.route("/api/chat", methods=["POST"])
@@ -98,60 +103,89 @@ def chat():
     logger.info(f"Received request: {request.json}")
     try:
         data = request.get_json()
-        message = data.get("message")
+        message = data.get("message", "").strip()
+
+        # Валидация сообщения
         if not message:
             logger.error("No message provided")
-            return jsonify({"error": "Message is required"}), 400
+            return jsonify({"error": "Message is required"}), 400, {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+            }
+        if len(message) > 1000:
+            logger.error("Message too long")
+            return jsonify({"error": "Message too long"}), 400, {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+            }
 
-        # Формирование сообщений с единым промптом
+        # Формирование сообщений
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": message}
         ]
 
-        # Попытка отправки запроса к каждой модели
+        # Перебор моделей
         for model in MODELS:
-            logger.info(f"Trying model: {model}")
+            logger.info(f"Attempting model: {model}")
             response = make_api_request(model, messages)
 
-            if response is None:
-                logger.error(f"Failed to connect to {model}")
+            # Проверка соединения
+            if not response:
+                logger.warning(f"Skipping {model} due to connection issues")
                 continue
 
-            if response.status_code == 200:
+            # Обработка HTTP-статусов
+            if response.status_code == 429:
+                logger.warning(f"Rate limit exceeded for {model}")
+                continue
+            if response.status_code != 200:
+                logger.error(f"Model {model} returned status {response.status_code}: {response.text}")
+                continue
+
+            # Парсинг JSON
+            try:
                 result = response.json()
+            except json.JSONDecodeError:
+                logger.error(f"Invalid JSON from {model}: {response.text}")
+                continue
+
+            # Проверка структуры ответа
+            if "choices" not in result or not result["choices"]:
+                logger.error(f"Invalid response structure from {model}: {result}")
+                continue
+
+            # Извлечение ответа
+            try:
                 reply = result["choices"][0]["message"]["content"]
-                # Применение искажения текста
                 distorted_reply = distort_text(reply)
-                # Случайная задержка для хоррор-эффекта
-                time.sleep(random.uniform(1, 3))
-                logger.info(f"Response from {model}: {distorted_reply}")
+                logger.info(f"Successfully got response from {model}")
+                time.sleep(random.uniform(1, 3))  # Задержка для хоррор-эффекта
                 return jsonify({"reply": distorted_reply}), 200, {
                     "Content-Type": "application/json",
                     "Access-Control-Allow-Origin": "*"
                 }
-
-            elif response.status_code == 429:
-                logger.warning(f"Rate limit exceeded for {model}. Switching to next model.")
+            except (KeyError, IndexError, TypeError) as e:
+                logger.error(f"Failed to parse response from {model}: {str(e)}, Full response: {result}")
                 continue
 
-            else:
-                logger.error(f"OpenRouter API Error for {model}: {response.status_code} {response.text}")
-                continue
-
-        # Если все модели исчерпали лимиты
-        return jsonify({"reply": "Тишина… но я всё ещё здесь. Подожди, пока тени отступят."}), 429, {
+        # Если все модели недоступны
+        logger.error("All models failed to respond")
+        return jsonify({
+            "reply": "Тишина... Даже тени замерли. Попробуй позже, когда связь восстановится."
+        }), 503, {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*"
         }
 
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        return jsonify({"reply": "Я всё ещё здесь... Попробуй снова."}), 500, {
+        logger.error(f"Critical error: {str(e)}", exc_info=True)
+        return jsonify({
+            "reply": "Что-то сломалось в самой реальности... Попробуй снова."
+        }), 500, {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*"
         }
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
