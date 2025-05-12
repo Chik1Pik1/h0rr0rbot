@@ -2,17 +2,16 @@ const { useState, useEffect } = React;
 
 // Глобальная переменная для хранения времени сброса лимита
 let rateLimitReset = 0;
+// Переключатель для принудительного включения анимаций
+const forceAnimations = true;
 
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
   return (
     <div className={isAccessGranted ? "chat-fullscreen" : "crt-window"}>
-      {isAccessGranted ? (
-        <ChatScreen />
-      ) : (
-        <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
-      )}
+      <div className="noise-overlay"></div>
+      {isAccessGranted ? <ChatScreen /> : <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />}
     </div>
   );
 };
@@ -102,7 +101,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           className="hack-code"
           style={{
             top: `${top}%`,
-            left: `${top}%`,
+            left: `${left}%`,
             animationDuration: `${duration}s`,
             animationDelay: `${delay}s`
           }}
@@ -115,7 +114,7 @@ const AccessScreen = ({ onAccessGranted }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center">
+    <div className="mobile-access-container">
       {showErrorOverlay && (
         <div className="error-overlay">
           ВНИМАНИЕ! ОШИБКА!
@@ -203,7 +202,7 @@ const ChatScreen = () => {
 
   // Эффекты касания
   useEffect(() => {
-    if (isReducedMotion) return;
+    if (!forceAnimations && isReducedMotion) return;
 
     let touchTimer;
     const messageElements = document.querySelectorAll('.message');
@@ -235,7 +234,7 @@ const ChatScreen = () => {
 
   // Шлейфы при скролле
   useEffect(() => {
-    if (isReducedMotion) return;
+    if (!forceAnimations && isReducedMotion) return;
 
     let lastScroll = 0;
     const handleScroll = () => {
@@ -258,15 +257,19 @@ const ChatScreen = () => {
 
   // Случайные силуэты (1 раз за сессию)
   useEffect(() => {
-    if (isReducedMotion) return;
+    if (!forceAnimations && isReducedMotion) return;
 
     let hasSilhouetteAppeared = false;
     if (!hasSilhouetteAppeared) {
       const timeout = setTimeout(() => {
         const ghost = document.createElement('div');
         ghost.className = 'silhouette';
-        ghost.style.top = `${Math.random() * 80}vh`;
-        ghost.style.left = `${Math.random() * 80}vw`;
+        ghost.style.cssText = `
+          top: ${Math.random() * 80}vh;
+          left: ${Math.random() * 80}vw;
+          opacity: ${Math.random() * 0.3 + 0.1};
+          transform: scale(${Math.random() + 0.5});
+        `;
         document.body.appendChild(ghost);
         setTimeout(() => ghost.remove(), 500);
         hasSilhouetteAppeared = true;
@@ -276,7 +279,7 @@ const ChatScreen = () => {
   }, []);
 
   const addScratches = () => {
-    if (isReducedMotion) return;
+    if (!forceAnimations && isReducedMotion) return;
 
     const scratches = document.createElement('div');
     scratches.innerHTML = `
@@ -330,6 +333,7 @@ const ChatScreen = () => {
 
   return (
     <div className="flex flex-col h-full p-4 relative">
+      <div className="noise-overlay"></div>
       <SecurityOverlay />
       <div id="status" className="text-demon text-xl mb-4">
         {modelStatus.length > 0 && (
