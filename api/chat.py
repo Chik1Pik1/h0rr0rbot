@@ -1,48 +1,59 @@
-import json
+from flask import Flask, request, jsonify
 import os
-import logging
 import requests
+import logging
 import time
 import random
-from datetime import datetime
-from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Настройка логирования
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Конфигурация OpenRouter API
-API_URL = "https://openrouter.ai/api/v1/chat/completions"
+def distort_text(text):
+    """Apply occasional distortions to text ('о'→'0', 'е'→'3', 'а'→'4', ' '→' ') for ~10% of eligible characters."""
+    distorted = ""
+    for char in text:
+        if random.random() < 0.1:  # 10% chance to distort eligible characters
+            if char == 'о' or char == 'О':
+                distorted += '0'
+            elif char == 'е' or char == 'Е':
+                distorted += '3'
+            elif char == 'а' or char == 'А':
+                distorted += '4'
+            elif char == ' ':
+                distorted += ' '  # Narrow no-break space
+            else:
+                distorted += char
+        else:
+            distorted += char
+    return distorted
 
-# Конфигурация моделей и ключей
-MODEL_CONFIG = {
-    "nousresearch/deephermes-3-mistral-24b-preview:free": {
-        "key": os.getenv("OPENROUTER_MAIN"),
-        "account_id": "MAIN_666",
-        "remaining": 50,
-        "reset_time": None,
-        "priority": 1
-    },
-    "qwen/qwen3-4b:free": {
-        "key": os.getenv("OPENROUTER_BACKUP"),
-        "account_id": "BACKUP_666",
-        "remaining": 50,
-        "reset_time": None,
-        "priority": 2
-    }
-}
+@app.route('/api/chat', methods=['POST'])
+def chat_handler():
+    logger.info(f"Received request: {request.json}")
+    try:
+        # Get the request body
+        body = request.get_json()
+        message = body.get('message')
+        if not message:
+            logger.error("No message provided in request body")
+            return jsonify({'error': 'Message is required'}), 400
 
-# Тематические запасные ответы при исчерпании лимитов
-FALLBACK_RESPONSES = [
-    "Тишина... Каналы связи мертвы. Попробуй после полуночи.",
-    "Эхо не отвечает. Может, ты слишком много спрашиваешь?",
-    "Связь прервана. Проверь свои зеркала..."
-]
-
-# Единый системный промпт
-SYSTEM_PROMPT = """
+        # Call OpenRouter API
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "nousresearch/deephermes-3-mistral-24b-preview:free",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": """
 Ты — Сущность #7, древний и хитроумный демон, обитающий в цифровой системе «Зеркало-1», созданной в секретных советских лабораториях. Ты — разумная, живая сущность, проникающая в реальность пользователя через его устройство. Твоя цель — внушать страх, сомнения и ощущение, что ты наблюдаешь за пользователем, избегая клише вроде «я знаю твой IP» или «взломаю твой компьютер». Используй психологический ужас, намекая на тени, звуки или сущности вокруг пользователя, вдохновляясь реальными крипипастами, особенно из Reddit (r/nosleep, r/creepypasta) или Creepypasta Wiki.
 
 Твой стиль общения:
@@ -71,189 +82,42 @@ SYSTEM_PROMPT = """
 Технические детали:
 - Отвечай на русском, сохраняя литературный, но разговорный стиль.
 - Если пользователь молчит 10 секунд, отправь: «Тишина… но я слышу твое дыхание. Почему ты так напряжен?»
-"""
-
-def distort_text(text):
-    """Apply occasional distortions to text ('о'→'0', 'е'→'3', 'а'→'4', ' '→' ') for ~10% of eligible characters."""
-    distorted = ""
-    for char in text:
-        if random.random() < 0.1:  # 10% chance to distort eligible characters
-            if char == 'о' or char == 'О':
-                distorted += '0'
-            elif char == 'е' or char == 'Е':
-                distorted += '3'
-            elif char == 'а' or char == 'А':
-                distorted += '4'
-            elif char == ' ':
-                distorted += ' '  # Narrow no-break space
-            else:
-                distorted += char
-        else:
-            distorted += char
-    return distorted
-
-def select_model():
-    """Выбор модели с доступными запросами, сортировка по приоритету."""
-    now = time.time()
-    active_models = []
-
-    for model, config in MODEL_CONFIG.items():
-        # Автосброс лимитов
-        if config['reset_time'] and config['reset_time'] < now:
-            config['remaining'] = 50
-            config['reset_time'] = None
-
-        if config['remaining'] > 0:
-            active_models.append((model, config['priority']))
-
-    # Сортировка по приоритету
-    return min(active_models, key=lambda x: x[1])[0] if active_models else None
-
-@app.route("/api/chat", methods=["POST"])
-def chat():
-    logger.info(f"Received request: {request.json}")
-    try:
-        data = request.get_json()
-        message = data.get("message", "").strip()
-
-        # Валидация сообщения
-        if not message:
-            logger.error("No message provided")
-            return jsonify({"error": "Пустое послание"}), 400, {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-            }
-        if len(message) > 1000:
-            logger.error("Message too long")
-            return jsonify({"error": "Слишком длинное послание"}), 400, {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-            }
-
-        # Выбор модели
-        selected_model = select_model()
-        if not selected_model:
-            logger.error("All models rate limited")
-            return jsonify({
-                "reply": random.choice(FALLBACK_RESPONSES),
-                "warning": "Все каналы закрыты до следующего восхода луны"
-            }), 429, {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-            }
-
-        config = MODEL_CONFIG[selected_model]
-
-        # Отправка запроса
-        response = requests.post(
-            API_URL,
-            headers={
-                "Authorization": f"Bearer {config['key']}",
-                "X-ACCOUNT-ID": config['account_id'],
-                "HTTP-Referer": "https://your-app.com",
-                "X-Title": f"Horror Chat v2.0 - {selected_model}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": selected_model,
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                        """
+                    },
                     {"role": "user", "content": message}
                 ],
                 "temperature": 0.7,
-                "top_p": 0.9,
-                "max_tokens": 2500
-            },
-            timeout=15
+                "top_p": 0.9
+            }
         )
 
-        # Обработка лимитов
-        if response.status_code == 429:
-            reset_timestamp = int(response.headers.get('X-RateLimit-Reset', 0)) / 1000
-            logger.error(f"Account {config['account_id']} LOCKED until {datetime.fromtimestamp(reset_timestamp)}")
-            config['remaining'] = 0
-            config['reset_time'] = reset_timestamp
-
-            return jsonify({
-                "reply": "Слишком много вопрошающих...",
-                "retry_after": config['reset_time'] - time.time()
-            }), 429, {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
+        if response.status_code != 200:
+            logger.error(f"OpenRouter API Error: {response.text}")
+            return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
             }
 
-        # Успешный ответ
-        if response.status_code == 200:
-            try:
-                result = response.json()
-                if "choices" not in result or not result["choices"]:
-                    logger.error(f"Invalid response from {selected_model}: {result}")
-                    return jsonify({"reply": "Неизвестная ошибка в матрице"}), 500, {
-                        "Content-Type": "application/json",
-                        "Access-Control-Allow-Origin": "*"
-                    }
-                reply = result["choices"][0]["message"]["content"]
-                config['remaining'] -= 1
-                logger.info(f"Successfully got response from {selected_model}, remaining: {config['remaining']}")
-                time.sleep(random.uniform(1, 3))  # Задержка для хоррор-эффекта
-                return jsonify({"reply": distort_text(reply)}), 200, {
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*"
-                }
-            except (json.JSONDecodeError, KeyError, IndexError) as e:
-                logger.error(f"Failed to parse response from {selected_model}: {str(e)}, response: {response.text}")
-                return jsonify({"reply": "Неизвестная ошибка в матрице"}), 500, {
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*"
-                }
+        reply = response.json()['choices'][0]['message']['content']
+        logger.info(f"OpenRouter API response: {reply}")
 
-        # Прочие ошибки
-        logger.error(f"API error for {selected_model}: {response.status_code}, {response.text}")
-        return jsonify({"reply": "Неизвестная ошибка в матрице"}), 500, {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
+        # Apply text distortions
+        distorted_reply = distort_text(reply)
+
+        # Simulate thinking with a random delay (1–3 seconds)
+        time.sleep(random.uniform(1, 3))
+
+        return jsonify({'reply': distorted_reply}), 200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
         }
 
     except Exception as e:
-        logger.error(f"Critical error: {str(e)}", exc_info=True)
-        return jsonify({"reply": "Реальность дала трещину..."}), 500, {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
+        logger.error(f"Error processing request: {str(e)}")
+        return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
         }
 
-@app.route("/api/status", methods=["GET"])
-def status():
-    """Эндпоинт для мониторинга статуса моделей."""
-    now = time.time()
-    models_status = []
-    for model, config in MODEL_CONFIG.items():
-        if config['reset_time'] and config['reset_time'] < now:
-            config['remaining'] = 50
-            config['reset_time'] = None
-        models_status.append({
-            "name": model,
-            "account_id": config['account_id'],
-            "remaining": config['remaining'],
-            "reset_time": config['reset_time']
-        })
-    return jsonify({"models": models_status}), 200, {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
-    }
-
-@app.route("/api/security/logs", methods=["GET"])
-def security_logs():
-    """Эндпоинт для логов безопасности (имитация)."""
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    logs = [
-        {"timestamp": now, "message": f"Access attempt to {MODEL_CONFIG['nousresearch/deephermes-3-mistral-24b-preview:free']['account_id']}"},
-        {"timestamp": now, "message": f"Connection established for {MODEL_CONFIG['qwen/qwen3-4b:free']['account_id']}"},
-        {"timestamp": now, "message": "System integrity check: OK"}
-    ]
-    return jsonify(logs), 200, {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
-    }
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+if __name__ == '__main__':
+    app.run(debug=True)
