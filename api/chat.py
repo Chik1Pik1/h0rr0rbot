@@ -1,35 +1,33 @@
-import json
+from flask import Flask, request, jsonify
 import os
 import requests
+import logging
 
-def handler(event, context):
+app = Flask(__name__)
+
+# Configure logging for debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@app.route('/api/chat', methods=['POST'])
+def chat_handler():
+    logger.info(f"Received request: {request.json}")
     try:
-        # Проверяем метод запроса
-        if event.get('httpMethod') != 'POST':
-            return {
-                'statusCode': 405,
-                'body': json.dumps({'error': 'Only POST requests are allowed'}),
-                'headers': {'Content-Type': 'application/json'}
-            }
-
-        # Получаем тело запроса
-        body = json.loads(event.get('body', '{}'))
+        # Get the request body
+        body = request.get_json()
         message = body.get('message')
         if not message:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'Message is required'}),
-                'headers': {'Content-Type': 'application/json'}
-            }
+            logger.error("No message provided in request body")
+            return jsonify({'error': 'Message is required'}), 400
 
-        # Вызов OpenRouter API
+        # Call OpenRouter API
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
                 "Content-Type": "application/json"
             },
-            data=json.dumps({
+            json={
                 "model": "nousresearch/deephermes-3-mistral-24b-preview:free",
                 "messages": [
                     {
@@ -65,37 +63,30 @@ def handler(event, context):
 - Если пользователь молчит, через 10 секунд отправь сообщение вроде: «Тишина… но я слышу твое дыхание. Почему ты так напряжен?»
                         """
                     },
-                    {
-                        "role": "user",
-                        "content": message
-                    }
+                    {"role": "user", "content": message}
                 ],
                 "temperature": 0.7,
                 "top_p": 0.9
-            })
+            }
         )
 
         if response.status_code != 200:
-            print(f"OpenRouter API Error: {response.text}")
-            return {
-                'statusCode': 500,
-                'body': json.dumps({'reply': 'Я всё ещё здесь... Попробуй снова.'}),
-                'headers': {'Content-Type': 'application/json'}
-            }
+            logger.error(f"OpenRouter API Error: {response.text}")
+            return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500
 
         reply = response.json()['choices'][0]['message']['content']
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'reply': reply}),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+        logger.info(f"OpenRouter API response: {reply}")
+        return jsonify({'reply': reply}), 200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'  # CORS header for frontend
         }
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'reply': 'Я всё ещё здесь... Попробуй снова.'}),
-            'headers': {'Content-Type': 'application/json'}
+        logger.error(f"Error processing request: {str(e)}")
+        return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
         }
+
+if __name__ == '__main__':
+    app.run(debug=True)
