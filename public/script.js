@@ -135,6 +135,7 @@ const ChatScreen = () => {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [modelStatus, setModelStatus] = useState([]);
 
   // Проверка prefers-reduced-motion
   const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -153,6 +154,22 @@ const ChatScreen = () => {
     const seconds = Math.ceil((resetTime - Date.now()) / 1000);
     alert(`Лимит восстановится через ${seconds} секунд`);
   };
+
+  // Получение статуса моделей
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        setModelStatus(data.models);
+      } catch (error) {
+        console.error('Failed to fetch model status:', error);
+      }
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 60000); // Обновление каждые 60 секунд
+    return () => clearInterval(interval);
+  }, []);
 
   // Эффекты касания
   useEffect(() => {
@@ -252,11 +269,9 @@ const ChatScreen = () => {
       const data = await response.json();
 
       if (response.status === 429) {
-        // Извлечение времени сброса лимита из заголовков
-        const resetTime = response.headers.get('X-RateLimit-Reset');
-        if (resetTime) {
-          rateLimitReset = parseInt(resetTime) * 1000; // Конвертация в миллисекунды
-        }
+        // Извлечение времени сброса лимита
+        const retryAfter = data.retry_after ? Date.now() + (data.retry_after * 1000) : Date.now() + 60000;
+        rateLimitReset = retryAfter;
         return data.reply || 'Я всё ещё здесь... Попробуй снова.';
       }
 
@@ -285,6 +300,18 @@ const ChatScreen = () => {
 
   return (
     <div className="flex flex-col h-full p-4 relative">
+      <div id="status" className="text-demon text-xl mb-4">
+        {modelStatus.length > 0 && (
+          <div className="model-status">
+            {modelStatus.map((model, index) => (
+              <div key={index} className="mb-2">
+                <h3>{model.name.split('/')[1]}</h3>
+                <p>Осталось запросов: {model.remaining}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="chat-container">
         {messages.map((msg, index) => (
           <p
