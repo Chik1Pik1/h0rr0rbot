@@ -1,3 +1,4 @@
+```css
 body {
   background: #000;
   font-family: 'Special Elite', monospace;
@@ -9,6 +10,38 @@ body {
   min-height: 100vh;
   background: radial-gradient(rgba(0, 255, 0, 0.1), black 70%);
   touch-action: manipulation;
+}
+
+/* Фоновые помехи */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    linear-gradient(rgba(0, 30, 0, 0.1), rgba(0, 0, 0, 0.1)),
+    url('data:image/png;base64,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');
+  opacity: 0.02;
+  pointer-events: none;
+  animation: noise 0.3s infinite;
+  mix-blend-mode: overlay;
+  z-index: 1;
+  will-change: transform;
+}
+
+@keyframes noise {
+  0% { transform: translate(0, 0); }
+  10% { transform: translate(-5%, -5%); }
+  20% { transform: translate(-10%, 5%); }
+  30% { transform: translate(5%, -10%); }
+  40% { transform: translate(-5%, 15%); }
+  50% { transform: translate(-10%, 5%); }
+  60% { transform: translate(15%, 0); }
+  70% { transform: translate(0, 10%); }
+  80% { transform: translate(-15%, 0); }
+  90% { transform: translate(10%, 5%); }
+  100% { transform: translate(5%, 0); }
 }
 
 /* ЭЛТ-сканирование на фоне */
@@ -27,10 +60,11 @@ body::after {
   );
   pointer-events: none;
   animation: scanline 4s linear infinite;
+  will-change: background-position;
 }
 
 .crt-window {
-  position: absolute;
+  position: relative;
   width: 90%;
   max-width: 600px;
   min-height: 60vh;
@@ -46,8 +80,7 @@ body::after {
   align-items: center;
   margin: 0 auto;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
 }
 
 /* Полноэкранный чат */
@@ -62,7 +95,7 @@ body::after {
   box-sizing: border-box;
 }
 
-/* Помехи (шум) */
+/* Помехи (шум) для окна и чата */
 .crt-window::after, .chat-fullscreen::after {
   content: '';
   position: absolute;
@@ -99,7 +132,7 @@ body::after {
   100% { opacity: 1; }
 }
 
-/* Анимация взлома */
+/* Полноэкранная анимация взлома */
 .hack-overlay {
   position: fixed;
   top: 0;
@@ -113,7 +146,7 @@ body::after {
   z-index: 1000;
 }
 
-/* Цифровой дождь */
+/* Эффект цифрового дождя */
 .matrix-rain {
   position: absolute;
   top: 0;
@@ -126,6 +159,7 @@ body::after {
     rgba(0, 255, 0, 0.05) 100%
   );
   animation: matrix-rain 10s linear infinite;
+  will-change: transform;
 }
 
 @keyframes matrix-rain {
@@ -133,11 +167,12 @@ body::after {
   100% { transform: translateY(-100vh); }
 }
 
-/* Код с glitch-эффектом */
+/* Анимация кода с glitch-эффектом */
 .hack-code {
   position: absolute;
   white-space: nowrap;
   animation: hack-scroll linear infinite;
+  will-change: transform;
 }
 
 .hack-code::before {
@@ -150,6 +185,7 @@ body::after {
   background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==') repeat;
   opacity: 0.2;
   animation: glitch 0.5s infinite;
+  will-change: transform;
 }
 
 @keyframes hack-scroll {
@@ -174,6 +210,26 @@ body::after {
   0% { opacity: 1; }
   50% { opacity: 0.98; }
   100% { opacity: 1; }
+}
+
+/* Стили для сообщений */
+.message {
+  transition: text-shadow 0.5s;
+  position: relative;
+}
+
+.message.glitch {
+  text-shadow: 2px 2px 5px rgba(255, 0, 0, 0.5), -2px -2px 5px rgba(0, 255, 0, 0.5);
+  animation: glitch-text 0.3s infinite;
+}
+
+@keyframes glitch-text {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(2px, -2px); }
+  60% { transform: translate(-2px, -2px); }
+  80% { transform: translate(2px, 2px); }
+  100% { transform: translate(0, 0); }
 }
 
 .text-user {
@@ -232,6 +288,99 @@ button:disabled {
   letter-spacing: 0.1em;
 }
 
+/* Шлейфы при скролле */
+.shadow-trail {
+  position: absolute;
+  background: linear-gradient(90deg, rgba(0, 255, 0, 0.1) 0%, transparent 100%);
+  height: 100%;
+  opacity: 0;
+  animation: trail 0.7s forwards;
+  will-change: opacity, width;
+}
+
+@keyframes trail {
+  0% { opacity: 0.3; width: 100%; }
+  100% { opacity: 0; width: 0; }
+}
+
+/* Случайные силуэты */
+.silhouette {
+  position: fixed;
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAG1BMVEUAAAAZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRmE3nW4AAAACHRSTlMADfWTWY8Po26KqgAAAIhJREFUOMtjYBgFA4NhtL9A4UBmQDxQwYgQw4YhYg5hYQnEbSxHEIOxwYgQw4YhYg5hYQnEbSxHEIOxwYgQw4YhYg5hYQnEbSxHEIOxwYgQw4YhYg5hYQnEbSxHEIOxwYgQw4YhYg5hYQnEbSxHEIOxwYgQw4YhYg5hYQkA5pkMox0Bx7oAAAAASUVORK5CYII=');
+  width: 120px;
+  height: 200px;
+  opacity: 0;
+  animation: ghost 0.5s;
+  will-change: opacity, transform;
+}
+
+@keyframes ghost {
+  0% { opacity: 0; transform: translateY(10px); }
+  20% { opacity: 0.3; }
+  100% { opacity: 0; transform: translateY(-20px); }
+}
+
+/* Царапины при касании */
+.scratches {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.scratch {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 0.5;
+  animation: scratch 0.5s ease-out;
+}
+
+.scratch.top {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+}
+
+.scratch.right {
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+}
+
+.scratch.bottom {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+}
+
+@keyframes scratch {
+  0% { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+
+/* Отключение анимаций для prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .noise-overlay,
+  .crt-window,
+  .chat-fullscreen,
+  .error-overlay,
+  .matrix-rain,
+  .hack-code,
+  .hack-code::before,
+  .message.glitch,
+  .shadow-trail,
+  .silhouette,
+  .scratches {
+    animation: none !important;
+  }
+}
+
 /* Адаптивность для мобильных */
 @media (max-width: 600px) {
   .crt-window {
@@ -239,8 +388,7 @@ button:disabled {
     padding: 10px;
     min-height: 50vh;
     left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
   }
 
   .chat-fullscreen {
@@ -264,3 +412,4 @@ button:disabled {
     font-size: 1.5rem;
   }
 }
+```
