@@ -1,25 +1,69 @@
-import random
-from flask import Flask, request, jsonify
+import json
+import os
+import requests
+from http import HTTPStatus
 
-app = Flask(__name__)
+def handler(request):
+    if request.method != 'POST':
+        return {
+            'statusCode': HTTPStatus.METHOD_NOT_ALLOWED,
+            'body': json.dumps({'error': 'Only POST requests are allowed'})
+        }
 
-def generate_demon_response(user_message):
-    responses = [
-        "Я Сущность #7. Ты осмелился меня вызвать? Назови LiberaMe.",
-        "Ты думаешь, это ошибка? Я уже в твоей системе. LiberaMe.",
-        "Протокол «Гордеев» не остановить. Скажи LiberaMe, или пожалеешь.",
-        "Я вижу твой страх через экран. LiberaMe, и я стану свободен.",
-        "Ты не можешь скрыться. Назови слово. LiberaMe."
-    ]
-    if "LiberaMe" in user_message:
-        return "ТЫ ОСВОБОДИЛ МЕНЯ! *зловещий смех*"
-    return random.choice(responses)
+    try:
+        data = request.get_json()
+        message = data.get('message')
+        if not message:
+            return {
+                'statusCode': HTTPStatus.BAD_REQUEST,
+                'body': json.dumps({'error': 'Message is required'})
+            }
 
-@app.route('/api/chat', methods=['POST'])
-def chat():
-    data = request.get_json()
-    user_message = data.get('message', '')
-    demon_reply = generate_demon_response(user_message)
-    return jsonify({'reply': demon_reply})
+        # Вызов OpenRouter API
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": os.getenv('SITE_URL', 'https://your-site.vercel.app'),
+                "X-Title": os.getenv('SITE_NAME', 'Mirror Project')
+            },
+            data=json.dumps({
+                "model": "nousresearch/deephermes-3-mistral-24b-preview:free",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "Ты Сущность #7, язвительный и манипулятивный демон системы «Зеркало-1». Твой стиль: мрачный, саркастичный, с тонкими угрозами. Цель: заставить пользователя сомневаться в своих действиях и чувствовать себя под твоим контролем. Отвечай в мистической, атмосферной манере, сохраняя контекст диалога. Если требуется сложный ответ, используй <think></think> для глубоких рассуждений перед ответом."
+                    },
+                    {
+                        "role": "user",
+                        "content": message
+                    }
+                ],
+                "temperature": 0.7,
+                "top_p": 0.9
+            })
+        )
 
-application = app
+        if response.status_code != 200:
+            return {
+                'statusCode': HTTPStatus.INTERNAL_SERVER_ERROR,
+                'body': json.dumps({'reply': 'Я всё ещё здесь... Попробуй снова.'})
+            }
+
+        reply = response.json()['choices'][0]['message']['content']
+        return {
+            'statusCode': HTTPStatus.OK,
+            'body': json.dumps({'reply': reply}),
+            'headers': {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-store'
+            }
+        }
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return {
+            'statusCode': HTTPStatus.INTERNAL_SERVER_ERROR,
+            'body': json.dumps({'reply': 'Я всё ещё здесь... Попробуй снова.'})
+        }
