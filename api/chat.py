@@ -4,6 +4,7 @@ import logging
 import requests
 import time
 import random
+from datetime import datetime
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
@@ -20,6 +21,13 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODELS = [
     "nousresearch/deephermes-3-mistral-24b-preview:free",
     "qwen/qwen3-4b:free"
+]
+
+# Тематические запасные ответы при исчерпании лимитов
+FALLBACK_RESPONSES = [
+    "Тишина... Слишком много вопрошающих. Жди, когда тени позволят мне говорить.",
+    "Эхо затихло. Вернись после заката.",
+    "Связь прервана. Ты всё ещё там?.."
 ]
 
 # Единый системный промпт
@@ -108,40 +116,40 @@ def chat():
         # Валидация сообщения
         if not message:
             logger.error("No message provided")
-            return jsonify({"error": "Message is required"}), 400, {
+            return jsonify({"error": "Сообщение пустое"}), 400, {
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*"
             }
         if len(message) > 1000:
             logger.error("Message too long")
-            return jsonify({"error": "Message too long"}), 400, {
+            return jsonify({"error": "Слишком длинное послание"}), 400, {
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*"
             }
 
-        # Формирование сообщений
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": message}
         ]
 
-        # Перебор моделей
+        rate_limited_models = set()
+
         for model in MODELS:
+            if model in rate_limited_models:
+                continue
+
             logger.info(f"Attempting model: {model}")
             response = make_api_request(model, messages)
 
-            # Проверка соединения
             if not response:
-                logger.warning(f"Skipping {model} due to connection issues")
+                logger.warning(f"Connection issue with {model}")
                 continue
 
-            # Обработка HTTP-статусов
-            if response.status_code == 429:
-                logger.warning(f"Rate limit exceeded for {model}")
-                continue
-            if response.status_code != 200:
-                logger.error(f"Model {model} returned status {response.status_code}: {response.text}")
-                continue
+            # Анализ заголовков rate limit
+            rate_limit_reset = response.headers.get('X-RateLimit-Reset')
+            if rate_limit_reset:
+                reset_time = datetime.fromtimestamp(int(rate_limit_reset) / 1000)
+                logger.info(f"RateLimit reset for {model} at {reset_time}")
 
             # Парсинг JSON
             try:
@@ -150,30 +158,42 @@ def chat():
                 logger.error(f"Invalid JSON from {model}: {response.text}")
                 continue
 
-            # Проверка структуры ответа
-            if "choices" not in result or not result["choices"]:
-                logger.error(f"Invalid response structure from {model}: {result}")
+            # Обработка кодов ошибок API
+            if response.status_code == 200:
+                if "choices" not in result or not result["choices"]:
+                    logger.error(f"Invalid response from {model}: {result}")
+                    continue
+
+                try:
+                    reply = result["choices"][0]["message"]["content"]
+                    distorted_reply = distort_text(reply)
+                    logger.info(f"Successfully got response from {model}")
+                    time.sleep(random.uniform(1, 3))  # Задержка для хоррор-эффекта
+                    return jsonify({"reply": distorted_reply}), 200, {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*"
+                    }
+                except (KeyError, IndexError, TypeError) as e:
+                    logger.error(f"Failed to parse response from {model}: {str(e)}, Full response: {result}")
+                    continue
+
+            elif response.status_code == 429 or result.get('error', {}).get('code') == 429:
+                logger.warning(f"Rate limit hit for {model}")
+                rate_limited_models.add(model)
                 continue
 
-            # Извлечение ответа
-            try:
-                reply = result["choices"][0]["message"]["content"]
-                distorted_reply = distort_text(reply)
-                logger.info(f"Successfully got response from {model}")
-                time.sleep(random.uniform(1, 3))  # Задержка для хоррор-эффекта
-                return jsonify({"reply": distorted_reply}), 200, {
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*"
-                }
-            except (KeyError, IndexError, TypeError) as e:
-                logger.error(f"Failed to parse response from {model}: {str(e)}, Full response: {result}")
+            else:
+                error_msg = result.get('error', {}).get('message', 'Unknown error')
+                logger.error(f"API Error for {model}: {error_msg}")
                 continue
 
-        # Если все модели недоступны
-        logger.error("All models failed to respond")
+        # Все модели недоступны
+        logger.error("All models rate limited")
+        fallback = random.choice(FALLBACK_RESPONSES)
         return jsonify({
-            "reply": "Тишина... Даже тени замерли. Попробуй позже, когда связь восстановится."
-        }), 503, {
+            "reply": fallback,
+            "warning": "Достигнут лимит запросов. Попробуйте позже или перейдите на платный аккаунт."
+        }), 429, {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*"
         }
@@ -181,7 +201,8 @@ def chat():
     except Exception as e:
         logger.error(f"Critical error: {str(e)}", exc_info=True)
         return jsonify({
-            "reply": "Что-то сломалось в самой реальности... Попробуй снова."
+            "reply": "Реальность дрожит... Повтори попытку.",
+            "error": "Системная ошибка"
         }), 500, {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*"
@@ -189,4 +210,3 @@ def chat():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
