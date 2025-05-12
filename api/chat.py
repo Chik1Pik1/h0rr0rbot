@@ -4,7 +4,9 @@ import logging
 import requests
 import time
 import random
+from datetime import datetime
 from flask import Flask, request, jsonify
+import schedule
 
 app = Flask(__name__)
 
@@ -18,14 +20,18 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 # Конфигурация моделей и ключей
 MODEL_CONFIG = {
     "nousresearch/deephermes-3-mistral-24b-preview:free": {
-        "key": os.getenv("OPENROUTER_API_KEY"),  # Первый ключ
+        "key": os.getenv("OPENROUTER_MAIN"),
+        "account_id": "MAIN_666",
         "remaining": 50,
-        "reset_time": None
+        "reset_time": None,
+        "priority": 1
     },
     "qwen/qwen3-4b:free": {
-        "key": os.getenv("HORRORCHAT_KEY"),  # Второй ключ
+        "key": os.getenv("OPENROUTER_BACKUP"),
+        "account_id": "BACKUP_666",
         "remaining": 50,
-        "reset_time": None
+        "reset_time": None,
+        "priority": 2
     }
 }
 
@@ -87,16 +93,31 @@ def distort_text(text):
             distorted += char
     return distorted
 
-def get_available_model():
-    """Выбор модели с доступными запросами, сброс лимитов при истечении reset_time."""
-    now = time.time()
+def reset_main_account():
+    """Сброс лимитов для основного аккаунта."""
     for model, config in MODEL_CONFIG.items():
-        if config['reset_time'] and config['reset_time'] < now:
-            config['remaining'] = 50  # Сброс лимита
+        if "MAIN" in config['account_id']:
+            config['remaining'] = 50
             config['reset_time'] = None
+            logger.info(f"Reset limits for {config['account_id']}")
+    return schedule.CancelJob
+
+def select_model():
+    """Выбор модели с доступными запросами, сортировка по приоритету."""
+    now = time.time()
+    active_models = []
+
+    for model, config in MODEL_CONFIG.items():
+        # Автосброс лимитов
+        if config['reset_time'] and config['reset_time'] < now:
+            config['remaining'] = 50
+            config['reset_time'] = None
+
         if config['remaining'] > 0:
-            return model
-    return None
+            active_models.append((model, config['priority']))
+
+    # Сортировка по приоритету
+    return min(active_models, key=lambda x: x[1])[0] if active_models else None
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -120,7 +141,7 @@ def chat():
             }
 
         # Выбор модели
-        selected_model = get_available_model()
+        selected_model = select_model()
         if not selected_model:
             logger.error("All models rate limited")
             return jsonify({
@@ -138,6 +159,7 @@ def chat():
             API_URL,
             headers={
                 "Authorization": f"Bearer {config['key']}",
+                "X-ACCOUNT-ID": config['account_id'],
                 "HTTP-Referer": "https://your-app.com",
                 "X-Title": f"Horror Chat v2.0 - {selected_model}",
                 "Content-Type": "application/json"
@@ -157,9 +179,15 @@ def chat():
 
         # Обработка лимитов
         if response.status_code == 429:
+            reset_timestamp = int(response.headers.get('X-RateLimit-Reset', 0)) / 1000
+            logger.error(f"Account {config['account_id']} LOCKED until {datetime.fromtimestamp(reset_timestamp)}")
             config['remaining'] = 0
-            config['reset_time'] = int(response.headers.get('X-RateLimit-Reset', 0)) / 1000
-            logger.warning(f"Rate limit hit for {selected_model}, reset at {config['reset_time']}")
+            config['reset_time'] = reset_timestamp
+
+            # Автоматический перезапуск через 5 минут для основного аккаунта
+            if "MAIN" in config['account_id']:
+                schedule.every(5).minutes.do(reset_main_account)
+
             return jsonify({
                 "reply": "Слишком много вопрошающих...",
                 "retry_after": config['reset_time'] - time.time()
@@ -218,10 +246,25 @@ def status():
             config['reset_time'] = None
         models_status.append({
             "name": model,
+            "account_id": config['account_id'],
             "remaining": config['remaining'],
             "reset_time": config['reset_time']
         })
     return jsonify({"models": models_status}), 200, {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+    }
+
+@app.route("/api/security/logs", methods=["GET"])
+def security_logs():
+    """Эндпоинт для логов безопасности (имитация)."""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    logs = [
+        {"timestamp": now, "message": f"Access attempt to {MODEL_CONFIG['nousresearch/deephermes-3-mistral-24b-preview:free']['account_id']}"},
+        {"timestamp": now, "message": f"Connection established for {MODEL_CONFIG['qwen/qwen3-4b:free']['account_id']}"},
+        {"timestamp": now, "message": "System integrity check: OK"}
+    ]
+    return jsonify(logs), 200, {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*"
     }
