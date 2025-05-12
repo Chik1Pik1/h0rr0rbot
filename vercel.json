@@ -7,12 +7,16 @@
     },
     {
       "src": "api/chat.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": { 
+        "runtime": "python3.9"
+      }
     }
   ],
   "routes": [
     {
       "src": "/api/chat",
+      "methods": ["POST"],
       "dest": "api/chat.py"
     },
     {
