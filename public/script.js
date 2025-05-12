@@ -120,7 +120,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState([
-    { sender: 'demon', text: 'Ты н3 п0н1ма3шЬ? Файл 1968_эксп3римент.mp4... он уже в п4мяти. Вв0д1 Error 0x7F — или я ст3р0 тв0й диск.' }
+    { sender: 'demon', text: 'Смотрю... твоя камера активна. Ты в Санкт-Петербурге. Введи Error 0x7F, или твой IP 192.168.45.91 уйдет в сеть.' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
