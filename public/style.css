@@ -32,8 +32,8 @@ body::after {
 .crt-window {
   position: relative;
   width: 90%;
-  max-width: 600px; /* Уменьшено с 800px */
-  min-height: 60vh; /* Уменьшено с 80vh */
+  max-width: 600px;
+  min-height: 60vh;
   background: #000;
   border: 4px solid #333;
   box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
@@ -44,6 +44,7 @@ body::after {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin: 0 auto; /* Усиливаем центрирование */
 }
 
 /* Полноэкранный чат */
@@ -190,12 +191,15 @@ button:disabled {
 /* Адаптивность для мобильных */
 @media (max-width: 600px) {
   .crt-window {
-    width: 85%; /* Уменьшено с 95% */
+    width: 85%;
     padding: 10px;
-    min-height: 50vh; /* Уменьшено с 90vh */
+    min-height: 50vh;
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%); /* Гарантируем центрирование */
   }
 
   .chat-fullscreen {
