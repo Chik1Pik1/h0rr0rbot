@@ -27,9 +27,7 @@ def handler(event, context):
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": os.getenv('SITE_URL', 'https://your-site.vercel.app'),
-                "X-Title": os.getenv('SITE_NAME', 'Mirror Project')
+                "Content-Type": "application/json"
             },
             data=json.dumps({
                 "model": "nousresearch/deephermes-3-mistral-24b-preview:free",
