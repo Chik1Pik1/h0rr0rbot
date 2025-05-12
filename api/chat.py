@@ -1,22 +1,25 @@
 import json
 import os
 import requests
-from http import HTTPStatus
 
-def handler(request):
-    if request.method != 'POST':
-        return {
-            'statusCode': HTTPStatus.METHOD_NOT_ALLOWED,
-            'body': json.dumps({'error': 'Only POST requests are allowed'})
-        }
-
+def handler(event, context):
     try:
-        data = request.get_json()
-        message = data.get('message')
+        # Проверяем метод запроса
+        if event.get('httpMethod') != 'POST':
+            return {
+                'statusCode': 405,
+                'body': json.dumps({'error': 'Only POST requests are allowed'}),
+                'headers': {'Content-Type': 'application/json'}
+            }
+
+        # Получаем тело запроса
+        body = json.loads(event.get('body', '{}'))
+        message = body.get('message')
         if not message:
             return {
-                'statusCode': HTTPStatus.BAD_REQUEST,
-                'body': json.dumps({'error': 'Message is required'})
+                'statusCode': 400,
+                'body': json.dumps({'error': 'Message is required'}),
+                'headers': {'Content-Type': 'application/json'}
             }
 
         # Вызов OpenRouter API
@@ -46,24 +49,26 @@ def handler(request):
         )
 
         if response.status_code != 200:
+            print(f"OpenRouter API Error: {response.text}")
             return {
-                'statusCode': HTTPStatus.INTERNAL_SERVER_ERROR,
-                'body': json.dumps({'reply': 'Я всё ещё здесь... Попробуй снова.'})
+                'statusCode': 500,
+                'body': json.dumps({'reply': 'Я всё ещё здесь... Попробуй снова.'}),
+                'headers': {'Content-Type': 'application/json'}
             }
 
         reply = response.json()['choices'][0]['message']['content']
         return {
-            'statusCode': HTTPStatus.OK,
+            'statusCode': 200,
             'body': json.dumps({'reply': reply}),
             'headers': {
-                'Content-Type': 'application/json',
-                'Cache-Control': 'no-store'
+                'Content-Type': 'application/json'
             }
         }
 
     except Exception as e:
         print(f"Error: {str(e)}")
         return {
-            'statusCode': HTTPStatus.INTERNAL_SERVER_ERROR,
-            'body': json.dumps({'reply': 'Я всё ещё здесь... Попробуй снова.'})
+            'statusCode': 500,
+            'body': json.dumps({'reply': 'Я всё ещё здесь... Попробуй снова.'}),
+            'headers': {'Content-Type': 'application/json'}
         }
