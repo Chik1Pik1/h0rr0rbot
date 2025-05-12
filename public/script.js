@@ -1,4 +1,3 @@
-```javascript
 const { useState, useEffect } = React;
 
 const App = () => {
@@ -288,4 +287,4 @@ const ChatScreen = () => {
 };
 
 ReactDOM.render(<App />, document.getElementById('root'));
-```
+
