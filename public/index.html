@@ -2,50 +2,15 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Проект Зеркало</title>
-  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.20.6/babel.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Система «Зеркало-1»</title>
   <link rel="stylesheet" href="/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="noise-overlay"></div>
   <div id="root"></div>
-  <script type="text/babel" src="/script.js"></script>
-  <script>
-    (function(){
-      function c(){
-        var b = a.contentDocument || a.contentWindow.document;
-        if(b){
-          var d = b.createElement('script');
-          d.innerHTML = "window.__CF$cv$params={r:'93eb0b136fb8b04c',t:'MTc0NzA2NDcyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
-          b.getElementsByTagName('head')[0].appendChild(d)
-        }
-      }
-      if(document.body){
-        var a = document.createElement('iframe');
-        a.height = 1;
-        a.width = 1;
-        a.style.position = 'absolute';
-        a.style.top = 0;
-        a.style.left = 0;
-        a.style.border = 'none';
-        a.style.visibility = 'hidden';
-        document.body.appendChild(a);
-        if('loading' !== document.readyState) c();
-        else if(window.addEventListener) document.addEventListener('DOMContentLoaded', c);
-        else {
-          var e = document.onreadystatechange || function(){};
-          document.onreadystatechange = function(b){
-            e(b);
-            'loading' !== document.readyState && (document.onreadystatechange = e, c())
-          }
-        }
-      }
-    })();
-  </script>
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="/script.js"></script>
 </body>
 </html>
-
