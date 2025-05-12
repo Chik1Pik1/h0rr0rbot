@@ -57,7 +57,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     for (let i = 0; i < 20; i++) {
       const top = Math.random() * 100;
       const left = Math.random() * 100;
-      const duration = 5 + Math.random() * 5;
+      const duration = 0.5 + Math.random() * 0.5; // Ускоряем: 0.5–1 секунда
       codes.push(
         <div
           key={i}
