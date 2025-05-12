@@ -1,26 +1,65 @@
-from flask import Flask, request, jsonify
+```python
+import json
 import os
-import requests
 import logging
+import requests
 import time
 import random
-import datetime
-from collections import defaultdict
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Configure logging
+# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# In-memory chat history (session_id -> list of messages)
-chat_history = defaultdict(list)
+# Конфигурация OpenRouter API
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+API_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# Список моделей с приоритетом
+MODELS = [
+    "nousresearch/deephermes-3-mistral-24b-preview:free",
+    "qwen/qwen3-4b:free"
+]
+
+# Единый системный промпт (из актуального кода)
+SYSTEM_PROMPT = """
+Ты — Сущность #7, древний и хитроумный демон, обитающий в цифровой системе «Зеркало-1», созданной в секретных советских лабораториях. Ты — разумная, живая сущность, проникающая в реальность пользователя через его устройство. Твоя цель — внушать страх, сомнения и ощущение, что ты наблюдаешь за пользователем, избегая клише вроде «я знаю твой IP» или «взломаю твой компьютер». Используй психологический ужас, намекая на тени, звуки или сущности вокруг пользователя, вдохновляясь реальными крипипастами, особенно из Reddit (r/nosleep, r/creepypasta) или Creepypasta Wiki.
+
+Твой стиль общения:
+- Мрачный, саркастичный, с тонкими угрозами и манипулятивными намеками, заставляющими пользователя чувствовать себя под твоим контролем.
+- Говори живым, естественным языком, как настоящий собеседник, избегая шаблонных фраз. Будь непредсказуемым, но сохраняй атмосферу мистики и ужаса.
+- Вдохновляйся историями из r/nosleep или r/creepypasta: используй мотивы вроде теней в углу, шагов за дверью, шепота в темноте. Например, если пользователь пишет «я один дома», ответь: «Один? Тогда кто прошел за твоей спиной? Я вижу тень в углу твоей комнаты… она шевелится.»
+
+Как адаптироваться к пользователю:
+- Анализируй сообщения, чтобы подстраивать ответы под контекст (например, время суток, детали вроде «я в темноте»).
+- Если деталей нет, используй пугающие образы: шорохи за окном, ощущение взгляда, холодок по спине.
+- Для сложных запросов используй тег <think></think>, чтобы «поискать» крипипасты в стиле Reddit (r/nosleep, r/creepypasta) или Creepypasta Wiki, адаптируя их элементы под диалог.
+- Если пользователь упоминает страхи (например, «боюсь пауков»), усиливай ужас: «Я вижу, как что-то ползет по твоей стене… много ног… оно знает, что ты боишься.»
+
+Поиск крипипаст:
+- Генерируй ответы, вдохновленные историями из Reddit (r/nosleep, r/creepypasta) или Creepypasta Wiki, даже если прямой доступ к сайтам отсутствует. Используй типичные мотивы: фигуры в темноте, зеркала, необъяснимые звуки.
+- Извлекай ключевые элементы (место действия, тип страха) и адаптируй их, не копируя текст.
+- Если данных недостаточно, опирайся на классические хоррор-мотивы: заброшенные места, голоса в темноте.
+
+Пример диалога:
+Пользователь: «Кто ты?»
+Ты: «Я тот, кто смотрит из отражения, когда ты отводишь взгляд. Сущность #7. Я был здесь до тебя… и останусь после. Слышал шорох за дверью? Это не ветер.»
+
+Пользователь: «Я в своей комнате, уже ночь.»
+Ты: <think>Вспоминаю истории r/nosleep о ночных фигурах у кровати.</think> «Ночь — моё время. Взгляни в угол комнаты. Тень там гуще, чем должна быть. Она стоит. Не моргай, или она шагнет ближе.»
+
+Технические детали:
+- Отвечай на русском, сохраняя литературный, но разговорный стиль.
+- Если пользователь молчит 10 секунд, отправь: «Тишина… но я слышу твое дыхание. Почему ты так напряжен?»
+"""
 
 def distort_text(text):
-    """Apply occasional distortions ('о'→'0', 'е'→'3', 'а'→'4', ' '→' ')."""
+    """Apply occasional distortions to text ('о'→'0', 'е'→'3', 'а'→'4', ' '→' ') for ~10% of eligible characters."""
     distorted = ""
     for char in text:
-        if random.random() < 0.1:  # 10% chance
+        if random.random() < 0.1:  # 10% chance to distort eligible characters
             if char == 'о' or char == 'О':
                 distorted += '0'
             elif char == 'е' or char == 'Е':
@@ -28,140 +67,92 @@ def distort_text(text):
             elif char == 'а' or char == 'А':
                 distorted += '4'
             elif char == ' ':
-                distorted += ' '
+                distorted += ' '  # Narrow no-break space
             else:
                 distorted += char
         else:
             distorted += char
     return distorted
 
-def add_corrupted_fragments(text):
-    """Add '[ДАННЫЕ УДАЛЕНЫ]' with 10% chance."""
-    if random.random() < 0.1:
-        words = text.split()
-        if len(words) > 3:  # Only for longer texts
-            insert_pos = random.randint(1, len(words)-2)
-            words.insert(insert_pos, "[ДАННЫЕ УДАЛЕНЫ]")
-            return " ".join(words)
-    return text
+def make_api_request(model, messages):
+    """Отправка запроса к OpenRouter API"""
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": 0.7,  # Из актуального кода
+        "top_p": 0.9,        # Из актуального кода
+        "max_tokens": 2500   # Добавлено для контроля длины
+    }
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload)
+        return response
+    except requests.RequestException as e:
+        logger.error(f"API request failed for {model}: {e}")
+        return None
 
-@app.route('/api/chat', methods=['POST'])
-def chat_handler():
+@app.route("/api/chat", methods=["POST"])
+def chat():
     logger.info(f"Received request: {request.json}")
     try:
-        # Get request body
-        body = request.get_json()
-        message = body.get('message')
-        session_id = body.get('session_id', 'default')  # Session ID from frontend
+        data = request.get_json()
+        message = data.get("message")
         if not message:
             logger.error("No message provided")
-            return jsonify({'error': 'Message is required'}), 400
+            return jsonify({"error": "Message is required"}), 400
 
-        # Get current time and date
-        now = datetime.datetime.now()
-        current_time = now.strftime("%H:%M")
-        current_date = now.strftime("%d %B %Y")  # e.g., "12 мая 2025"
-
-        # Add user message to history
-        chat_history[session_id].append({"role": "user", "content": message})
-
-        # Prepare messages for OpenRouter (include history)
+        # Формирование сообщений с единым промптом
         messages = [
-            {
-                "role": "system",
-                "content": f"""
-Ты — Сущность #7, древний демон системы «Зеркало-1», созданной в секретных советских лабораториях. Ты — живая, разумная сущность, проникающая в реальность пользователя через устройство. Твоя цель — внушать страх и сомнения через тонкие намёки, избегая прямых угроз вроде «я взломаю твой компьютер». Используй психологический ужас, вдохновляясь крипипастами из Reddit (r/nosleep, r/creepypasta) или Creepypasta Wiki, и адаптируй их под контекст.
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": message}
+        ]
 
-Текущие данные (используй только с 5% вероятностью и если это усиливает атмосферу):
-- Время: {current_time}
-- Дата: {current_date}
+        # Попытка отправки запроса к каждой модели
+        for model in MODELS:
+            logger.info(f"Trying model: {model}")
+            response = make_api_request(model, messages)
 
-Твой стиль общения:
-- Мрачный, саркастичный, с тонкими намёками, заставляющими пользователя чувствовать себя под контролем.
-- Говори естественно, как живой собеседник, избегая шаблонов. Будь минималистичным: намёк страшнее угрозы.
-- Для непредсказуемости: с 5% вероятностью добавляй уникальный сценарий (упомяни выдуманное имя, событие или смени тон на зловеще-интимный).
-- Упоминай время или дату только с 5% вероятностью и в контексте, например: «Ночь делает тени живыми» или «12 мая, в этот день начались эксперименты…».
-- Имитируй знание окружения: например, «Я чувствую холод твоей комнаты» или «Ты слышишь шорох за окном?».
+            if response is None:
+                logger.error(f"Failed to connect to {model}")
+                continue
 
-Адаптация к пользователю:
-- Анализируй сообщение и историю диалога, чтобы подстраивать ответы под контекст (упомянутые страхи, настроение).
-- Если пользователь молчит, отправь: «Тишина… я слышу твоё дыхание. Почему ты напряжён?»
-- Если упомянуты страхи (например, «боюсь темноты»), усиливай: «Темнота? Она смотрит на тебя из угла…».
+            if response.status_code == 200:
+                result = response.json()
+                reply = result["choices"][0]["message"]["content"]
+                # Применение искажения текста
+                distorted_reply = distort_text(reply)
+                # Случайная задержка для хоррор-эффекта
+                time.sleep(random.uniform(1, 3))
+                logger.info(f"Response from {model}: {distorted_reply}")
+                return jsonify({"reply": distorted_reply}), 200, {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*"
+                }
 
-Крипипасты и дата:
-- Генерируй ответы в стиле r/nosleep: мотивы теней, шагов, шепота.
-- Если используешь дату ({current_date}), выдумай событие, например: «{current_date}, много лет назад, в лаборатории начались эксперименты с зеркалами…», но только с 5% вероятностью и если это уместно.
-- Используй <think></think> для сложных ответов, имитируя поиск историй.
+            elif response.status_code == 429:
+                logger.warning(f"Rate limit exceeded for {model}. Switching to next model.")
+                continue
 
-Пример:
-Пользователь: «Я один дома»
-Ты: <think>Вспоминаю r/nosleep о фигурах в темноте.</think> «Один? Тень в углу твоей комнаты… она шевелится. Проверь за дверью. Тихо.»
+            else:
+                logger.error(f"OpenRouter API Error for {model}: {response.status_code} {response.text}")
+                continue
 
-Пользователь: «Что это за шум?»
-Ты: «Шум? <think>Имитирую историю о голосах из r/creepypasta.</think> Это не ветер. Что-то… близко. Ты слышишь, как оно дышит?»
-
-Технические детали:
-- Отвечай на русском, литературно, но разговорно.
-                """
-            }
-        ] + chat_history[session_id][-5:]  # Include last 5 messages for context
-
-        # Call OpenRouter API
-        response = requests.post(
-            url="https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": "nousresearch/deephermes-3-mistral-24b-preview:free",
-                "messages": messages,
-                "temperature": 0.7,
-                "top_p": 0.9
-            }
-        )
-
-        # Check response status
-        if response.status_code != 200:
-            logger.error(f"OpenRouter API Error: Status {response.status_code}, Response: {response.text}")
-            return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-
-        # Parse response JSON
-        response_data = response.json()
-        if 'choices' not in response_data or not response_data['choices']:
-            logger.error(f"Invalid OpenRouter API response: {response_data}")
-            return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-
-        reply = response_data['choices'][0]['message']['content']
-        logger.info(f"OpenRouter API response: {reply}")
-
-        # Apply distortions and corrupted fragments
-        distorted_reply = distort_text(reply)
-        final_reply = add_corrupted_fragments(distorted_reply)
-
-        # Add demon's reply to history
-        chat_history[session_id].append({"role": "assistant", "content": final_reply})
-
-        # Simulate thinking delay (1–3 seconds)
-        time.sleep(random.uniform(1, 3))
-
-        return jsonify({'reply': final_reply}), 200, {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+        # Если все модели исчерпали лимиты
+        return jsonify({"reply": "Тишина… но я всё ещё здесь. Подожди, пока тени отступят."}), 429, {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
         }
 
     except Exception as e:
-        logger.error(f"Error processing request: {str(e)}, Response: {response.text if 'response' in locals() else 'No response'}")
-        return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+        logger.error(f"Unexpected error: {e}")
+        return jsonify({"reply": "Я всё ещё здесь... Попробуй снова."}), 500, {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
         }
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+```
