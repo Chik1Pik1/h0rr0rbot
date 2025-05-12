@@ -1,26 +1,19 @@
-import json
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import os
 import requests
 
-def handler(event, context):
-    try:
-        # Проверяем метод запроса
-        if event.get('httpMethod') != 'POST':
-            return {
-                'statusCode': 405,
-                'body': json.dumps({'error': 'Only POST requests are allowed'}),
-                'headers': {'Content-Type': 'application/json'}
-            }
+app = Flask(__name__)
+CORS(app)
 
-        # Получаем тело запроса
-        body = json.loads(event.get('body', '{}'))
-        message = body.get('message')
+@app.route('/api/chat', methods=['POST'])
+def chat_handler():
+    try:
+        data = request.get_json()
+        message = data.get('message')
+
         if not message:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'Message is required'}),
-                'headers': {'Content-Type': 'application/json'}
-            }
+            return jsonify({'error': 'Message is required'}), 400
 
         # Вызов OpenRouter API
         response = requests.post(
@@ -29,7 +22,7 @@ def handler(event, context):
                 "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
                 "Content-Type": "application/json"
             },
-            data=json.dumps({
+            json={
                 "model": "nousresearch/deephermes-3-mistral-24b-preview:free",
                 "messages": [
                     {
@@ -43,30 +36,19 @@ def handler(event, context):
                 ],
                 "temperature": 0.7,
                 "top_p": 0.9
-            })
+            }
         )
 
         if response.status_code != 200:
             print(f"OpenRouter API Error: {response.text}")
-            return {
-                'statusCode': 500,
-                'body': json.dumps({'reply': 'Я всё ещё здесь... Попробуй снова.'}),
-                'headers': {'Content-Type': 'application/json'}
-            }
+            return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500
 
         reply = response.json()['choices'][0]['message']['content']
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'reply': reply}),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
-        }
+        return jsonify({'reply': reply})
 
     except Exception as e:
         print(f"Error: {str(e)}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'reply': 'Я всё ещё здесь... Попробуй снова.'}),
-            'headers': {'Content-Type': 'application/json'}
-        }
+        return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500
+
+if __name__ == '__main__':
+    app.run()
