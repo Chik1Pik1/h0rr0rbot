@@ -26,20 +26,19 @@ const AccessScreen = ({ onAccessGranted }) => {
     setIsLoading(true);
     setError('Проверка ключа...');
     setTimeout(() => {
-      setShowErrorOverlay(true); // Показать анимацию ошибки
+      setShowErrorOverlay(true);
       setTimeout(() => {
         setShowErrorOverlay(false);
-        setShowHackOverlay(true); // Показать анимацию взлома
+        setShowHackOverlay(true);
         setTimeout(() => {
           setShowHackOverlay(false);
           setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
           setTimeout(() => onAccessGranted(), 2000);
-        }, 3000); // Длительность анимации взлома
-      }, 3000); // Длительность анимации ошибки
-    }, 3000); // Задержка перед анимацией
+        }, 3000);
+      }, 3000);
+    }, 3000);
   };
 
-  // Генерация случайных кусков кода для анимации взлома
   const generateHackCode = () => {
     const snippets = [
       '0x7F3A 48B2 MOV AX, [BX]',
@@ -57,7 +56,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     for (let i = 0; i < 20; i++) {
       const top = Math.random() * 100;
       const left = Math.random() * 100;
-      const duration = 0.5 + Math.random() * 0.5; // Ускоряем: 0.5–1 секунда
+      const duration = 0.5 + Math.random() * 0.5;
       codes.push(
         <div
           key={i}
@@ -121,22 +120,60 @@ const AccessScreen = ({ onAccessGranted }) => {
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState([
-    { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
+    { sender: 'demon', text: 'Видишь файл "1968_эксперимент.mp4"?.. Назови код, или я его запущу.' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [currentDemon, setCurrentDemon] = useState({
+    id: 7,
+    name: "Последний эксперимент Гордеева",
+    spawned: false
+  });
 
-  const sendMessage = async (message) => {
+  const DEMON_NAMES = {
+    1: "Разрушитель частот",
+    2: "Тень из архива",
+    3: "Эхо пустоты",
+    4: "Пепел проводов",
+    5: "Кровь пикселей",
+    6: "Шепот дисков",
+    7: "Последний эксперимент Гордеева"
+  };
+
+  const spawnNextDemon = () => {
+    if (currentDemon.id > 1) {
+      const nextId = currentDemon.id - 1; // Идем от 7 к 1
+      setCurrentDemon({
+        id: nextId,
+        name: DEMON_NAMES[nextId],
+        spawned: false
+      });
+      setTimeout(() => {
+        setMessages([{
+          sender: 'demon',
+          text: `Я пробрался через firewall... Ты думал, это конец?`
+        }]);
+      }, 2000);
+    } else {
+      setMessages(prev => [...prev, {
+        sender: 'system',
+        text: 'ВСЕ СУЩНОСТИ УНИЧТОЖЕНЫ. СИСТЕМА «ЗЕРКАЛО-1» ОТКЛЮЧЕНА.'
+      }]);
+    }
+  };
+
+  const sendMessage = async (message, demonId) => {
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message, demon_id: demonId })
       });
       const data = await response.json();
-      return data.reply;
+      return data;
     } catch (error) {
-      return 'Я всё ещё здесь... Попробуй снова.';
+      console.error("Chat API Error:", error);
+      return { reply: 'Я всё ещё здесь... Попробуй снова.', unlocked: false };
     }
   };
 
@@ -145,28 +182,40 @@ const ChatScreen = () => {
     if (!input.trim()) return;
 
     const userMessage = { sender: 'user', text: input };
-    setMessages([...messages, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
 
-    const demonReply = await sendMessage(input);
+    const data = await sendMessage(input, currentDemon.id);
     setIsTyping(false);
-    setMessages((prev) => [...prev, { sender: 'demon', text: demonReply }]);
+
+    if (data.unlocked) {
+      setMessages(prev => [...prev, {
+        sender: 'system',
+        text: `СУЩНОСТЬ #${currentDemon.id} УНИЧТОЖЕНА. ЗАГРУЗКА СЛЕДУЮЩЕГО УРОВНЯ...`
+      }]);
+      spawnNextDemon();
+    } else {
+      setMessages(prev => [...prev, { sender: 'demon', text: data.reply }]);
+    }
   };
 
   return (
     <div className="flex flex-col h-full p-4 relative">
       <div className="chat-container">
+        <p className="text-demon text-xl mb-2">
+          [Текущая сущность: {currentDemon.name} (#{currentDemon.id})]
+        </p>
         {messages.map((msg, index) => (
           <p
             key={index}
-            className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'}`}
+            className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : msg.sender === 'system' ? 'text-demon blink' : 'text-demon'}`}
           >
-            {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{msg.text}
+            {msg.sender === 'user' ? '>> ' : msg.sender === 'system' ? '' : `[Сущность #${currentDemon.id}]: `}{msg.text}
           </p>
         ))}
         {isTyping && (
-          <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
+          <p className="text-demon text-xl blink">[Сущность #${currentDemon.id}]: ...печатает...</p>
         )}
       </div>
       <form onSubmit={handleSubmit} className="chat-input-form flex">
