@@ -30,7 +30,7 @@ body::after {
 }
 
 .crt-window {
-  position: relative;
+  position: absolute;
   width: 90%;
   max-width: 600px;
   min-height: 60vh;
@@ -46,7 +46,8 @@ body::after {
   align-items: center;
   margin: 0 auto;
   left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Полноэкранный чат */
@@ -61,7 +62,7 @@ body::after {
   box-sizing: border-box;
 }
 
-/* Помехи (шум) для окна и чата */
+/* Помехи (шум) */
 .crt-window::after, .chat-fullscreen::after {
   content: '';
   position: absolute;
@@ -98,7 +99,7 @@ body::after {
   100% { opacity: 1; }
 }
 
-/* Полноэкранная анимация взлома */
+/* Анимация взлома */
 .hack-overlay {
   position: fixed;
   top: 0;
@@ -112,7 +113,7 @@ body::after {
   z-index: 1000;
 }
 
-/* Эффект цифрового дождя */
+/* Цифровой дождь */
 .matrix-rain {
   position: absolute;
   top: 0;
@@ -132,7 +133,7 @@ body::after {
   100% { transform: translateY(-100vh); }
 }
 
-/* Анимация кода с glitch-эффектом */
+/* Код с glitch-эффектом */
 .hack-code {
   position: absolute;
   white-space: nowrap;
@@ -238,7 +239,8 @@ button:disabled {
     padding: 10px;
     min-height: 50vh;
     left: 50%;
-    transform: translateX(-50%);
+    top: 50%;
+    transform: translate(-50%, -50%);
   }
 
   .chat-fullscreen {
