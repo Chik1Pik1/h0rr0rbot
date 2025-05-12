@@ -41,6 +41,9 @@ body::after {
   animation: flicker 0.1s infinite;
   overflow: hidden;
   box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Помехи (шум) */
@@ -152,10 +155,20 @@ button:disabled {
 }
 
 .chat-container {
-  max-height: 50vh;
+  max-height: 70vh; /* Увеличено для большего пространства диалога */
   overflow-y: auto;
   margin-bottom: 10px;
   padding-right: 10px;
+  flex-grow: 1;
+}
+
+.chat-input-form {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background: #000;
 }
 
 .dash-line {
@@ -168,6 +181,9 @@ button:disabled {
     width: 95%;
     padding: 10px;
     min-height: 90vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   input, button {
@@ -176,7 +192,7 @@ button:disabled {
   }
 
   .chat-container {
-    max-height: 60vh;
+    max-height: 75vh;
   }
 
   h1, p, input, button {
