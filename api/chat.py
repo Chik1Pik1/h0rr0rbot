@@ -121,14 +121,24 @@ def chat_handler():
             }
         )
 
+        # Check response status
         if response.status_code != 200:
-            logger.error(f"OpenRouter API Error: {response.text}")
+            logger.error(f"OpenRouter API Error: Status {response.status_code}, Response: {response.text}")
             return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             }
 
-        reply = response.json()['choices'][0]['message']['content']
+        # Parse response JSON
+        response_data = response.json()
+        if 'choices' not in response_data or not response_data['choices']:
+            logger.error(f"Invalid OpenRouter API response: {response_data}")
+            return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+
+        reply = response_data['choices'][0]['message']['content']
         logger.info(f"OpenRouter API response: {reply}")
 
         # Apply distortions and corrupted fragments
@@ -147,7 +157,7 @@ def chat_handler():
         }
 
     except Exception as e:
-        logger.error(f"Error processing request: {str(e)}")
+        logger.error(f"Error processing request: {str(e)}, Response: {response.text if 'response' in locals() else 'No response'}")
         return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
