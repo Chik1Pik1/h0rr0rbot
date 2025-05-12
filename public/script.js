@@ -4,7 +4,7 @@ const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
   return (
-    <div className="crt-window">
+    <div className={isAccessGranted ? "chat-fullscreen" : "crt-window"}>
       {isAccessGranted ? (
         <ChatScreen />
       ) : (
