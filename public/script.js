@@ -34,7 +34,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center">
-      <h1 className="text- Stad3xl text-demon mb-4">ПРОЕКТ ЗЕРКАЛО-1</h1>
+      <h1 className="text-3xl text-demon mb-4">ПРОЕКТ ЗЕРКАЛО-1</h1>
       <p className="text-xl text-demon mb-4">ГРИФ: СОВЕРШЕННО СЕКРЕТНО</p>
       <form onSubmit={handleSubmit} className="w-full max-w-sm">
         <input
