@@ -52,10 +52,10 @@ RUSSIAN_MONTHS = {
     12: "декабря"
 }
 
-def is_demon_available():
-    """Check if current time is within demon's active hours (23:00–00:00 MSK)."""
-    now = datetime.now(pytz.timezone('Europe/Moscow')).time()
-    return time(23, 0) <= now <= time(23, 59) or now == time(0, 0)
+# def is_demon_available():
+#     """Check if current time is within demon's active hours (23:00–00:00 MSK)."""
+#     now = datetime.now(pytz.timezone('Europe/Moscow')).time()
+#     return time(23, 0) <= now <= time(23, 59) or now == time(0, 0)
 
 def distort_text(text):
     """Apply occasional distortions to text ('о'→'0', 'е'→'3', 'а'→'4', ' '→' ') for ~10% of eligible characters."""
@@ -143,29 +143,29 @@ def make_openrouter_request(api_key, model, messages):
         logger.error(f"OpenRouter request failed: {str(e)}")
         return None
 
-@app.route('/api/time-check', methods=['GET'])
-def time_check():
-    """Check remaining time for demon availability."""
-    now = datetime.now(pytz.timezone('Europe/Moscow'))
-    if is_demon_available():
-        end_time = datetime.combine(now.date(), time(23, 59))
-        time_left = (end_time - now).seconds
-    else:
-        time_left = 0
-    return jsonify({'timeLeft': time_left})
+# @app.route('/api/time-check', methods=['GET'])
+# def time_check():
+#     """Check remaining time for demon availability."""
+#     now = datetime.now(pytz.timezone('Europe/Moscow'))
+#     if is_demon_available():
+#         end_time = datetime.combine(now.date(), time(23, 59))
+#         time_left = (end_time - now).seconds
+#     else:
+#         time_left = 0
+#     return jsonify({'timeLeft': time_left})
 
 @app.route('/api/chat', methods=['POST'])
 def chat_handler():
     logger.info(f"Received request: {request.json}")
     try:
-        if not is_demon_available():
-            return jsonify({
-                'reply': 'Сущность спит... Возвращайся в 23:00.',
-                'isTimeLimitReached': True
-            }), 403, {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
+        # if not is_demon_available():
+        #     return jsonify({
+        #         'reply': 'Сущность спит... Возвращайся в 23:00.',
+        #         'isTimeLimitReached': True
+        #     }), 403, {
+        #         'Content-Type': 'application/json',
+        #         'Access-Control-Allow-Origin': '*'
+        #     }
 
         body = request.get_json()
         message = body.get('message')
