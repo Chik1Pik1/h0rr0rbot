@@ -145,7 +145,25 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null);
   const userId = getUserId();
+
+  useEffect(() => {
+    const checkTime = async () => {
+      try {
+        const response = await fetch('/api/time-check');
+        const data = await response.json();
+        setTimeLeft(data.timeLeft);
+        setIsDisconnected(data.timeLeft === 0);
+      } catch (error) {
+        console.error('Error checking time:', error);
+        setIsDisconnected(true);
+      }
+    };
+    checkTime();
+    const interval = setInterval(checkTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const sendMessage = async (message) => {
     try {
@@ -157,7 +175,7 @@ const ChatScreen = () => {
       const data = await response.json();
       return data;
     } catch (error) {
-      return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false };
+      return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false, isTimeLimitReached: false };
     }
   };
 
@@ -172,17 +190,35 @@ const ChatScreen = () => {
 
     const response = await sendMessage(input);
     setIsTyping(false);
-    
-    if (response.isLimitReached) {
+
+    if (response.isTimeLimitReached) {
+      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
       setIsDisconnected(true);
+      document.getElementById('chat-container').classList.add('demon-disappear');
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { sender: 'demon', text: 'Ты опоздал... Я ухожу в Зеркало. До завтрашней ночи.' }]);
+      }, 3000);
+    } else if (response.isLimitReached) {
+      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      setIsDisconnected(true);
+    } else {
+      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
     }
-    
-    setMessages((prev) => [...prev, { sender: 'demon', text: response.reply }]);
   };
 
   return (
     <div className="flex flex-col h-full p-4 relative">
-      <div className="chat-container">
+      {timeLeft !== null && timeLeft > 0 && (
+        <p className="text-demon text-xl blink mb-4">
+          Демон исчезнет через: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+        </p>
+      )}
+      {timeLeft === 0 && (
+        <p className="text-demon text-xl blink mb-4">
+          Доступ открыт только с 23:00 до полуночи. Приди позже.
+        </p>
+      )}
+      <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
         {messages.map((msg, index) => (
           <p
             key={index}
