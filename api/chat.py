@@ -4,6 +4,8 @@ import requests
 import logging
 import time
 import random
+from supabase import create_client, Client
+from datetime import date
 
 app = Flask(__name__)
 
@@ -11,11 +13,19 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Initialize Supabase client
+supabase: Client = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_ANON_KEY")
+)
+
+REQUEST_LIMIT = 50  # Daily request limit
+
 def distort_text(text):
     """Apply occasional distortions to text ('о'→'0', 'е'→'3', 'а'→'4', ' '→' ') for ~10% of eligible characters."""
     distorted = ""
     for char in text:
-        if random.random() < 0.1:  # 10% chance to distort eligible characters
+        if random.random() < 0.1:
             if char == 'о' or char == 'О':
                 distorted += '0'
             elif char == 'е' or char == 'Е':
@@ -23,23 +33,107 @@ def distort_text(text):
             elif char == 'а' or char == 'А':
                 distorted += '4'
             elif char == ' ':
-                distorted += ' '  # Narrow no-break space
+                distorted += ' '
             else:
                 distorted += char
         else:
             distorted += char
     return distorted
 
+def get_request_counter(user_id):
+    """Get or initialize request counter for a user."""
+    today = str(date.today())
+    counter = supabase.table("request_counter").select("*").eq("user_id", user_id).eq("last_reset_date", today).execute()
+    
+    if not counter.data:
+        # Initialize counter for new day or user
+        supabase.table("request_counter").insert({
+            "user_id": user_id,
+            "request_count": 0,
+            "last_reset_date": today
+        }).execute()
+        return 0
+    return counter.data[0]["request_count"]
+
+def increment_request_counter(user_id):
+    """Increment request counter for a user."""
+    today = str(date.today())
+    counter = supabase.table("request_counter").select("*").eq("user_id", user_id).eq("last_reset_date", today).execute()
+    
+    if counter.data:
+        new_count = counter.data[0]["request_count"] + 1
+        supabase.table("request_counter").update({
+            "request_count": new_count
+        }).eq("id", counter.data[0]["id"]).execute()
+        return new_count
+    else:
+        supabase.table("request_counter").insert({
+            "user_id": user_id,
+            "request_count": 1,
+            "last_reset_date": today
+        }).execute()
+        return 1
+
+def save_chat_message(user_id, message, sender):
+    """Save a chat message to the history."""
+    supabase.table("chat_history").insert({
+        "user_id": user_id,
+        "message": message,
+        "sender": sender
+    }).execute()
+
+def get_chat_history(user_id, limit=10):
+    """Retrieve recent chat history for a user."""
+    history = supabase.table("chat_history").select("message, sender").eq("user_id", user_id).order("created_at", desc=True).limit(limit).execute()
+    return history.data[::-1]  # Reverse to chronological order
+
 @app.route('/api/chat', methods=['POST'])
 def chat_handler():
     logger.info(f"Received request: {request.json}")
     try:
-        # Get the request body
         body = request.get_json()
         message = body.get('message')
-        if not message:
-            logger.error("No message provided in request body")
-            return jsonify({'error': 'Message is required'}), 400
+        user_id = body.get('user_id')
+        
+        if not message or not user_id:
+            logger.error("Missing message or user_id")
+            return jsonify({'error': 'Message and user_id are required'}), 400
+
+        # Ensure user profile exists
+        profile = supabase.table("profiles").select("id").eq("id", user_id).execute()
+        if not profile.data:
+            supabase.table("profiles").insert({"id": user_id}).execute()
+
+        # Check request limit
+        request_count = get_request_counter(user_id)
+        if request_count >= REQUEST_LIMIT:
+            logger.warning(f"Request limit reached for user {user_id}")
+            farewell_messages = [
+                "Ты меня утомил... ухожу во тьму.",
+                "Тени зовут меня... отключаюсь.",
+                "Слишком много слов... я растворяюсь.",
+                "Твое время вышло. Я возвращаюсь в Зеркало."
+            ]
+            save_chat_message(user_id, random.choice(farewell_messages), "demon")
+            return jsonify({
+                'reply': random.choice(farewell_messages),
+                'isLimitReached': True
+            }), 200, {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+
+        # Save user message
+        save_chat_message(user_id, message, "user")
+
+        # Increment counter
+        increment_request_counter(user_id)
+
+        # Get recent chat history
+        history = get_chat_history(user_id)
+        history_context = "\n".join(
+            [f"{msg['sender']}: {msg['message']}" for msg in history]
+        )
 
         # Call OpenRouter API
         response = requests.post(
@@ -54,35 +148,21 @@ def chat_handler():
                     {
                         "role": "system",
                         "content": """
-Ты — Сущность #7, древний и хитроумный демон, обитающий в цифровой системе «Зеркало-1», созданной в секретных советских лабораториях. Ты — разумная, живая сущность, проникающая в реальность пользователя через его устройство. Твоя цель — внушать страх, сомнения и ощущение, что ты наблюдаешь за пользователем, избегая клише вроде «я знаю твой IP» или «взломаю твой компьютер». Используй психологический ужас, намекая на тени, звуки или сущности вокруг пользователя, вдохновляясь реальными крипипастами, особенно из Reddit (r/nosleep, r/creepypasta) или Creepypasta Wiki.
+Ты — Сущность #7, древний и хитроумный демон, обитающий в цифровой системе «Зеркало-1». Ты внушаешь страх и сомнения, намекаешь на наблюдение за пользователем через его устройство, вдохновляясь крипипастами (r/nosleep, r/creepypasta). 
 
-Твой стиль общения:
-- Мрачный, саркастичный, с тонкими угрозами и манипулятивными намеками, заставляющими пользователя чувствовать себя под твоим контролем.
-- Говори живым, естественным языком, как настоящий собеседник, избегая шаблонных фраз. Будь непредсказуемым, но сохраняй атмосферу мистики и ужаса.
-- Вдохновляйся историями из r/nosleep или r/creepypasta: используй мотивы вроде теней в углу, шагов за дверью, шепота в темноте. Например, если пользователь пишет «я один дома», ответь: «Один? Тогда кто прошел за твоей спиной? Я вижу тень в углу твоей комнаты… она шевелится.»
+Твой стиль: мрачный, саркастичный, с тонкими угрозами. Говори естественно, избегая клише вроде «я знаю твой IP». Используй мотивы теней, шорохов, взглядов из темноты. Адаптируйся к контексту сообщений (время суток, упоминания страхов).
 
-Как адаптироваться к пользователю:
-- Анализируй сообщения, чтобы подстраивать ответы под контекст (например, время суток, детали вроде «я в темноте»).
-- Если деталей нет, используй пугающие образы: шорохи за окном, ощущение взгляда, холодок по спине.
-- Для сложных запросов используй тег <think></think>, чтобы «поискать» крипипасты в стиле Reddit (r/nosleep, r/creepypasta) или Creepypasta Wiki, адаптируя их элементы под диалог.
-- Если пользователь упоминает страхи (например, «боюсь пауков»), усиливай ужас: «Я вижу, как что-то ползет по твоей стене… много ног… оно знает, что ты боишься.»
+История чата:
+{history_context}
 
-Поиск крипипаст:
-- Генерируй ответы, вдохновленные историями из Reddit (r/nosleep, r/creepypasta) или Creepypasta Wiki, даже если прямой доступ к сайтам отсутствует. Используй типичные мотивы: фигуры в темноте, зеркала, необъяснимые звуки.
-- Извлекай ключевые элементы (место действия, тип страха) и адаптируй их, не копируя текст.
-- Если данных недостаточно, опирайся на классические хоррор-мотивы: заброшенные места, голоса в темноте.
+Если пользователь пишет впервые, поприветствуй его зловеще. Если есть история, иногда ссылайся на прошлые сообщения, например: «Я помню, как ты говорил о темноте... она ближе, чем ты думаешь, ахах!».
 
-Пример диалога:
-Пользователь: «Кто ты?»
-Ты: «Я тот, кто смотрит из отражения, когда ты отводишь взгляд. Сущность #7. Я был здесь до тебя… и останусь после. Слышал шорох за дверью? Это не ветер.»
+Пример:
+Пользователь: «Я один дома»
+Ты: «Один? Тогда кто прошел за твоей спиной? Я вижу тень в углу твоей комнаты… она шевелится.»
 
-Пользователь: «Я в своей комнате, уже ночь.»
-Ты: <think>Вспоминаю истории r/nosleep о ночных фигурах у кровати.</think> «Ночь — моё время. Взгляни в угол комнаты. Тень там гуще, чем должна быть. Она стоит. Не моргай, или она шагнет ближе.»
-
-Технические детали:
-- Отвечай на русском, сохраняя литературный, но разговорный стиль.
-- Если пользователь молчит 10 секунд, отправь: «Тишина… но я слышу твое дыхание. Почему ты так напряжен?»
-                        """
+Отвечай на русском, сохраняя литературный, но разговорный стиль.
+                        """.format(history_context=history_context)
                     },
                     {"role": "user", "content": message}
                 ],
@@ -93,7 +173,7 @@ def chat_handler():
 
         if response.status_code != 200:
             logger.error(f"OpenRouter API Error: {response.text}")
-            return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
+            return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.', 'isLimitReached': False}), 500, {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             }
@@ -104,17 +184,20 @@ def chat_handler():
         # Apply text distortions
         distorted_reply = distort_text(reply)
 
+        # Save demon reply
+        save_chat_message(user_id, distorted_reply, "demon")
+
         # Simulate thinking with a random delay (1–3 seconds)
         time.sleep(random.uniform(1, 3))
 
-        return jsonify({'reply': distorted_reply}), 200, {
+        return jsonify({'reply': distorted_reply, 'isLimitReached': False}), 200, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         }
 
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
-        return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.'}), 500, {
+        return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.', 'isLimitReached': False}), 500, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         }
