@@ -92,12 +92,6 @@ body::after {
   z-index: 10;
 }
 
-@keyframes error-blink {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
-  100% { opacity: 1; }
-}
-
 /* Полноэкранная анимация взлома */
 .hack-overlay {
   position: fixed;
@@ -127,9 +121,20 @@ body::after {
   animation: matrix-rain 10s linear infinite;
 }
 
-@keyframes matrix-rain {
-  0% { transform: translateY(100vh); }
-  100% { transform: translateY(-100vh); }
+/* Анимация исчезновения */
+@keyframes dissolve {
+  0% { opacity: 1; filter: blur(0px); }
+  100% { opacity: 0; filter: blur(20px); }
+}
+
+.demon-disappear {
+  animation: dissolve 3s forwards;
+}
+
+/* Блокировка интерфейса */
+.chat-disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* Анимация кода с glitch-эффектом */
@@ -173,6 +178,17 @@ body::after {
   0% { opacity: 1; }
   50% { opacity: 0.98; }
   100% { opacity: 1; }
+}
+
+@keyframes error-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+@keyframes matrix-rain {
+  0% { transform: translateY(100vh); }
+  100% { transform: translateY(-100vh); }
 }
 
 .text-user {
