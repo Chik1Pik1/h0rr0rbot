@@ -5,7 +5,7 @@ import logging
 import time
 import random
 from supabase import create_client, Client
-from datetime import datetime, time
+from datetime import datetime
 import pytz
 
 app = Flask(__name__)
