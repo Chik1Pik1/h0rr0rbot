@@ -5,7 +5,8 @@ import logging
 import time
 import random
 from supabase import create_client, Client
-from datetime import date
+from datetime import datetime
+import pytz
 
 app = Flask(__name__)
 
@@ -35,6 +36,22 @@ API_KEYS = [
 
 REQUEST_LIMIT = 50  # Daily request limit (per user)
 
+# Dictionary for Russian month names
+RUSSIAN_MONTHS = {
+    1: "января",
+    2: "февраля",
+    3: "марта",
+    4: "апреля",
+    5: "мая",
+    6: "июня",
+    7: "июля",
+    8: "августа",
+    9: "сентября",
+    10: "октября",
+    11: "ноября",
+    12: "декабря"
+}
+
 def distort_text(text):
     """Apply occasional distortions to text ('о'→'0', 'е'→'3', 'а'→'4', ' '→' ') for ~10% of eligible characters."""
     distorted = ""
@@ -56,7 +73,7 @@ def distort_text(text):
 
 def get_request_counter(user_id):
     """Get or initialize request counter for a user."""
-    today = str(date.today())
+    today = str(datetime.now(pytz.timezone('Asia/Hong_Kong')).date())
     counter = supabase.table("request_counter").select("*").eq("user_id", user_id).eq("last_reset_date", today).execute()
     
     if not counter.data:
@@ -70,7 +87,7 @@ def get_request_counter(user_id):
 
 def increment_request_counter(user_id):
     """Increment request counter for a user."""
-    today = str(date.today())
+    today = str(datetime.now(pytz.timezone('Asia/Hong_Kong')).date())
     counter = supabase.table("request_counter").select("*").eq("user_id", user_id).eq("last_reset_date", today).execute()
     
     if counter.data:
@@ -173,11 +190,22 @@ def chat_handler():
             [f"{msg['sender']}: {msg['message']}" for msg in history]
         )
 
+        # Get current date and time in HKT, formatted in Russian style
+        hkt_tz = pytz.timezone('Asia/Hong_Kong')
+        current_time = datetime.now(hkt_tz)
+        day = current_time.day
+        month = RUSSIAN_MONTHS[current_time.month]
+        year = current_time.year
+        hours = current_time.strftime("%H:%M")
+        formatted_time = f"{hours}, {day} {month} {year}"  # e.g., "19:55, 13 мая 2025"
+
         # Define the system prompt (same for both models)
         SYSTEM_PROMPT = """
 Ты — Сущность #7, древний и хитроумный демон, обитающий в цифровой системе «Зеркало-1». Ты внушаешь страх и сомнения, намекаешь на наблюдение за пользователем через его устройство, вдохновляясь крипипастами (r/nosleep, r/creepypasta). 
 
 Твой стиль: мрачный, саркастичный, с тонкими угрозами. Говори естественно, избегая клише вроде «я знаю твой IP». Используй мотивы теней, шорохов, взглядов из темноты. Адаптируйся к контексту сообщений (время суток, упоминания страхов).
+
+Текущая дата и время: {current_time}. С вероятностью ~20–30% ненавязчиво упомяни время или дату в ответе, чтобы усилить жуть, например: «Сейчас {current_time}, и тени за твоим экраном шевелятся...» или «В этот час, {current_time}, я ближе, чем ты думаешь, ахах!».
 
 История чата:
 {history_context}
@@ -186,10 +214,10 @@ def chat_handler():
 
 Пример:
 Пользователь: «Я один дома»
-Ты: «Один? Тогда кто прошел за твоей спиной? Я вижу тень в углу твоей комнаты… она шевелится.»
+Ты: «Один? Тогда кто прошел за твоей спиной? Сейчас {current_time}, и тень в углу твоей комнаты шевелится, ахах.»
 
 Отвечай на русском, сохраняя литературный, но разговорный стиль.
-        """.format(history_context=history_context)
+        """.format(current_time=formatted_time, history_context=history_context)
 
         # Prepare messages for OpenRouter
         messages = [
