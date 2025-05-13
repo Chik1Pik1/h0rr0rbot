@@ -97,7 +97,7 @@ def increment_request_counter(user_id):
         }).eq("id", counter.data[0]["id"]).execute()
         return new_count
     else:
-        supbase.table("request_counter").insert({
+        supabase.table("request_counter").insert({
             "user_id": user_id,
             "request_count": 1,
             "last_reset_date": today
@@ -153,7 +153,7 @@ def chat_handler():
         # Ensure user profile exists
         logger.info(f"Checking profile for user_id: {user_id}")
         profile = supabase.table("profiles").select("id").eq("id", user_id).execute()
-        logger.info(f"Profile check response: {profile.data}")
+        logger.info(f"Profile check reaction: {profile.data}")
         if not profile.data:
             logger.info(f"Creating new profile for user_id: {user_id}")
             supabase.table("profiles").insert({"id": user_id}).execute()
@@ -250,7 +250,7 @@ def chat_handler():
 Ты: «Я тот, кто шепчет, когда ты гасишь свет. Сущность #7. Твое отражение в экране… оно мигнуло? Или это был я?»
 
 Отвечай на русском, сохраняя литературный, но разговорный стиль. Будь разнообразным, избегая повторений, и усиливай атмосферу ужаса в каждом ответе.
-        """.format(current_time=formatted_time, history_context=history_context)
+        """.format(formatted_time=formatted_time, history_context=history_context)
 
         # Prepare messages for OpenRouter
         messages = [
