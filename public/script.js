@@ -1,5 +1,18 @@
 const { useState, useEffect } = React;
 
+// Generate or retrieve UUID for user
+const getUserId = () => {
+  let userId = localStorage.getItem('user_id');
+  if (!userId) {
+    userId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+    localStorage.setItem('user_id', userId);
+  }
+  return userId;
+};
+
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
@@ -38,12 +51,11 @@ const AccessScreen = ({ onAccessGranted }) => {
           setShowHackOverlay(false);
           setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
           setTimeout(() => onAccessGranted(), 2000);
-        }, 4000); // Длительность анимации взлома
-      }, 3000); // Длительность анимации ошибки
-    }, 3000); // Задержка перед анимацией
+        }, 4000);
+      }, 3000);
+    }, 3000);
   };
 
-  // Генерация случайных кусков кода для анимации взлома
   const generateHackCode = () => {
     const snippets = [
       'INITIALIZE BACKDOOR: 0xDEADBEEF',
@@ -61,8 +73,8 @@ const AccessScreen = ({ onAccessGranted }) => {
     for (let i = 0; i < 30; i++) {
       const top = Math.random() * 100;
       const left = Math.random() * 100;
-      const duration = 1 + Math.random() * 2; // 1–3 секунды
-      const delay = Math.random() * 2; // Случайная задержка
+      const duration = 1 + Math.random() * 2;
+      const delay = Math.random() * 2;
       codes.push(
         <div
           key={i}
@@ -132,33 +144,40 @@ const ChatScreen = () => {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isDisconnected, setIsDisconnected] = useState(false);
+  const userId = getUserId();
 
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message, user_id: userId })
       });
       const data = await response.json();
-      return data.reply;
+      return data;
     } catch (error) {
-      return 'Я всё ещё здесь... Попробуй снова.';
+      return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false };
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isDisconnected) return;
 
     const userMessage = { sender: 'user', text: input };
     setMessages([...messages, userMessage]);
     setInput('');
     setIsTyping(true);
 
-    const demonReply = await sendMessage(input);
+    const response = await sendMessage(input);
     setIsTyping(false);
-    setMessages((prev) => [...prev, { sender: 'demon', text: demonReply }]);
+    
+    if (response.isLimitReached) {
+      setIsDisconnected(true);
+    }
+    
+    setMessages((prev) => [...prev, { sender: 'demon', text: response.reply }]);
   };
 
   return (
@@ -172,7 +191,7 @@ const ChatScreen = () => {
             {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{msg.text}
           </p>
         ))}
-        {isTyping && (
+        {isTyping && !isDisconnected && (
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
@@ -183,10 +202,12 @@ const ChatScreen = () => {
           onChange={(e) => setInput(e.target.value)}
           className="flex-1 text-user text-xl p-2 border focus:outline-none"
           placeholder="Введи сообщение..."
+          disabled={isDisconnected}
         />
         <button
           type="submit"
           className="text-user text-xl border px-4 py-2"
+          disabled={isDisconnected}
         >
           Отправить
         </button>
