@@ -31,6 +31,7 @@ body::after {
 
 .crt-window {
   position: relative;
+  z-index: 10; /* Чтобы окно было поверх других элементов */
   width: 90%;
   max-width: 600px;
   min-height: 60vh;
@@ -74,14 +75,18 @@ body::after {
   pointer-events: none;
 }
 
-/* Анимация ошибки */
-.error-overlay {
-  position: absolute;
+/* Полноэкранные оверлеи */
+.error-overlay-fullscreen, .hack-overlay-fullscreen {
+  position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 0, 0, 0.3);
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+}
+
+.error-overlay-fullscreen {
+  background: rgba(0, 0, 0, 0.9);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -89,21 +94,10 @@ body::after {
   font-size: 3rem;
   text-align: center;
   animation: error-blink 0.5s infinite;
-  z-index: 10;
 }
 
-/* Полноэкранная анимация взлома */
-.hack-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+.hack-overlay-fullscreen {
   background: #000;
-  color: #00FF00;
-  font-size: 1rem;
-  overflow: hidden;
-  z-index: 1000;
 }
 
 /* Эффект цифрового дождя */
@@ -148,7 +142,7 @@ body::after {
   content: '';
   position: absolute;
   top: -10%;
-  microwave: -10%;
+  left: -10%;
   width: 120%;
   height: 120%;
   background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==') repeat;
@@ -253,8 +247,11 @@ button:disabled {
     width: 95%;
     padding: 10px;
     min-height: 50vh;
-    left: 50%;
-    transform: translateX(-50%);
+    /* Убрать left и transform, добавить центрирование через margin */
+    left: unset;
+    transform: unset;
+    margin: 20px auto;
+    position: relative;
   }
 
   .chat-fullscreen {
@@ -274,7 +271,7 @@ button:disabled {
     font-size: 1rem;
   }
 
-  .error-overlay {
+  .error-overlay-fullscreen {
     font-size: 1.5rem;
   }
 }
