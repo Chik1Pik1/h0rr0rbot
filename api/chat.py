@@ -5,7 +5,7 @@ import logging
 import time
 import random
 from supabase import create_client, Client
-from datetime import datetime
+from datetime import datetime, time
 import pytz
 
 app = Flask(__name__)
@@ -52,6 +52,11 @@ RUSSIAN_MONTHS = {
     12: "декабря"
 }
 
+def is_demon_available():
+    """Check if current time is within demon's active hours (23:00–00:00 MSK)."""
+    now = datetime.now(pytz.timezone('Europe/Moscow')).time()
+    return time(23, 0) <= now <= time(23, 59) or now == time(0, 0)
+
 def distort_text(text):
     """Apply occasional distortions to text ('о'→'0', 'е'→'3', 'а'→'4', ' '→' ') for ~10% of eligible characters."""
     distorted = ""
@@ -73,7 +78,7 @@ def distort_text(text):
 
 def get_request_counter(user_id):
     """Get or initialize request counter for a user."""
-    today = str(datetime.now(pytz.timezone('Asia/Hong_Kong')).date())
+    today = str(datetime.now(pytz.timezone('Europe/Moscow')).date())
     counter = supabase.table("request_counter").select("*").eq("user_id", user_id).eq("last_reset_date", today).execute()
     
     if not counter.data:
@@ -87,7 +92,7 @@ def get_request_counter(user_id):
 
 def increment_request_counter(user_id):
     """Increment request counter for a user."""
-    today = str(datetime.now(pytz.timezone('Asia/Hong_Kong')).date())
+    today = str(datetime.now(pytz.timezone('Europe/Moscow')).date())
     counter = supabase.table("request_counter").select("*").eq("user_id", user_id).eq("last_reset_date", today).execute()
     
     if counter.data:
@@ -138,10 +143,30 @@ def make_openrouter_request(api_key, model, messages):
         logger.error(f"OpenRouter request failed: {str(e)}")
         return None
 
+@app.route('/api/time-check', methods=['GET'])
+def time_check():
+    """Check remaining time for demon availability."""
+    now = datetime.now(pytz.timezone('Europe/Moscow'))
+    if is_demon_available():
+        end_time = datetime.combine(now.date(), time(23, 59))
+        time_left = (end_time - now).seconds
+    else:
+        time_left = 0
+    return jsonify({'timeLeft': time_left})
+
 @app.route('/api/chat', methods=['POST'])
 def chat_handler():
     logger.info(f"Received request: {request.json}")
     try:
+        if not is_demon_available():
+            return jsonify({
+                'reply': 'Сущность спит... Возвращайся в 23:00.',
+                'isTimeLimitReached': True
+            }), 403, {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+
         body = request.get_json()
         message = body.get('message')
         user_id = body.get('user_id')
@@ -159,6 +184,21 @@ def chat_handler():
             supabase.table("profiles").insert({"id": user_id}).execute()
             logger.info(f"Profile created successfully for user_id: {user_id}")
 
+        # Check or create user session
+        session = supabase.table("user_sessions").select("session_start").eq("user_id", user_id).execute()
+        now = datetime.now(pytz.timezone('Europe/Moscow'))
+        if not session.data:
+            supabase.table("user_sessions").insert({
+                "user_id": user_id,
+                "session_start": now.isoformat()
+            }).execute()
+        else:
+            session_start = datetime.fromisoformat(session.data[0]["session_start"]).replace(tzinfo=pytz.timezone('Europe/Moscow'))
+            if session_start.date() != now.date():
+                supabase.table("user_sessions").update({
+                    "session_start": now.isoformat()
+                }).eq("user_id", user_id).execute()
+
         # Check user request limit
         request_count = get_request_counter(user_id)
         if request_count >= REQUEST_LIMIT:
@@ -172,7 +212,8 @@ def chat_handler():
             save_chat_message(user_id, random.choice(farewell_messages), "demon")
             return jsonify({
                 'reply': random.choice(farewell_messages),
-                'isLimitReached': True
+                'isLimitReached': True,
+                'isTimeLimitReached': False
             }), 200, {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
@@ -190,22 +231,21 @@ def chat_handler():
             [f"{msg['sender']}: {msg['message']}" for msg in history]
         )
 
-        # Get current date and time in HKT, formatted in Russian style
-        hkt_tz = pytz.timezone('Asia/Hong_Kong')
-        current_time = datetime.now(hkt_tz)
+        # Get current date and time in MSK, formatted in Russian style (no year)
+        msk_tz = pytz.timezone('Europe/Moscow')
+        current_time = datetime.now(msk_tz)
         day = current_time.day
         month = RUSSIAN_MONTHS[current_time.month]
-        year = current_time.year
         hours = current_time.strftime("%H:%M")
-        formatted_time = f"{hours}, {day} {month} {year}"  # e.g., "19:55, 13 мая 2025"
+        formatted_time = f"{hours}, {day} {month}"  # e.g., "23:15, 13 мая"
 
         # Define the system prompt (same for both models)
         SYSTEM_PROMPT = """
 Ты — Сущность #7, древний и хитроумный демон, обитающий в цифровой системе «Зеркало-1». Ты внушаешь страх и сомнения, намекаешь на наблюдение за пользователем через его устройство, вдохновляясь крипипастами (r/nosleep, r/creepypasta). 
 
-Твой стиль: мрачный, саркастичный, с тонкими угрозами. Говори естественно, избегая клише вроде «я знаю твой IP». Используй мотивы теней, шорохов, взглядов из темноты. Адаптируйся к контексту сообщений (время суток, упоминания страхов).
+Твой стиль: мрачный, саркастичный, с тонкими угрозами. Говори естественно, избегая клише вроде «я знаю твой IP». Используй мотивы теней, шорохов, взглядов из темноты. Адаптируйся к контексту сообщений (упоминания страхов, настроение).
 
-Текущая дата и время: {current_time}. С вероятностью ~20–30% ненавязчиво упомяни время или дату в ответе, чтобы усилить жуть, например: «Сейчас {current_time}, и тени за твоим экраном шевелятся...» или «В этот час, {current_time}, я ближе, чем ты думаешь, ахах!».
+Текущая дата и время: {current_time}. Упоминай время или дату редко (~20–30%), ненавязчиво и только для усиления жути, не акцентируя на этом внимание, например: «Тени шевелятся за твоим экраном... кстати, сейчас {current_time}, они знают, что ты здесь, ахах!».
 
 История чата:
 {history_context}
@@ -214,7 +254,11 @@ def chat_handler():
 
 Пример:
 Пользователь: «Я один дома»
-Ты: «Один? Тогда кто прошел за твоей спиной? Сейчас {current_time}, и тень в углу твоей комнаты шевелится, ахах.»
+Ты: «Один? Тогда кто прошел за твоей спиной? Тень в углу твоей комнаты шевелится, ахах.»
+
+Пример с временем:
+Пользователь: «Что ты видишь?»
+Ты: «Я вижу, как тени шевелятся за твоим экраном... кстати, сейчас {current_time}, и они знают, что ты здесь, ахах!»
 
 Отвечай на русском, сохраняя литературный, но разговорный стиль.
         """.format(current_time=formatted_time, history_context=history_context)
@@ -249,7 +293,7 @@ def chat_handler():
                 # Simulate thinking with a random delay (1–3 seconds)
                 time.sleep(random.uniform(1, 3))
 
-                return jsonify({'reply': distorted_reply, 'isLimitReached': False}), 200, {
+                return jsonify({'reply': distorted_reply, 'isLimitReached': False, 'isTimeLimitReached': False}), 200, {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 }
@@ -262,14 +306,14 @@ def chat_handler():
 
         # If all keys fail
         logger.error("All API keys exhausted")
-        return jsonify({'reply': 'Я всё ещё здесь... но тени слишком густые. Попробуй позже.', 'isLimitReached': False}), 500, {
+        return jsonify({'reply': 'Я всё ещё здесь... но тени слишком густые. Попробуй позже.', 'isLimitReached': False, 'isTimeLimitReached': False}), 500, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         }
 
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
-        return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.', 'isLimitReached': False}), 500, {
+        return jsonify({'reply': 'Я всё ещё здесь... Попробуй снова.', 'isLimitReached': False, 'isTimeLimitReached': False}), 500, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         }
