@@ -42,17 +42,18 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
     setIsLoading(true);
     setError('Проверка ключа...');
+    // Этап 1: Показать ошибку на весь экран
+    setShowErrorOverlay(true);
     setTimeout(() => {
-      setShowErrorOverlay(true);
+      setShowErrorOverlay(false);
+      // Этап 2: Показать взлом на весь экран
+      setShowHackOverlay(true);
       setTimeout(() => {
-        setShowErrorOverlay(false);
-        setShowHackOverlay(true);
-        setTimeout(() => {
-          setShowHackOverlay(false);
-          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
-          setTimeout(() => onAccessGranted(), 2000);
-        }, 4000);
-      }, 3000);
+        setShowHackOverlay(false);
+        // Этап 3: Вернуть окно входа
+        setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
+        setTimeout(() => onAccessGranted(), 2000);
+      }, 4000);
     }, 3000);
   };
 
@@ -94,47 +95,53 @@ const AccessScreen = ({ onAccessGranted }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center">
+    <>
+      {/* Полноэкранные анимации */}
       {showErrorOverlay && (
-        <div className="error-overlay">
+        <div className="error-overlay-fullscreen">
           ВНИМАНИЕ! ОШИБКА!
         </div>
       )}
       {showHackOverlay && (
-        <div className="hack-overlay">
+        <div className="hack-overlay-fullscreen">
           <div className="matrix-rain" />
           {generateHackCode()}
         </div>
       )}
-      <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
-      <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
-      <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
-      <form onSubmit={handleSubmit} className="w-full max-w-sm">
-        <div className="flex items-center mb-4">
-          <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
-          <input
-            type="text"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            className="flex-1 text-user text-xl p-2 border focus:outline-none"
-            placeholder="_________"
-            disabled={isLoading}
-          />
+      {/* Окно входа */}
+      <div className="crt-window">
+        <div className="flex flex-col items-center justify-center h-full text-center">
+          <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
+          <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
+          <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
+          <form onSubmit={handleSubmit} className="w-full max-w-sm">
+            <div className="flex items-center mb-4">
+              <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
+              <input
+                type="text"
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                className="flex-1 text-user text-xl p-2 border focus:outline-none"
+                placeholder="_________"
+                disabled={isLoading}
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full text-user text-xl border px-4 py-2"
+              disabled={isLoading}
+            >
+              Подтвердить
+            </button>
+          </form>
+          {error && (
+            <p className="text-demon text-xl mt-4 blink" style={{ whiteSpace: 'pre-line' }}>
+              {error}
+            </p>
+          )}
         </div>
-        <button
-          type="submit"
-          className="w-full text-user text-xl border px-4 py-2"
-          disabled={isLoading}
-        >
-          Подтвердить
-        </button>
-      </form>
-      {error && (
-        <p className="text-demon text-xl mt-4 blink" style={{ whiteSpace: 'pre-line' }}>
-          {error}
-        </p>
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 
