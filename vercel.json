@@ -6,7 +6,7 @@
       "use": "@vercel/static"
     },
     {
-      "src": "api/chat.py",
+      "src": "api/**",
       "use": "@vercel/python",
       "config": { 
         "runtime": "python3.9"
