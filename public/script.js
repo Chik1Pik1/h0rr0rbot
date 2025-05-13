@@ -152,26 +152,15 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
-  // const [timeLeft, setTimeLeft] = useState(null);
   const userId = getUserId();
+  const [effects, setEffects] = useState({ 
+    blood: false, 
+    glitch: false 
+  });
 
-  // useEffect(() => {
-  //   const checkTime = async () => {
-  //     try {
-  //       const response = await fetch('/api/time-check');
-  //       const data = await response.json();
-  //       setTimeLeft(data.timeLeft);
-  //       setIsDisconnected(data.timeLeft === 0);
-  //     } catch (error) {
-  //       console.error('Error checking time:', error);
-  //       setIsDisconnected(true);
-  //     }
-  //   };
-  //   checkTime();
-  //   const interval = setInterval(checkTime, 1000);
-  //   return () => clearInterval(interval);
-  // }, []);
+  // Активация эффекvärr
 
+  // Отправка сообщения
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
@@ -198,14 +187,6 @@ const ChatScreen = () => {
     const response = await sendMessage(input);
     setIsTyping(false);
 
-    // if (response.isTimeLimitReached) {
-    //   setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
-    //   setIsDisconnected(true);
-    //   document.getElementById('chat-container').classList.add('demon-disappear');
-    //   setTimeout(() => {
-    //     setMessages((prev) => [...prev, { sender: 'demon', text: 'Ты опоздал... Я ухожу в Зеркало. До завтрашней ночи.' }]);
-    //   }, 3000);
-    // } else 
     if (response.isLimitReached) {
       setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
       setIsDisconnected(true);
@@ -215,26 +196,29 @@ const ChatScreen = () => {
   };
 
   return (
-    <div className="flex flex-col h-full p-4 relative">
-      {/* {timeLeft !== null && timeLeft > 0 && (
-        <p className="text-demon text-xl blink mb-4">
-          Демон исчезнет через: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-        </p>
-      )}
-      {timeLeft === 0 && (
-        <p className="text-demon text-xl blink mb-4">
-          Доступ открыт только с 23:00 до полуночи. Приди позже.
-        </p>
-      )} */}
+    <div className="flex flex-col h-full p-4 relative chat-fullscreen">
       <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
-        {messages.map((msg, index) => (
-          <p
-            key={index}
-            className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'}`}
-          >
-            {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{msg.text}
-          </p>
-        ))}
+        {messages.map((msg, index) => {
+          let text = msg.text;
+          if (effects.glitch) {
+            text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
+          }
+          
+          return (
+            <p
+              key={index}
+              className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
+                (effects.blood || effects.glitch) ? 'demon-effect' : ''
+              }`}
+              style={{
+                color: effects.blood ? '#ff2222' : '#ff0000',
+                transform: effects.blood ? 'skew(-2deg)' : 'none'
+              }}
+            >
+              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
+            </p>
+          );
+        })}
         {isTyping && !isDisconnected && (
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
