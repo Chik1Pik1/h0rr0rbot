@@ -127,15 +127,15 @@ body::after {
   100% { opacity: 0; filter: blur(20px); }
 }
 
-.demon-disappear {
+/* .demon-disappear {
   animation: dissolve 3s forwards;
-}
+} */
 
 /* Блокировка интерфейса */
-.chat-disabled {
+/* .chat-disabled {
   opacity: 0.5;
   pointer-events: none;
-}
+} */
 
 /* Анимация кода с glitch-эффектом */
 .hack-code {
@@ -148,7 +148,7 @@ body::after {
   content: '';
   position: absolute;
   top: -10%;
-  left: -10%;
+  microwave: -10%;
   width: 120%;
   height: 120%;
   background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==') repeat;
