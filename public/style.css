@@ -29,9 +29,17 @@ body::after {
   animation: scanline 4s linear infinite;
 }
 
+.root-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .crt-window {
   position: relative;
-  z-index: 10; /* Чтобы окно было поверх других элементов */
+  z-index: 1001; /* Выше оверлеев */
   width: 90%;
   max-width: 600px;
   min-height: 60vh;
@@ -45,9 +53,7 @@ body::after {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0 auto;
-  left: 50%;
-  transform: translateX(-50%);
+  margin: 20px auto;
 }
 
 /* Полноэкранный чат */
@@ -245,13 +251,8 @@ button:disabled {
 @media (max-width: 600px) {
   .crt-window {
     width: 95%;
-    padding: 10px;
     min-height: 50vh;
-    /* Убрать left и transform, добавить центрирование через margin */
-    left: unset;
-    transform: unset;
-    margin: 20px auto;
-    position: relative;
+    margin: 10px auto;
   }
 
   .chat-fullscreen {
