@@ -97,7 +97,7 @@ def increment_request_counter(user_id):
         }).eq("id", counter.data[0]["id"]).execute()
         return new_count
     else:
-        supabase.table("request_counter").insert({
+        supbase.table("request_counter").insert({
             "user_id": user_id,
             "request_count": 1,
             "last_reset_date": today
@@ -207,12 +207,16 @@ def chat_handler():
         )
 
         # Get current date and time in MSK, formatted in Russian style (no year)
-        msk_tz = pytz.timezone('Europe/Moscow')
-        current_time = datetime.now(msk_tz)
-        day = current_time.day
-        month = RUSSIAN_MONTHS[current_time.month]
-        hours = current_time.strftime("%H:%M")
-        formatted_time = f"{hours}, {day} {month}"  # e.g., "23:15, 13 мая"
+        try:
+            msk_tz = pytz.timezone('Europe/Moscow')
+            current_time = datetime.now(msk_tz)
+            day = current_time.day
+            month = RUSSIAN_MONTHS.get(current_time.month, "неизвестно")
+            hours = current_time.strftime("%H:%M")
+            formatted_time = f"{hours}, {day} {month}"  # e.g., "23:15, 13 мая"
+        except Exception as e:
+            logger.error(f"Error formatting time: {str(e)}")
+            formatted_time = "время неизвестно"
 
         # Define the system prompt
         SYSTEM_PROMPT = """
