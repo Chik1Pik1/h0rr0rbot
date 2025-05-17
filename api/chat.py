@@ -24,7 +24,7 @@ supabase: Client = create_client(
 API_KEYS = [
     {
         "key": os.getenv("OPENROUTER_API_KEY_1"),
-        "model": os.getenv("OPENROUTER_MODEL_1", "mistralai/mixtral-7b-instruct"),
+        "model": os.getenv("OPENROUTER_MODEL_1", "nousresearch/deephermes-3-mistral-24b-preview:free"),
         "name": "primary"
     },
     {
