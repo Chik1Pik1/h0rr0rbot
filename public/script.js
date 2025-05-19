@@ -1,4 +1,4 @@
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect } = React;
 
 // Generate or retrieve UUID for user
 const getUserId = () => {
@@ -14,12 +14,7 @@ const getUserId = () => {
 };
 
 const App = () => {
-  const [isAccessGranted, setIsAccessGranted] = useState(() => {
-    // Проверяем localStorage, но не сохраняем автоматически
-    const saved = localStorage.getItem('isAccessGranted');
-    console.log('Initial isAccessGranted:', saved ? JSON.parse(saved) : false);
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [isAccessGranted, setIsAccessGranted] = useState(false);
 
   return (
     <div className="root-container">
@@ -39,59 +34,6 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
 
-  // Звук сирены
-  const errorSound = new Audio('/music/signal-pojarnoy-trevogi.mp3');
-  errorSound.loop = false;
-
-  useEffect(() => {
-    let timeoutId = null;
-
-    const stopSound = () => {
-      console.log('Останавливаем errorSound');
-      try {
-        errorSound.pause();
-        errorSound.currentTime = 0;
-      } catch (e) {
-        console.error('Ошибка остановки звука:', e);
-      }
-    };
-
-    const playSound = () => {
-      return new Promise((resolve, reject) => {
-        if (errorSound.readyState >= 2) {
-          resolve();
-        } else {
-          errorSound.oncanplay = () => resolve();
-          errorSound.onerror = () => reject(new Error('Не удалось загрузить signal-pojarnoy-trevogi.mp3'));
-        }
-      });
-    };
-
-    if (showErrorOverlay) {
-      console.log('Запускаем errorSound');
-      stopSound();
-      playSound()
-        .then(() => {
-          errorSound.play().catch((e) => {
-            console.error('Ошибка воспроизведения signal-pojarnoy-trevogi.mp3:', e);
-          });
-          timeoutId = setTimeout(stopSound, 3000);
-        })
-        .catch((e) => {
-          console.error('Ошибка загрузки звука:', e);
-        });
-    } else {
-      stopSound();
-    }
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      stopSound();
-    };
-  }, [showErrorOverlay]);
-
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!key.trim()) {
@@ -100,18 +42,17 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
     setIsLoading(true);
     setError('Проверка ключа...');
+    // Этап 1: Показать ошибку на весь экран
     setShowErrorOverlay(true);
     setTimeout(() => {
       setShowErrorOverlay(false);
+      // Этап 2: Показать взлом на весь экран
       setShowHackOverlay(true);
       setTimeout(() => {
         setShowHackOverlay(false);
+        // Этап 3: Вернуть окно входа
         setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
-        setTimeout(() => {
-          console.log('Вызываем onAccessGranted');
-          localStorage.setItem('isAccessGranted', 'true'); // Сохраняем только при успехе
-          onAccessGranted();
-        }, 2000);
+        setTimeout(() => onAccessGranted(), 2000);
       }, 4000);
     }, 3000);
   };
@@ -155,6 +96,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 
   return (
     <>
+      {/* Полноэкранные анимации */}
       {showErrorOverlay && (
         <div className="error-overlay-fullscreen">
           ВНИМАНИЕ! ОШИБКА!
@@ -166,6 +108,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           {generateHackCode()}
         </div>
       )}
+      {/* Окно входа */}
       <div className="crt-window">
         <div className="flex flex-col items-center justify-center h-full text-center">
           <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
@@ -209,178 +152,15 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordTime, setRecordTime] = useState(0);
-  const [hasInteracted, setHasInteracted] = useState(false);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
     glitch: false 
   });
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const timerRef = useRef(null);
 
-  // Фоновый звук
-  const backgroundSound = new Audio('/music/fon.mp3');
-  backgroundSound.loop = true;
+  // Активация эффекvärr
 
-  // Обработчик взаимодействия для звука
-  const handleInteraction = () => {
-    setHasInteracted(true);
-  };
-
-  useEffect(() => {
-    const events = ['click', 'touchstart', 'keydown'];
-    events.forEach(event => {
-      document.addEventListener(event, handleInteraction, { once: true });
-    });
-
-    const stopSound = () => {
-      console.log('Останавливаем backgroundSound');
-      try {
-        backgroundSound.pause();
-        backgroundSound.currentTime = 0;
-      } catch (e) {
-        console.error('Ошибка остановки звука:', e);
-      }
-    };
-
-    const playSound = () => {
-      return new Promise((resolve, reject) => {
-        if (backgroundSound.readyState >= 2) {
-          resolve();
-        } else {
-          backgroundSound.oncanplay = () => resolve();
-          backgroundSound.onerror = () => reject(new Error('Не удалось загрузить fon.mp3'));
-        }
-      });
-    };
-
-    const tryPlaySound = () => {
-      playSound()
-        .then(() => {
-          backgroundSound.play()
-            .then(() => console.log('backgroundSound успешно воспроизводится'))
-            .catch((e) => {
-              console.error('Ошибка воспроизведения fon.mp3:', e);
-            });
-        })
-        .catch((e) => {
-          console.error('Ошибка загрузки fon.mp3:', e);
-        });
-    };
-
-    if (hasInteracted) {
-      tryPlaySound();
-    } else {
-      const interactionHandler = () => {
-        tryPlaySound();
-        events.forEach(event => {
-          document.removeEventListener(event, interactionHandler);
-        });
-      };
-      events.forEach(event => {
-        document.addEventListener(event, interactionHandler, { once: true });
-      });
-    }
-
-    return () => {
-      stopSound();
-      events.forEach(event => {
-        document.removeEventListener(event, handleInteraction);
-      });
-    };
-  }, [hasInteracted]);
-
-  // Форматирование времени
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const secs = (seconds % 60).toString().padStart(2, '0');
-    return `${mins}:${secs}`;
-  };
-
-  // Обработчик микрофона
-  const handleMicClick = async () => {
-    if (isDisconnected) return;
-
-    if (isRecording) {
-      stopRecording(false);
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorderRef.current = new MediaRecorder(stream);
-        audioChunksRef = useRef([]);
-        audioChunksRef.current = [];
-
-        mediaRecorderRef.current.ondataavailable = (event) => {
-          audioChunksRef.current.push(event.data);
-        };
-
-        mediaRecorderRef.current.onstop = (event, shouldSend = true) => {
-          if (shouldSend && audioChunksRef.current.length > 0) {
-            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            handleAudioSubmit(audioUrl);
-          }
-          stream.getTracks().forEach(track => track.stop());
-        };
-
-        mediaRecorderRef.current.start();
-        setIsRecording(true);
-        setRecordTime(0);
-
-        timerRef.current = setInterval(() => {
-          setRecordTime(prev => prev + 1);
-        }, 1000);
-
-        console.log('Начата запись аудио');
-      } catch (error) {
-        console.error('Ошибка доступа к микрофону:', error);
-        setIsRecording(false);
-      }
-    }
-  };
-
-  // Остановка записи
-  const stopRecording = (shouldSend = true) => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop(shouldSend);
-      setIsRecording(false);
-      clearInterval(timerRef.current);
-      console.log('Запись остановлена');
-    }
-  };
-
-  // Отправка аудио
-  const handleAudioSubmit = async (audioUrl) => {
-    if (isDisconnected) return;
-
-    const userMessage = { sender: 'user', audio: audioUrl };
-    setMessages([...messages, userMessage]);
-    setIsTyping(true);
-
-    // Имитация распознавания речи
-    const audioBlob = await fetch(audioUrl).then(res => res.blob());
-    const dummyText = 'Привет, это тестовое голосовое сообщение';
-
-    try {
-      const response = await sendMessage(dummyText);
-      setIsTyping(false);
-
-      if (response.isLimitReached) {
-        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
-        setIsDisconnected(true);
-      } else {
-        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
-      }
-    } catch (error) {
-      setIsTyping(false);
-      setMessages([...messages, userMessage, { sender: 'demon', text: 'Я всё ещё здесь... Попробуй снова.' }]);
-    }
-  };
-
-  // Отправка текстового сообщения
+  // Отправка сообщения
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
@@ -395,7 +175,7 @@ const ChatScreen = () => {
     }
   };
 
-  const handleTextSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isDisconnected) return;
 
@@ -404,15 +184,15 @@ const ChatScreen = () => {
     setInput('');
     setIsTyping(true);
 
-    sendMessage(input).then(response => {
-      setIsTyping(false);
-      if (response.isLimitReached) {
-        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
-        setIsDisconnected(true);
-      } else {
-        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
-      }
-    });
+    const response = await sendMessage(input);
+    setIsTyping(false);
+
+    if (response.isLimitReached) {
+      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      setIsDisconnected(true);
+    } else {
+      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+    }
   };
 
   return (
@@ -420,78 +200,45 @@ const ChatScreen = () => {
       <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
         {messages.map((msg, index) => {
           let text = msg.text;
-          if (effects.glitch && msg.text) {
+          if (effects.glitch) {
             text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
           
           return (
-            <div key={index} className="mb-2">
-              {msg.audio ? (
-                <div className={`text-xl ${msg.sender === 'user' ? 'text-user' : 'text-demon'}`}>
-                  {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}
-                  <audio src={msg.audio} controls className="inline-block" />
-                </div>
-              ) : (
-                <p
-                  className={`text-xl ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
-                    (effects.blood || effects.glitch) ? 'demon-effect' : ''
-                  }`}
-                  style={{
-                    transform: effects.blood ? 'skew(-2deg)' : 'none'
-                  }}
-                >
-                  {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
-                </p>
-              )}
-            </div>
+            <p
+              key={index}
+              className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
+                (effects.blood || effects.glitch) ? 'demon-effect' : ''
+              }`}
+              style={{
+                color: effects.blood ? '#ff2222' : '#ff0000',
+                transform: effects.blood ? 'skew(-2deg)' : 'none'
+              }}
+            >
+              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
+            </p>
           );
         })}
         {isTyping && !isDisconnected && (
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-      <form onSubmit={handleTextSubmit} className="chat-input-form flex items-center space-x-2">
+      <form onSubmit={handleSubmit} className="chat-input-form flex">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="text-user text-xl p-2 border focus:outline-none input-field"
+          className="flex-1 text-user text-xl p-2 border focus:outline-none"
           placeholder="Введи сообщение..."
-          disabled={isDisconnected || isRecording}
+          disabled={isDisconnected}
         />
         <button
           type="submit"
           className="text-user text-xl border px-4 py-2"
-          disabled={isDisconnected || isRecording}
+          disabled={isDisconnected}
         >
           Отправить
         </button>
-        <div
-          className={`mic-button p-2 border ${isRecording ? 'bg-red-600 animate-pulse' : 'text-user'} ${isDisconnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-          onClick={handleMicClick}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-            />
-          </svg>
-          {isRecording && (
-            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-user text-xs font-mono flex items-center">
-              <span className="blink mr-1">REC</span>
-              <span>{formatTime(recordTime)}</span>
-              <span className="ml-1 animate-pulse">|█|</span>
-            </div>
-          )}
-        </div>
       </form>
     </div>
   );
