@@ -39,12 +39,22 @@ const AccessScreen = ({ onAccessGranted }) => {
   errorSound.loop = false;
 
   useEffect(() => {
+    let timeoutId;
     if (showErrorOverlay) {
       errorSound.play().catch((e) => console.error('Ошибка воспроизведения signal-pojarnoy-trevogi.mp3:', e));
+      // Остановить звук через 3 секунды, синхронизированно с оверлеем
+      timeoutId = setTimeout(() => {
+        errorSound.pause();
+        errorSound.currentTime = 0;
+      }, 3000);
     } else {
       errorSound.pause();
       errorSound.currentTime = 0;
     }
+    // Очистка таймера при размонтировании или изменении showErrorOverlay
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [showErrorOverlay]);
 
   const handleSubmit = (e) => {
@@ -92,7 +102,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           className="hack-code"
           style={{
             top: `${top}%`,
-            left: `${left}%`,
+            left: `${top}%`,
             animationDuration: `${duration}s`,
             animationDelay: `${delay}s`
           }}
