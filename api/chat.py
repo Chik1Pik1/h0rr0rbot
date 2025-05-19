@@ -7,6 +7,8 @@ import random
 from supabase import create_client, Client
 from datetime import datetime
 import pytz
+import tempfile
+import whisper
 
 app = Flask(__name__)
 
@@ -129,17 +131,73 @@ def make_openrouter_request(api_key, model, messages):
             json={
                 "model": model,
                 "messages": messages,
-                "temperature": 0.8,  # Balance between creativity and logic
-                "top_p": 0.9,  # Moderate randomness
-                "frequency_penalty": 0.6,  # Reduce repetition
-                "presence_penalty": 0.4,  # Encourage new ideas
-                "max_tokens": 150  # Focus responses
+                "temperature": 0.8,
+                "top_p": 0.9,
+                "frequency_penalty": 0.6,
+                "presence_penalty": 0.4,
+                "max_tokens": 150
             }
         )
         return response
     except Exception as e:
         logger.error(f"OpenRouter request failed: {str(e)}")
         return None
+
+@app.route('/api/voice', methods=['POST'])
+def voice_handler():
+    logger.info("Received voice request")
+    try:
+        if 'audio' not in request.files or 'user_id' not in request.form:
+            logger.error("Missing audio file or user_id")
+            return jsonify({'error': 'Audio file and user_id are required'}), 400
+
+        audio_file = request.files['audio']
+        user_id = request.form['user_id']
+
+        # Save audio file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.webm') as tmp_file:
+            audio_file.save(tmp_file.name)
+            tmp_file_path = tmp_file.name
+
+        # Transcribe audio using Whisper
+        try:
+            model = whisper.load_model("base")
+            result = model.transcribe(tmp_file_path, language="ru")
+            transcription = result["text"]
+            logger.info(f"Transcription: {transcription}")
+        finally:
+            os.unlink(tmp_file_path)  # Delete temporary file
+
+        # Increment request counter
+        request_count = get_request_counter(user_id)
+        if request_count >= REQUEST_LIMIT:
+            logger.warning(f"Request limit reached for user {user_id}")
+            farewell_messages = [
+                "Лампа гаснет. Тишина... Но тень в углу осталась.",
+                "Скрипы затихают. Но дверь осталась приоткрытой.",
+                "Занавески замерли. Но отражение в окне... Оно смотрит.",
+                "Тишина. Но твой стул только что скрипнул."
+            ]
+            save_chat_message(user_id, random.choice(farewell_messages), "demon")
+            return jsonify({
+                'transcription': '',
+                'error': random.choice(farewell_messages),
+                'isLimitReached': True
+            }), 200
+
+        increment_request_counter(user_id)
+        save_chat_message(user_id, f"[Голосовое сообщение: {transcription}]", "user")
+
+        return jsonify({'transcription': transcription}), 200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        }
+    except Exception as e:
+        logger.error(f"Error processing voice request: {str(e)}")
+        return jsonify({'error': 'Ошибка обработки голосового сообщения'}), 500, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        }
 
 @app.route('/api/chat', methods=['POST'])
 def chat_handler():
