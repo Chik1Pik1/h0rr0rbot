@@ -216,10 +216,39 @@ const ChatScreen = () => {
   backgroundSound.volume = 0.2;
 
   useEffect(() => {
-    backgroundSound.play().catch((e) => console.error('Ошибка воспроизведения fon.mp3:', e));
-    return () => {
+    // Функция для остановки звука
+    const stopSound = () => {
+      console.log('Останавливаем backgroundSound');
       backgroundSound.pause();
       backgroundSound.currentTime = 0;
+    };
+
+    // Проверка готовности звука перед воспроизведением
+    const playSound = () => {
+      return new Promise((resolve, reject) => {
+        if (backgroundSound.readyState >= 2) { // HAVE_CURRENT_DATA или выше
+          resolve();
+        } else {
+          backgroundSound.oncanplay = () => resolve();
+          backgroundSound.onerror = () => reject(new Error('Не удалось загрузить fon.mp3'));
+        }
+      });
+    };
+
+    console.log('Запускаем backgroundSound');
+    playSound()
+      .then(() => {
+        backgroundSound.play().catch((e) => {
+          console.error('Ошибка воспроизведения fon.mp3:', e);
+        });
+      })
+      .catch((e) => {
+        console.error('Ошибка загрузки fon.mp3:', e);
+      });
+
+    // Очистка при размонтировании
+    return () => {
+      stopSound();
     };
   }, []);
 
