@@ -298,47 +298,55 @@ const ChatScreen = () => {
     return `${mins}:${secs}`;
   };
 
-  // Начало записи
-  const startRecording = async () => {
+  // Обработчик кнопки микрофона
+  const handleMicClick = async () => {
     if (isDisconnected) return;
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
+    if (isRecording) {
+      // Остановить запись без отправки
+      stopRecording(false);
+    } else {
+      // Начать запись
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        audioChunksRef.current = [];
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          audioChunksRef.current.push(event.data);
+        };
 
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        handleAudioSubmit(audioUrl);
-        // Очистка потока
-        stream.getTracks().forEach(track => track.stop());
-      };
+        mediaRecorderRef.current.onstop = (event, shouldSend = true) => {
+          if (shouldSend && audioChunksRef.current.length > 0) {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            handleAudioSubmit(audioUrl);
+          }
+          // Очистка потока
+          stream.getTracks().forEach(track => track.stop());
+        };
 
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-      setRecordTime(0);
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+        setRecordTime(0);
 
-      // Запуск таймера
-      timerRef.current = setInterval(() => {
-        setRecordTime(prev => prev + 1);
-      }, 1000);
+        // Запуск таймера
+        timerRef.current = setInterval(() => {
+          setRecordTime(prev => prev + 1);
+        }, 1000);
 
-      console.log('Начата запись аудио');
-    } catch (error) {
-      console.error('Ошибка доступа к микрофону:', error);
-      setIsRecording(false);
+        console.log('Начата запись аудио');
+      } catch (error) {
+        console.error('Ошибка доступа к микрофону:', error);
+        setIsRecording(false);
+      }
     }
   };
 
   // Остановка записи
-  const stopRecording = () => {
+  const stopRecording = (shouldSend = true) => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stop(shouldSend);
       setIsRecording(false);
       clearInterval(timerRef.current);
       console.log('Запись остановлена');
@@ -353,13 +361,7 @@ const ChatScreen = () => {
     setMessages([...messages, userMessage]);
     setIsTyping(true);
 
-    // Имитация распознавания речи (Web Speech API)
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'ru-RU';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    // Конвертация аудио в текст (заглушка)
+    // Имитация распознавания речи (заглушка)
     const audioBlob = await fetch(audioUrl).then(res => res.blob());
     const dummyText = 'Привет, это тестовое голосовое сообщение'; // Заменить на реальное распознавание
 
@@ -371,7 +373,7 @@ const ChatScreen = () => {
         setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
         setIsDisconnected(true);
       } else {
-        setMessages([...messages, userMessage, { sender: 'demon', text: `Я прослушал твое сообщение. Ты сказал: "${dummyText}". ${response.reply}` }]);
+        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
       }
     } catch (error) {
       setIsTyping(false);
@@ -383,7 +385,7 @@ const ChatScreen = () => {
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
-        method: 'POST',
+        method='POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, user_id: userId })
       });
@@ -454,7 +456,7 @@ const ChatScreen = () => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="flex-1 text-user text-xl p-2 border focus:outline-none"
+          className="text-user text-xl p-2 border focus:outline-none input-field"
           placeholder="Введи сообщение..."
           disabled={isDisconnected || isRecording}
         />
@@ -466,11 +468,8 @@ const ChatScreen = () => {
           Отправить
         </button>
         <div
-          className={`relative p-1 border ${isRecording ? 'bg-red-600 animate-pulse' : 'text-user'} ${isDisconnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-          onMouseDown={startRecording}
-          onMouseUp={stopRecording}
-          onTouchStart={startRecording}
-          onTouchEnd={stopRecording}
+          className={`mic-button p-2 border ${isRecording ? 'bg-red-600 animate-pulse' : 'text-user'} ${isDisconnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          onClick={handleMicClick}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
