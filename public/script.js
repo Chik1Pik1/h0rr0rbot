@@ -204,6 +204,7 @@ const ChatScreen = () => {
   const [isDisconnected, setIsDisconnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recognitionError, setRecognitionError] = useState('');
+  const [hasInteracted, setHasInteracted] = useState(false); // Отслеживание взаимодействия
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
@@ -215,7 +216,18 @@ const ChatScreen = () => {
   backgroundSound.loop = true;
   backgroundSound.volume = 0.2;
 
+  // Обработчик взаимодействия пользователя
+  const handleInteraction = () => {
+    setHasInteracted(true);
+  };
+
   useEffect(() => {
+    // Добавляем слушатель для взаимодействия
+    const events = ['click', 'touchstart', 'keydown'];
+    events.forEach(event => {
+      document.addEventListener(event, handleInteraction, { once: true });
+    });
+
     // Функция для остановки звука
     const stopSound = () => {
       console.log('Останавливаем backgroundSound');
@@ -226,31 +238,63 @@ const ChatScreen = () => {
     // Проверка готовности звука перед воспроизведением
     const playSound = () => {
       return new Promise((resolve, reject) => {
+        console.log('Проверяем готовность fon.mp3, readyState:', backgroundSound.readyState);
         if (backgroundSound.readyState >= 2) { // HAVE_CURRENT_DATA или выше
           resolve();
         } else {
-          backgroundSound.oncanplay = () => resolve();
+          backgroundSound.oncanplay = () => {
+            console.log('fon.mp3 готов к воспроизведению');
+            resolve();
+          };
           backgroundSound.onerror = () => reject(new Error('Не удалось загрузить fon.mp3'));
+          backgroundSound.load(); // Принудительно загружаем
         }
       });
     };
 
-    console.log('Запускаем backgroundSound');
-    playSound()
-      .then(() => {
-        backgroundSound.play().catch((e) => {
-          console.error('Ошибка воспроизведения fon.mp3:', e);
+    // Запуск звука
+    const tryPlaySound = () => {
+      console.log('Попытка запустить backgroundSound, hasInteracted:', hasInteracted);
+      playSound()
+        .then(() => {
+          backgroundSound.play()
+            .then(() => console.log('backgroundSound успешно воспроизводится'))
+            .catch((e) => {
+              console.error('Ошибка воспроизведения fon.mp3:', e);
+              // Повторная попытка после взаимодействия
+              if (!hasInteracted) {
+                console.log('Ожидаем взаимодействия пользователя для воспроизведения');
+              }
+            });
+        })
+        .catch((e) => {
+          console.error('Ошибка загрузки fon.mp3:', e);
         });
-      })
-      .catch((e) => {
-        console.error('Ошибка загрузки fon.mp3:', e);
+    };
+
+    // Запускаем звук, если было взаимодействие, или ждём его
+    if (hasInteracted) {
+      tryPlaySound();
+    } else {
+      const interactionHandler = () => {
+        tryPlaySound();
+        events.forEach(event => {
+          document.removeEventListener(event, interactionHandler);
+        });
+      };
+      events.forEach(event => {
+        document.addEventListener(event, interactionHandler, { once: true });
       });
+    }
 
     // Очистка при размонтировании
     return () => {
       stopSound();
+      events.forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
     };
-  }, []);
+  }, [hasInteracted]);
 
   // Инициализация SpeechRecognition
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
