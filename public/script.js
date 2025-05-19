@@ -1,4 +1,4 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 // Generate or retrieve UUID for user
 const getUserId = () => {
@@ -34,18 +34,55 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
 
-  // Воспроизведение звука ошибки
+  // Звук сирены для оверлея ошибки из /public/music/
+  const errorSound = new Audio('/music/signal-pojarnoy-trevogi.mp3');
+  errorSound.loop = false;
+
   useEffect(() => {
-    let errorSound;
+    let timeoutId = null;
+
+    // Функция для остановки звука
+    const stopSound = () => {
+      console.log('Останавливаем errorSound');
+      errorSound.pause();
+      errorSound.currentTime = 0;
+    };
+
+    // Проверка готовности звука перед воспроизведением
+    const playSound = () => {
+      return new Promise((resolve, reject) => {
+        if (errorSound.readyState >= 2) {
+          resolve();
+        } else {
+          errorSound.oncanplay = () => resolve();
+          errorSound.onerror = () => reject(new Error('Не удалось загрузить signal-pojarnoy-trevogi.mp3'));
+        }
+      });
+    };
+
     if (showErrorOverlay) {
-      errorSound = new Audio('/music/signal-pojarnoy-trevogi.mp3');
-      errorSound.play();
+      console.log('Запускаем errorSound');
+      stopSound();
+      playSound()
+        .then(() => {
+          errorSound.play().catch((e) => {
+            console.error('Ошибка воспроизведения signal-pojarnoy-trevogi.mp3:', e);
+          });
+          timeoutId = setTimeout(stopSound, 3000);
+        })
+        .catch((e) => {
+          console.error('Ошибка загрузки звука:', e);
+        });
+    } else {
+      stopSound();
     }
+
     return () => {
-      if (errorSound) {
-        errorSound.pause();
-        errorSound.currentTime = 0;
+      if (timeoutId) {
+        console.log('Очистка таймера');
+        clearTimeout(timeoutId);
       }
+      stopSound();
     };
   }, [showErrorOverlay]);
 
@@ -124,9 +161,7 @@ const AccessScreen = ({ onAccessGranted }) => {
       )}
       <div className="crt-window">
         <div className="flex flex-col items-center justify-center h-full text-center">
-          <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ─
-
-───────────────</h1>
+          <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
           <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
           <form onSubmit={handleSubmit} className="w-full max-w-sm">
@@ -162,105 +197,232 @@ const AccessScreen = ({ onAccessGranted }) => {
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState([
-    { sender: 'demon', type: 'text', content: 'Ты кто? Я вижу тебя... через твое устройство.' }
+    { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [recordTime, setRecordTime] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [audioStream, setAudioStream] = useState(null);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
     glitch: false 
   });
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const timerRef = useRef(null);
+  const recognitionRef = useRef(null);
 
-  // Фоновая музыка
+  // Фоновый звук из /public/music/
+  const backgroundSound = new Audio('/music/fon.mp3');
+  backgroundSound.loop = true;
+
+  // Обработчик взаимодействия для фонового звука
+  const handleInteraction = () => {
+    setHasInteracted(true);
+  };
+
   useEffect(() => {
-    const backgroundMusic = new Audio('/music/fon.mp3');
-    backgroundMusic.loop = true;
-    backgroundMusic.volume = 0.3;
-    backgroundMusic.play().catch(() => {});
-    return () => {
-      backgroundMusic.pause();
-      backgroundMusic.currentTime = 0;
+    const events = ['click', 'touchstart', 'keydown'];
+    events.forEach(event => {
+      document.addEventListener(event, handleInteraction, { once: true });
+    });
+
+    const stopSound = () => {
+      console.log('Останавливаем backgroundSound');
+      backgroundSound.pause();
+      backgroundSound.currentTime = 0;
     };
-  }, []);
 
-  // Таймер записи
-  useEffect(() => {
-    let timer;
-    if (isRecording) {
-      timer = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
+    const playSound = () => {
+      return new Promise((resolve, reject) => {
+        console.log('Проверяем готовность fon.mp3, readyState:', backgroundSound.readyState);
+        if (backgroundSound.readyState >= 2) {
+          resolve();
+        } else {
+          backgroundSound.oncanplay = () => {
+            console.log('fon.mp3 готов к воспроизведению');
+            resolve();
+          };
+          backgroundSound.onerror = () => reject(new Error('Не удалось загрузить fon.mp3'));
+          backgroundSound.load();
+        }
+      });
+    };
+
+    const tryPlaySound = () => {
+      console.log('Попытка запустить backgroundSound, hasInteracted:', hasInteracted);
+      playSound()
+        .then(() => {
+          backgroundSound.play()
+            .then(() => console.log('backgroundSound успешно воспроизводится'))
+            .catch((e) => {
+              console.error('Ошибка воспроизведения fon.mp3:', e);
+              if (!hasInteracted) {
+                console.log('Ожидаем взаимодействия пользователя для воспроизведения');
+              }
+            });
+        })
+        .catch((e) => {
+          console.error('Ошибка загрузки fon.mp3:', e);
+        });
+    };
+
+    if (hasInteracted) {
+      tryPlaySound();
+    } else {
+      const interactionHandler = () => {
+        tryPlaySound();
+        events.forEach(event => {
+          document.removeEventListener(event, interactionHandler);
+        });
+      };
+      events.forEach(event => {
+        document.addEventListener(event, interactionHandler, { once: true });
+      });
     }
-    return () => clearInterval(timer);
-  }, [isRecording]);
 
-  // Начать запись
+    return () => {
+      stopSound();
+      events.forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
+    };
+  }, [hasInteracted]);
+
+  // Очистка audioStream при размонтировании
+  useEffect(() => {
+    return () => {
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+        console.log('Очищен audioStream');
+      }
+    };
+  }, [audioStream]);
+
+  // Форматирование времени (MM:SS)
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
+
+  // Начало записи
   const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks = [];
+    if (isDisconnected || isRecording) return;
 
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        stream.getTracks().forEach(track => track.stop());
-        await sendVoiceMessage(blob);
+    try {
+      let stream = audioStream;
+      if (!stream) {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setAudioStream(stream);
+        console.log('Получен новый audioStream');
+      }
+
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
       };
 
-      setMediaRecorder(recorder);
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        handleAudioSubmit(audioUrl);
+        // Не очищаем stream, чтобы использовать его повторно
+      };
+
+      // Запуск распознавания речи
+      if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+        recognitionRef.current = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognitionRef.current.lang = 'ru-RU';
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.maxAlternatives = 1;
+
+        recognitionRef.current.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          console.log('Распознанный текст:', transcript);
+          recognitionRef.current.transcript = transcript;
+        };
+
+        recognitionRef.current.onerror = (event) => {
+          console.error('Ошибка распознавания речи:', event.error);
+        };
+
+        recognitionRef.current.onend = () => {
+          console.log('Распознавание речи завершено');
+        };
+
+        recognitionRef.current.start();
+        console.log('Начато распознавание речи');
+      } else {
+        console.warn('Web Speech API не поддерживается в этом браузере');
+      }
+
+      mediaRecorderRef.current.start();
       setIsRecording(true);
-      setRecordingTime(0);
-      recorder.start();
+      setRecordTime(0);
+
+      timerRef.current = setInterval(() => {
+        setRecordTime(prev => prev + 1);
+      }, 1000);
+
+      console.log('Начата запись аудио');
     } catch (error) {
-      console.error('Ошибка записи:', error);
-      setMessages([...messages, { sender: 'demon', type: 'text', content: 'Ошибка доступа к микрофону.' }]);
-    }
-  };
-
-  // Остановить запись
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
+      console.error('Ошибка доступа к микрофону:', error);
       setIsRecording(false);
+      setMessages([...messages, { sender: 'demon', text: 'Ошибка доступа к микрофону. Проверь настройки.' }]);
     }
   };
 
-  // Отправка голосового сообщения
-  const sendVoiceMessage = async (blob) => {
+  // Остановка записи
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(timerRef.current);
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      console.log('Запись остановлена');
+    }
+  };
+
+  // Отправка аудио и обработка демоном
+  const handleAudioSubmit = async (audioUrl) => {
+    if (isDisconnected) return;
+
+    const userMessage = { sender: 'user', audio: audioUrl };
+    setMessages([...messages, userMessage]);
+    setIsTyping(true);
+
+    let transcript = recognitionRef.current?.transcript || '';
+    if (!transcript) {
+      console.warn('Текст не распознан, используется заглушка');
+      transcript = '';
+    }
+
     try {
-      const audioUrl = URL.createObjectURL(blob);
-      const userMessage = { sender: 'user', type: 'audio', content: audioUrl };
-      setMessages([...messages, userMessage]);
-      setIsTyping(true);
-
-      // Отправка на сервер для транскрипции
-      const formData = new FormData();
-      formData.append('audio', blob, 'voice.webm');
-      formData.append('user_id', userId);
-
-      const response = await fetch('/api/voice', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await response.json();
-
-      const chatResponse = await sendMessage(data.transcription || '');
+      const response = await sendMessage(transcript || 'Голосовое сообщение');
       setIsTyping(false);
 
-      if (chatResponse.isLimitReached) {
-        setMessages([...messages, userMessage, { sender: 'demon', type: 'text', content: chatResponse.reply }]);
+      if (response.isLimitReached) {
+        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
         setIsDisconnected(true);
       } else {
-        setMessages([...messages, userMessage, { sender: 'demon', type: 'text', content: chatResponse.reply }]);
+        const reply = transcript 
+          ? `Я прослушал твое сообщение. Ты сказал: "${transcript}". ${response.reply}`
+          : `Я не понял твоего голоса... ${response.reply}`;
+        setMessages([...messages, userMessage, { sender: 'demon', text: reply }]);
       }
     } catch (error) {
-      setMessages([...messages, { sender: 'demon', type: 'text', content: 'Ошибка обработки голосового сообщения.' }]);
+      console.error('Ошибка отправки сообщения:', error);
+      setIsTyping(false);
+      setMessages([...messages, userMessage, { sender: 'demon', text: 'Я всё ещё здесь... Попробуй снова.' }]);
     }
   };
 
@@ -272,66 +434,64 @@ const ChatScreen = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, user_id: userId })
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       return data;
     } catch (error) {
+      console.error('Ошибка API /api/chat:', error);
       return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false, isTimeLimitReached: false };
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleTextSubmit = (e) => {
     e.preventDefault();
     if (!input.trim() || isDisconnected) return;
 
-    const userMessage = { sender: 'user', type: 'text', content: input };
+    const userMessage = { sender: 'user', text: input };
     setMessages([...messages, userMessage]);
     setInput('');
     setIsTyping(true);
 
-    const response = await sendMessage(input);
-    setIsTyping(false);
-
-    if (response.isLimitReached) {
-      setMessages([...messages, userMessage, { sender: 'demon', type: 'text', content: response.reply }]);
-      setIsDisconnected(true);
-    } else {
-      setMessages([...messages, userMessage, { sender: 'demon', type: 'text', content: response.reply }]);
-    }
-  };
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    sendMessage(input).then(response => {
+      setIsTyping(false);
+      if (response.isLimitReached) {
+        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+        setIsDisconnected(true);
+      } else {
+        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      }
+    });
   };
 
   return (
     <div className="flex flex-col h-full p-4 relative chat-fullscreen">
       <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
         {messages.map((msg, index) => {
-          let content = msg.content;
-          if (msg.type === 'text' && effects.glitch) {
-            content = content.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
+          let text = msg.text;
+          if (effects.glitch && msg.text) {
+            text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
           
           return (
-            <div
-              key={index}
-              className={`mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
-                (effects.blood || effects.glitch) ? 'demon-effect' : ''
-              }`}
-              style={{
-                color: effects.blood ? '#ff2222' : msg.sender === 'user' ? '#00FF00' : '#ff0000',
-                transform: effects.blood ? 'skew(-2deg)' : 'none'
-              }}
-            >
-              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}
-              {msg.type === 'text' ? (
-                <span className="text-xl">{content}</span>
-              ) : (
-                <div className="audio-message">
-                  <audio controls src={content} />
+            <div key={index} className="mb-2">
+              {msg.audio ? (
+                <div className={`text-xl ${msg.sender === 'user' ? 'text-user' : 'text-demon'}`}>
+                  {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}
+                  <audio src={msg.audio} controls className="inline-block" onEnded={() => URL.revokeObjectURL(msg.audio)} />
                 </div>
+              ) : (
+                <p
+                  className={`text-xl ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
+                    (effects.blood || effects.glitch) ? 'demon-effect' : ''
+                  }`}
+                  style={{
+                    transform: effects.blood ? 'skew(-2deg)' : 'none'
+                  }}
+                >
+                  {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
+                </p>
               )}
             </div>
           );
@@ -340,7 +500,7 @@ const ChatScreen = () => {
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-      <form onSubmit={handleSubmit} className="chat-input-form flex items-center">
+      <form onSubmit={handleTextSubmit} className="chat-input-form flex items-center space-x-2">
         <input
           type="text"
           value={input}
@@ -351,29 +511,40 @@ const ChatScreen = () => {
         />
         <button
           type="submit"
-          className="text-user text-xl border px-4 py-2 mx-2"
-          disabled={isDisconnected || isRecording || !input.trim()}
+          className="text-user text-xl border px-4 py-2"
+          disabled={isDisconnected || isRecording}
         >
           Отправить
         </button>
-        <button
-          type="button"
-          className={`text-user text-xl border px-4 py-2 ${isRecording ? 'stop-button' : 'mic-button'}`}
-          onClick={isRecording ? stopRecording : startRecording}
-          disabled={isDisconnected}
+        <div
+          className={`relative p-1 border ${isRecording ? 'bg-red-600 animate-pulse' : 'text-user'} ${isDisconnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          onMouseDown={startRecording}
+          onMouseUp={stopRecording}
+          onTouchStart={startRecording}
+          onTouchEnd={stopRecording}
         >
-          {isRecording ? (
-            <svg viewBox="0 0 24 24">
-              <rect x="4" y="4" width="16" height="16" />
-              <text x="12" y="24" fill="#00FF00" fontSize="8" textAnchor="middle">{formatTime(recordingTime)}</text>
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24">
-              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.47 6 6.93V21h2v-3.07c3.39-.46 6-3.4 6-6.93h-2z"/>
-            </svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+            />
+          </svg>
+          {isRecording && (
+            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-user text-xs font-mono flex items-center">
+              <span className="blink mr-1">REC</span>
+              <span>{formatTime(recordTime)}</span>
+              <span className="ml-1 animate-pulse">|█|</span>
+            </div>
           )}
-        </button>
+        </div>
       </form>
     </div>
   );
