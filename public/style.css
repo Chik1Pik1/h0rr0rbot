@@ -308,6 +308,30 @@ button:disabled {
   letter-spacing: 0.1em;
 }
 
+/* Стили для аудиоплеера */
+.audio-message {
+  margin: 8px 0;
+}
+
+.audio-message audio {
+  width: 200px;
+  height: 30px;
+  background: #000;
+  border: 2px solid #00FF00;
+  filter: drop-shadow(0 0 2px #00FF00);
+}
+
+.audio-message audio::-webkit-media-controls-panel {
+  background: #000;
+  color: #00FF00;
+}
+
+.audio-message audio::-webkit-media-controls-play-button,
+.audio-message audio::-webkit-media-controls-current-time-display,
+.audio-message audio::-webkit-media-controls-time-remaining-display {
+  color: #00FF00;
+}
+
 /* Адаптивность для мобильных */
 @media (max-width: 600px) {
   .crt-window {
@@ -340,5 +364,9 @@ button:disabled {
   .mic-button svg, .stop-button svg {
     width: 20px;
     height: 20px;
+  }
+
+  .audio-message audio {
+    width: 150px;
   }
 }
