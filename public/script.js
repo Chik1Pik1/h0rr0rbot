@@ -34,16 +34,16 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
 
-  // Звук сирены для оверлея ошибки
+  // Звук сирены для оверлея ошибки из /public/music/
   const errorSound = new Audio('/music/signal-pojarnoy-trevogi.mp3');
   errorSound.loop = false;
 
   useEffect(() => {
     if (showErrorOverlay) {
-      errorSound.play().catch((e) => console.error('Ошибка воспроизведения звука:', e));
+      errorSound.play().catch((e) => console.error('Ошибка воспроизведения signal-pojarnoy-trevogi.mp3:', e));
     } else {
       errorSound.pause();
-      errorSound.currentTime = 0; // Сбрасываем на начало
+      errorSound.currentTime = 0;
     }
   }, [showErrorOverlay]);
 
@@ -55,15 +55,12 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
     setIsLoading(true);
     setError('Проверка ключа...');
-    // Этап 1: Показать ошибку на весь экран
     setShowErrorOverlay(true);
     setTimeout(() => {
       setShowErrorOverlay(false);
-      // Этап 2: Показать взлом на весь экран
       setShowHackOverlay(true);
       setTimeout(() => {
         setShowHackOverlay(false);
-        // Этап 3: Вернуть окно входа
         setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
         setTimeout(() => onAccessGranted(), 2000);
       }, 4000);
@@ -109,7 +106,6 @@ const AccessScreen = ({ onAccessGranted }) => {
 
   return (
     <>
-      {/* Полноэкранные анимации */}
       {showErrorOverlay && (
         <div className="error-overlay-fullscreen">
           ВНИМАНИЕ! ОШИБКА!
@@ -121,7 +117,6 @@ const AccessScreen = ({ onAccessGranted }) => {
           {generateHackCode()}
         </div>
       )}
-      {/* Окно входа */}
       <div className="crt-window">
         <div className="flex flex-col items-center justify-center h-full text-center">
           <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
@@ -165,24 +160,71 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognitionError, setRecognitionError] = useState('');
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
     glitch: false 
   });
 
-  // Фоновый звук для чата
+  // Фоновый звук из /public/music/
   const backgroundSound = new Audio('/music/fon.mp3');
   backgroundSound.loop = true;
-  backgroundSound.volume = 0.2; // Тихий звук (20% громкости)
+  backgroundSound.volume = 0.2;
 
   useEffect(() => {
-    backgroundSound.play().catch((e) => console.error('Ошибка воспроизведения фона:', e));
+    backgroundSound.play().catch((e) => console.error('Ошибка воспроизведения fon.mp3:', e));
     return () => {
       backgroundSound.pause();
-      backgroundSound.currentTime = 0; // Сбрасываем при выходе
+      backgroundSound.currentTime = 0;
     };
-  }, []); // Пустой массив — звук запускается при монтировании
+  }, []);
+
+  // Инициализация SpeechRecognition
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+
+  if (recognition) {
+    recognition.lang = 'ru-RU';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+  }
+
+  // Обработка голосового ввода
+  const handleVoiceInput = () => {
+    if (!recognition) {
+      setRecognitionError('Голосовой ввод не поддерживается в этом браузере.');
+      return;
+    }
+
+    if (isRecording) {
+      recognition.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    setIsRecording(true);
+    setRecognitionError('');
+    recognition.start();
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setIsRecording(false);
+      if (transcript.trim()) {
+        handleMessageSubmit(transcript);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      setIsRecording(false);
+      setRecognitionError(`Ошибка распознавания: ${event.error}`);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+  };
 
   // Отправка сообщения
   const sendMessage = async (message) => {
@@ -199,16 +241,15 @@ const ChatScreen = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || isDisconnected) return;
+  const handleMessageSubmit = async (message) => {
+    if (!message.trim() || isDisconnected) return;
 
-    const userMessage = { sender: 'user', text: input };
+    const userMessage = { sender: 'user', text: message };
     setMessages([...messages, userMessage]);
     setInput('');
     setIsTyping(true);
 
-    const response = await sendMessage(input);
+    const response = await sendMessage(message);
     setIsTyping(false);
 
     if (response.isLimitReached) {
@@ -217,6 +258,11 @@ const ChatScreen = () => {
     } else {
       setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
     }
+  };
+
+  const handleTextSubmit = (e) => {
+    e.preventDefault();
+    handleMessageSubmit(input);
   };
 
   return (
@@ -245,20 +291,31 @@ const ChatScreen = () => {
         {isTyping && !isDisconnected && (
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
+        {recognitionError && (
+          <p className="text-demon text-xl mt-2">{recognitionError}</p>
+        )}
       </div>
-      <form onSubmit={handleSubmit} className="chat-input-form flex">
+      <form onSubmit={handleTextSubmit} className="chat-input-form flex">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           className="flex-1 text-user text-xl p-2 border focus:outline-none"
           placeholder="Введи сообщение..."
-          disabled={isDisconnected}
+          disabled={isDisconnected || isRecording}
         />
+        <button
+          type="button"
+          onClick={handleVoiceInput}
+          className={`text-user text-xl border px-4 py-2 ${isRecording ? 'bg-red-600' : ''}`}
+          disabled={isDisconnected}
+        >
+          {isRecording ? 'Стоп' : 'Голос'}
+        </button>
         <button
           type="submit"
           className="text-user text-xl border px-4 py-2"
-          disabled={isDisconnected}
+          disabled={isDisconnected || isRecording}
         >
           Отправить
         </button>
