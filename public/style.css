@@ -1,6 +1,6 @@
 body {
   background: #000;
-  font-family: 'Courier New', monospace;
+  font-family: 'Special Elite', monospace;
   overflow: hidden;
   margin: 0;
   display: flex;
@@ -11,7 +11,6 @@ body {
   touch-action: manipulation;
 }
 
-/* Фоновые помехи */
 body::after {
   content: '';
   position: fixed;
@@ -31,12 +30,13 @@ body::after {
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
-/* Основное окно */
 .crt-window {
-  background: #000;
-  border: 2px solid rgba(0, 255, 0, 0.2);
+  background: #000 !important;
+  border: 2px solid #00ff0033;
   position: relative;
   width: 90%;
   max-width: 600px;
@@ -48,9 +48,10 @@ body::after {
   align-items: center;
   margin: 20px auto;
   z-index: 1001;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
-/* ЭЛТ-помехи */
 .crt-window::before {
   content: '';
   position: absolute;
@@ -69,7 +70,6 @@ body::after {
   pointer-events: none;
 }
 
-/* Полноэкранный чат */
 .chat-fullscreen {
   position: relative;
   width: 100%;
@@ -82,7 +82,6 @@ body::after {
   box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.2);
 }
 
-/* Помехи для окна и чата */
 .crt-window::after,
 .chat-fullscreen::after {
   content: '';
@@ -96,7 +95,6 @@ body::after {
   pointer-events: none;
 }
 
-/* Полноэкранные оверлеи */
 .error-overlay-fullscreen,
 .hack-overlay-fullscreen {
   position: fixed;
@@ -122,7 +120,6 @@ body::after {
   background: #000;
 }
 
-/* Эффект цифрового дождя */
 .matrix-rain {
   position: absolute;
   top: 0;
@@ -137,7 +134,6 @@ body::after {
   animation: matrix-rain 10s linear infinite;
 }
 
-/* Анимация кода */
 .hack-code {
   position: absolute;
   white-space: nowrap;
@@ -158,14 +154,12 @@ body::after {
   animation: glitch 0.5s infinite;
 }
 
-/* Кровавое стекание */
 @keyframes blood-drip {
   0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
   50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
   100% { transform: translateY(0); }
 }
 
-/* Текстовые глитчи */
 @keyframes text-glitch {
   0% { clip-path: inset(10% 0 90% 0); }
   25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
@@ -173,14 +167,12 @@ body::after {
   75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
 }
 
-/* Эффект демона */
 .demon-effect {
   animation: 
     text-glitch 0.8s steps(2) infinite,
     blood-drip 1.2s ease-in-out;
 }
 
-/* Анимации */
 @keyframes hack-scroll {
   0% { transform: translateY(100%); }
   100% { transform: translateY(-100%); }
@@ -232,7 +224,6 @@ body::after {
   100% { opacity: 1; }
 }
 
-/* Текстовые стили */
 .text-user {
   color: #00FF00;
 }
@@ -245,10 +236,9 @@ body::after {
   animation: blink 1s step-end infinite;
 }
 
-/* Поля ввода и кнопки */
 input,
 button {
-  font-family: 'Courier New', monospace;
+  font-family: 'Special Elite', monospace;
   background: #000;
   border: 2px solid #00FF00;
   color: #00FF00;
@@ -259,8 +249,8 @@ button {
 
 button {
   cursor: pointer;
-  width: 100px; /* Фиксированная ширина для кнопки Отправить */
-  height: 40px; /* Фиксированная высота */
+  width: 100px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -272,13 +262,11 @@ input:disabled {
   cursor: not-allowed;
 }
 
-/* Поле ввода */
 .input-field {
   flex: 1;
-  max-width: 70%; /* Уменьшено для предотвращения переполнения */
+  max-width: 70%;
 }
 
-/* Чат */
 .chat-container {
   max-height: 70vh;
   overflow-y: auto;
@@ -299,12 +287,11 @@ input:disabled {
   background: #000;
 }
 
-/* Кнопка микрофона */
 .mic-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100px; /* Такой же размер, как у кнопки Отправить */
+  width: 100px;
   height: 40px;
   border: 2px solid #00FF00;
   cursor: pointer;
@@ -326,7 +313,6 @@ input:disabled {
   cursor: not-allowed;
 }
 
-/* Анимация записи */
 .chat-input-form .absolute {
   white-space: nowrap;
   font-size: 0.75rem;
@@ -348,18 +334,15 @@ input:disabled {
   animation: pulse 1s infinite;
 }
 
-/* Аудиоплеер */
 audio {
   max-width: 200px;
   vertical-align: middle;
 }
 
-/* Декоративные элементы */
 .dash-line {
   letter-spacing: 0.1em;
 }
 
-/* Адаптивность для мобильных */
 @media (max-width: 600px) {
   .crt-window {
     width: 95%;
