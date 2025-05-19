@@ -34,6 +34,19 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
 
+  // Звук сирены
+  const sirenSound = new Audio('https://freesound.org/data/previews/316/316847_4939433-lq.mp3'); // Замени на свой MP3 или base64
+  sirenSound.loop = false; // Проигрываем один раз
+
+  useEffect(() => {
+    if (showErrorOverlay) {
+      sirenSound.play().catch((e) => console.error('Ошибка воспроизведения звука:', e));
+    } else {
+      sirenSound.pause();
+      sirenSound.currentTime = 0; // Сбрасываем на начало
+    }
+  }, [showErrorOverlay]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!key.trim()) {
@@ -158,8 +171,6 @@ const ChatScreen = () => {
     glitch: false 
   });
 
-  // Активация эффекvärr
-
   // Отправка сообщения
   const sendMessage = async (message) => {
     try {
@@ -211,7 +222,6 @@ const ChatScreen = () => {
                 (effects.blood || effects.glitch) ? 'demon-effect' : ''
               }`}
               style={{
-                color: effects.blood ? '#ff2222' : '#ff0000',
                 transform: effects.blood ? 'skew(-2deg)' : 'none'
               }}
             >
