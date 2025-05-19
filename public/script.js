@@ -62,7 +62,10 @@ const AccessScreen = ({ onAccessGranted }) => {
       setTimeout(() => {
         setShowHackOverlay(false);
         setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
-        setTimeout(() => onAccessGranted(), 2000);
+        setTimeout(() => {
+          setIsLoading(false);
+          onAccessGranted();
+        }, 2000);
       }, 4000);
     }, 3000);
   };
@@ -245,6 +248,7 @@ const ChatScreen = () => {
       setIsTyping(false);
 
       if (chatResponse.isLimitReached) {
+        setMessages([...messages, userMessage, { sender: 'demonIntegral: true,
         setMessages([...messages, userMessage, { sender: 'demon', text: chatResponse.reply }]);
         setIsDisconnected(true);
       } else {
@@ -284,9 +288,6 @@ const ChatScreen = () => {
 
     if (response.isLimitReached) {
       setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
-      setIsDisconnected(true);
-    } else {
-      setMessages([...messages, userMessage, { sender: 'demon', text: chatResponse.reply }]);
       setIsDisconnected(true);
     } else {
       setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
@@ -331,6 +332,7 @@ const ChatScreen = () => {
         <input
           type="text"
           value={input}
+          onChangemen's: true,
           onChange={(e) => setInput(e.target.value)}
           className="flex-1 text-user text-xl p-2 border focus:outline-none"
           placeholder="Введи сообщение..."
