@@ -34,16 +34,16 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
 
-  // Звук сирены
-  const sirenSound = new Audio('https://freesound.org/data/previews/316/316847_4939433-lq.mp3'); // Замени на свой MP3 или base64
-  sirenSound.loop = false; // Проигрываем один раз
+  // Звук сирены для оверлея ошибки
+  const errorSound = new Audio('/music/signal-pojarnoy-trevogi.mp3');
+  errorSound.loop = false;
 
   useEffect(() => {
     if (showErrorOverlay) {
-      sirenSound.play().catch((e) => console.error('Ошибка воспроизведения звука:', e));
+      errorSound.play().catch((e) => console.error('Ошибка воспроизведения звука:', e));
     } else {
-      sirenSound.pause();
-      sirenSound.currentTime = 0; // Сбрасываем на начало
+      errorSound.pause();
+      errorSound.currentTime = 0; // Сбрасываем на начало
     }
   }, [showErrorOverlay]);
 
@@ -170,6 +170,19 @@ const ChatScreen = () => {
     blood: false, 
     glitch: false 
   });
+
+  // Фоновый звук для чата
+  const backgroundSound = new Audio('/music/fon.mp3');
+  backgroundSound.loop = true;
+  backgroundSound.volume = 0.2; // Тихий звук (20% громкости)
+
+  useEffect(() => {
+    backgroundSound.play().catch((e) => console.error('Ошибка воспроизведения фона:', e));
+    return () => {
+      backgroundSound.pause();
+      backgroundSound.currentTime = 0; // Сбрасываем при выходе
+    };
+  }, []); // Пустой массив — звук запускается при монтировании
 
   // Отправка сообщения
   const sendMessage = async (message) => {
