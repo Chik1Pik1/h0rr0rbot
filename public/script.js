@@ -1,4 +1,4 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 // Generate or retrieve UUID for user
 const getUserId = () => {
@@ -203,43 +203,42 @@ const ChatScreen = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [recognitionError, setRecognitionError] = useState('');
-  const [hasInteracted, setHasInteracted] = useState(false); // Отслеживание взаимодействия
+  const [recordTime, setRecordTime] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
     glitch: false 
   });
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const timerRef = useRef(null);
 
   // Фоновый звук из /public/music/
   const backgroundSound = new Audio('/music/fon.mp3');
   backgroundSound.loop = true;
-  // Убрано ограничение громкости: backgroundSound.volume = 0.2;
 
-  // Обработчик взаимодействия пользователя
+  // Обработчик взаимодействия для фонового звука
   const handleInteraction = () => {
     setHasInteracted(true);
   };
 
   useEffect(() => {
-    // Добавляем слушатель для взаимодействия
     const events = ['click', 'touchstart', 'keydown'];
     events.forEach(event => {
       document.addEventListener(event, handleInteraction, { once: true });
     });
 
-    // Функция для остановки звука
     const stopSound = () => {
       console.log('Останавливаем backgroundSound');
       backgroundSound.pause();
       backgroundSound.currentTime = 0;
     };
 
-    // Проверка готовности звука перед воспроизведением
     const playSound = () => {
       return new Promise((resolve, reject) => {
         console.log('Проверяем готовность fon.mp3, readyState:', backgroundSound.readyState);
-        if (backgroundSound.readyState >= 2) { // HAVE_CURRENT_DATA или выше
+        if (backgroundSound.readyState >= 2) {
           resolve();
         } else {
           backgroundSound.oncanplay = () => {
@@ -247,12 +246,11 @@ const ChatScreen = () => {
             resolve();
           };
           backgroundSound.onerror = () => reject(new Error('Не удалось загрузить fon.mp3'));
-          backgroundSound.load(); // Принудительно загружаем
+          backgroundSound.load();
         }
       });
     };
 
-    // Запуск звука
     const tryPlaySound = () => {
       console.log('Попытка запустить backgroundSound, hasInteracted:', hasInteracted);
       playSound()
@@ -261,7 +259,6 @@ const ChatScreen = () => {
             .then(() => console.log('backgroundSound успешно воспроизводится'))
             .catch((e) => {
               console.error('Ошибка воспроизведения fon.mp3:', e);
-              // Повторная попытка после взаимодействия
               if (!hasInteracted) {
                 console.log('Ожидаем взаимодействия пользователя для воспроизведения');
               }
@@ -272,7 +269,6 @@ const ChatScreen = () => {
         });
     };
 
-    // Запускаем звук, если было взаимодействие, или ждём его
     if (hasInteracted) {
       tryPlaySound();
     } else {
@@ -287,7 +283,6 @@ const ChatScreen = () => {
       });
     }
 
-    // Очистка при размонтировании
     return () => {
       stopSound();
       events.forEach(event => {
@@ -296,52 +291,96 @@ const ChatScreen = () => {
     };
   }, [hasInteracted]);
 
-  // Инициализация SpeechRecognition
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+  // Форматирование времени (MM:SS)
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
 
-  if (recognition) {
+  // Начало записи
+  const startRecording = async () => {
+    if (isDisconnected) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        handleAudioSubmit(audioUrl);
+        // Очистка потока
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      setRecordTime(0);
+
+      // Запуск таймера
+      timerRef.current = setInterval(() => {
+        setRecordTime(prev => prev + 1);
+      }, 1000);
+
+      console.log('Начата запись аудио');
+    } catch (error) {
+      console.error('Ошибка доступа к микрофону:', error);
+      setIsRecording(false);
+    }
+  };
+
+  // Остановка записи
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(timerRef.current);
+      console.log('Запись остановлена');
+    }
+  };
+
+  // Отправка аудио и обработка демоном
+  const handleAudioSubmit = async (audioUrl) => {
+    if (isDisconnected) return;
+
+    const userMessage = { sender: 'user', audio: audioUrl };
+    setMessages([...messages, userMessage]);
+    setIsTyping(true);
+
+    // Имитация распознавания речи (Web Speech API)
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'ru-RU';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
-  }
 
-  // Обработка голосового ввода
-  const handleVoiceInput = () => {
-    if (!recognition) {
-      setRecognitionError('Голосовой ввод не поддерживается в этом браузере.');
-      return;
-    }
+    // Конвертация аудио в текст (здесь нужна серверная логика, используем заглушку)
+    const audioBlob = await fetch(audioUrl).then(res => res.blob());
+    // Для простоты предполагаем, что текст извлечён (заглушка)
+    const dummyText = 'Привет, это тестовое голосовое сообщение'; // Заменить на реальное распознавание
 
-    if (isRecording) {
-      recognition.stop();
-      setIsRecording(false);
-      return;
-    }
+    try {
+      const response = await sendMessage(dummyText);
+      setIsTyping(false);
 
-    setIsRecording(true);
-    setRecognitionError('');
-    recognition.start();
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setIsRecording(false);
-      if (transcript.trim()) {
-        handleMessageSubmit(transcript);
+      if (response.isLimitReached) {
+        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+        setIsDisconnected(true);
+      } else {
+        setMessages([...messages, userMessage, { sender: 'demon', text: `Я прослушал твое сообщение. Ты сказал: "${dummyText}". ${response.reply}` }]);
       }
-    };
-
-    recognition.onerror = (event) => {
-      setIsRecording(false);
-      setRecognitionError(`Ошибка распознавания: ${event.error}`);
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-    };
+    } catch (error) {
+      setIsTyping(false);
+      setMessages([...messages, userMessage, { sender: 'demon', text: 'Я всё ещё здесь... Попробуй снова.' }]);
+    }
   };
 
-  // Отправка сообщения
+  // Отправка текстового сообщения
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
@@ -356,28 +395,24 @@ const ChatScreen = () => {
     }
   };
 
-  const handleMessageSubmit = async (message) => {
-    if (!message.trim() || isDisconnected) return;
+  const handleTextSubmit = (e) => {
+    e.preventDefault();
+    if (!input.trim() || isDisconnected) return;
 
-    const userMessage = { sender: 'user', text: message };
+    const userMessage = { sender: 'user', text: input };
     setMessages([...messages, userMessage]);
     setInput('');
     setIsTyping(true);
 
-    const response = await sendMessage(message);
-    setIsTyping(false);
-
-    if (response.isLimitReached) {
-      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
-      setIsDisconnected(true);
-    } else {
-      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
-    }
-  };
-
-  const handleTextSubmit = (e) => {
-    e.preventDefault();
-    handleMessageSubmit(input);
+    sendMessage(input).then(response => {
+      setIsTyping(false);
+      if (response.isLimitReached) {
+        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+        setIsDisconnected(true);
+      } else {
+        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      }
+    });
   };
 
   return (
@@ -385,32 +420,37 @@ const ChatScreen = () => {
       <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
         {messages.map((msg, index) => {
           let text = msg.text;
-          if (effects.glitch) {
+          if (effects.glitch && msg.text) {
             text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
           
           return (
-            <p
-              key={index}
-              className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
-                (effects.blood || effects.glitch) ? 'demon-effect' : ''
-              }`}
-              style={{
-                transform: effects.blood ? 'skew(-2deg)' : 'none'
-              }}
-            >
-              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
-            </p>
+            <div key={index} className="mb-2">
+              {msg.audio ? (
+                <div className={`text-xl ${msg.sender === 'user' ? 'text-user' : 'text-demon'}`}>
+                  {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}
+                  <audio src={msg.audio} controls className="inline-block" />
+                </div>
+              ) : (
+                <p
+                  className={`text-xl ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
+                    (effects.blood || effects.glitch) ? 'demon-effect' : ''
+                  }`}
+                  style={{
+                    transform: effects.blood ? 'skew(-2deg)' : 'none'
+                  }}
+                >
+                  {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
+                </p>
+              )}
+            </div>
           );
         })}
         {isTyping && !isDisconnected && (
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
-        {recognitionError && (
-          <p className="text-demon text-xl mt-2">{recognitionError}</p>
-        )}
       </div>
-      <form onSubmit={handleTextSubmit} className="chat-input-form flex">
+      <form onSubmit={handleTextSubmit} className="chat-input-form flex items-center">
         <input
           type="text"
           value={input}
@@ -419,14 +459,35 @@ const ChatScreen = () => {
           placeholder="Введи сообщение..."
           disabled={isDisconnected || isRecording}
         />
-        <button
-          type="button"
-          onClick={handleVoiceInput}
-          className={`text-user text-xl border px-4 py-2 ${isRecording ? 'bg-red-600' : ''}`}
-          disabled={isDisconnected}
+        <div
+          className={`relative p-2 border ${isRecording ? 'bg-red-600 animate-pulse' : 'text-user'} ${isDisconnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          onMouseDown={startRecording}
+          onMouseUp={stopRecording}
+          onTouchStart={startRecording}
+          onTouchEnd={stopRecording}
         >
-          {isRecording ? 'Стоп' : 'Голос'}
-        </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+            />
+          </svg>
+          {isRecording && (
+            <div className="absolute -top-12 left-0 text-user text-sm font-mono flex items-center">
+              <span className="blink mr-2">REC</span>
+              <span>{formatTime(recordTime)}</span>
+              <span className="ml-2 animate-pulse">|█||█||█|</span>
+            </div>
+          )}
+        </div>
         <button
           type="submit"
           className="text-user text-xl border px-4 py-2"
