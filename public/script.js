@@ -37,24 +37,14 @@ const AccessScreen = ({ onAccessGranted }) => {
   // Воспроизведение звука ошибки
   useEffect(() => {
     let errorSound;
-    let timer;
-    
     if (showErrorOverlay) {
       errorSound = new Audio('/music/signal-pojarnoy-trevogi.mp3');
-      errorSound.play().catch(() => {});
-      timer = setTimeout(() => {
-        errorSound.pause();
-        errorSound.currentTime = 0;
-      }, 3000);
+      errorSound.play();
     }
-    
     return () => {
       if (errorSound) {
         errorSound.pause();
         errorSound.currentTime = 0;
-      }
-      if (timer) {
-        clearTimeout(timer);
       }
     };
   }, [showErrorOverlay]);
@@ -134,7 +124,9 @@ const AccessScreen = ({ onAccessGranted }) => {
       )}
       <div className="crt-window">
         <div className="flex flex-col items-center justify-center h-full text-center">
-          <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
+          <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ─
+
+───────────────</h1>
           <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
           <form onSubmit={handleSubmit} className="w-full max-w-sm">
@@ -170,7 +162,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState([
-    { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
+    { sender: 'demon', type: 'text', content: 'Ты кто? Я вижу тебя... через твое устройство.' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -227,7 +219,7 @@ const ChatScreen = () => {
       recorder.start();
     } catch (error) {
       console.error('Ошибка записи:', error);
-      setMessages([...messages, { sender: 'demon', text: 'Ошибка доступа к микрофону.' }]);
+      setMessages([...messages, { sender: 'demon', type: 'text', content: 'Ошибка доступа к микрофону.' }]);
     }
   };
 
@@ -242,6 +234,12 @@ const ChatScreen = () => {
   // Отправка голосового сообщения
   const sendVoiceMessage = async (blob) => {
     try {
+      const audioUrl = URL.createObjectURL(blob);
+      const userMessage = { sender: 'user', type: 'audio', content: audioUrl };
+      setMessages([...messages, userMessage]);
+      setIsTyping(true);
+
+      // Отправка на сервер для транскрипции
       const formData = new FormData();
       formData.append('audio', blob, 'voice.webm');
       formData.append('user_id', userId);
@@ -252,21 +250,17 @@ const ChatScreen = () => {
       });
       const data = await response.json();
 
-      const userMessage = { sender: 'user', text: data.transcription || 'Голосовое сообщение' };
-      setMessages([...messages, userMessage]);
-      setIsTyping(true);
-
-      const chatResponse = await sendMessage(data.transcription);
+      const chatResponse = await sendMessage(data.transcription || '');
       setIsTyping(false);
 
       if (chatResponse.isLimitReached) {
-        setMessages([...messages, userMessage, { sender: 'demon', text: chatResponse.reply }]);
+        setMessages([...messages, userMessage, { sender: 'demon', type: 'text', content: chatResponse.reply }]);
         setIsDisconnected(true);
       } else {
-        setMessages([...messages, userMessage, { sender: 'demon', text: chatResponse.reply }]);
+        setMessages([...messages, userMessage, { sender: 'demon', type: 'text', content: chatResponse.reply }]);
       }
     } catch (error) {
-      setMessages([...messages, { sender: 'demon', text: 'Ошибка обработки голосового сообщения.' }]);
+      setMessages([...messages, { sender: 'demon', type: 'text', content: 'Ошибка обработки голосового сообщения.' }]);
     }
   };
 
@@ -289,7 +283,7 @@ const ChatScreen = () => {
     e.preventDefault();
     if (!input.trim() || isDisconnected) return;
 
-    const userMessage = { sender: 'user', text: input };
+    const userMessage = { sender: 'user', type: 'text', content: input };
     setMessages([...messages, userMessage]);
     setInput('');
     setIsTyping(true);
@@ -298,10 +292,10 @@ const ChatScreen = () => {
     setIsTyping(false);
 
     if (response.isLimitReached) {
-      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      setMessages([...messages, userMessage, { sender: 'demon', type: 'text', content: response.reply }]);
       setIsDisconnected(true);
     } else {
-      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      setMessages([...messages, userMessage, { sender: 'demon', type: 'text', content: response.reply }]);
     }
   };
 
@@ -315,15 +309,15 @@ const ChatScreen = () => {
     <div className="flex flex-col h-full p-4 relative chat-fullscreen">
       <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
         {messages.map((msg, index) => {
-          let text = msg.text;
-          if (effects.glitch) {
-            text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
+          let content = msg.content;
+          if (msg.type === 'text' && effects.glitch) {
+            content = content.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
           
           return (
-            <p
+            <div
               key={index}
-              className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
+              className={`mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
                 (effects.blood || effects.glitch) ? 'demon-effect' : ''
               }`}
               style={{
@@ -331,8 +325,15 @@ const ChatScreen = () => {
                 transform: effects.blood ? 'skew(-2deg)' : 'none'
               }}
             >
-              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
-            </p>
+              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}
+              {msg.type === 'text' ? (
+                <span className="text-xl">{content}</span>
+              ) : (
+                <div className="audio-message">
+                  <audio controls src={content} />
+                </div>
+              )}
+            </div>
           );
         })}
         {isTyping && !isDisconnected && (
