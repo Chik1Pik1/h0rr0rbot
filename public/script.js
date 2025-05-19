@@ -36,15 +36,27 @@ const AccessScreen = ({ onAccessGranted }) => {
 
   // Воспроизведение звука ошибки
   useEffect(() => {
+    let errorSound;
+    let timer;
+    
     if (showErrorOverlay) {
-      const errorSound = new Audio('/music/signal-pojarnoy-trevogi.mp3');
-      errorSound.play();
-      const timer = setTimeout(() => {
+      errorSound = new Audio('/music/signal-pojarnoy-trevogi.mp3');
+      errorSound.play().catch(() => {});
+      timer = setTimeout(() => {
         errorSound.pause();
         errorSound.currentTime = 0;
       }, 3000);
-      return () => clearTimeout(timer);
     }
+    
+    return () => {
+      if (errorSound) {
+        errorSound.pause();
+        errorSound.currentTime = 0;
+      }
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
   }, [showErrorOverlay]);
 
   const handleSubmit = (e) => {
