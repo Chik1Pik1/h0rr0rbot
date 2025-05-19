@@ -124,9 +124,7 @@ const AccessScreen = ({ onAccessGranted }) => {
       )}
       <div className="crt-window">
         <div className="flex flex-col items-center justify-center h-full text-center">
-          <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ─
-
-───────────────</h1>
+          <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
           <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
           <form onSubmit={handleSubmit} className="w-full max-w-sm">
@@ -170,6 +168,7 @@ const ChatScreen = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [audioStream, setAudioStream] = useState(null);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
@@ -188,6 +187,15 @@ const ChatScreen = () => {
     };
   }, []);
 
+  // Очистка аудиопотока при размонтировании
+  useEffect(() => {
+    return () => {
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [audioStream]);
+
   // Таймер записи
   useEffect(() => {
     let timer;
@@ -202,14 +210,18 @@ const ChatScreen = () => {
   // Начать запись
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      let stream = audioStream;
+      if (!stream) {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setAudioStream(stream);
+      }
+
       const recorder = new MediaRecorder(stream);
       const chunks = [];
 
       recorder.ondataavailable = (e) => chunks.push(e.data);
       recorder.onstop = async () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
-        stream.getTracks().forEach(track => track.stop());
         await sendVoiceMessage(blob);
       };
 
@@ -219,7 +231,7 @@ const ChatScreen = () => {
       recorder.start();
     } catch (error) {
       console.error('Ошибка записи:', error);
-      setMessages([...messages, { sender: 'demon', type: 'text', content: 'Ошибка доступа к микрофону.' }]);
+      setMessages([...messages, { sender: 'demon', type: 'text', content: 'Ошибка доступа к микрофону. Проверь разрешение.' }]);
     }
   };
 
@@ -248,7 +260,14 @@ const ChatScreen = () => {
         method: 'POST',
         body: formData
       });
+
+      if (!response.ok) {
+        console.error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+        throw new Error(`Сервер ответил: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('Ответ сервера /api/voice:', data);
 
       const chatResponse = await sendMessage(data.transcription || '');
       setIsTyping(false);
@@ -260,7 +279,9 @@ const ChatScreen = () => {
         setMessages([...messages, userMessage, { sender: 'demon', type: 'text', content: chatResponse.reply }]);
       }
     } catch (error) {
-      setMessages([...messages, { sender: 'demon', type: 'text', content: 'Ошибка обработки голосового сообщения.' }]);
+      console.error('Ошибка отправки голосового сообщения:', error.message);
+      setMessages([...messages, { sender: 'demon', type: 'text', content: 'Я не понял твоего голоса... Тень в углу шевельнулась.' }]);
+      setIsTyping(false);
     }
   };
 
@@ -272,9 +293,13 @@ const ChatScreen = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, user_id: userId })
       });
+      if (!response.ok) {
+        throw new Error(`Сервер /api/chat ответил: ${response.status}`);
+      }
       const data = await response.json();
       return data;
     } catch (error) {
+      console.error('Ошибка отправки текста:', error.message);
       return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false, isTimeLimitReached: false };
     }
   };
