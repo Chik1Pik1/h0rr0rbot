@@ -359,9 +359,8 @@ const ChatScreen = () => {
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    // Конвертация аудио в текст (здесь нужна серверная логика, используем заглушку)
+    // Конвертация аудио в текст (заглушка)
     const audioBlob = await fetch(audioUrl).then(res => res.blob());
-    // Для простоты предполагаем, что текст извлечён (заглушка)
     const dummyText = 'Привет, это тестовое голосовое сообщение'; // Заменить на реальное распознавание
 
     try {
@@ -450,7 +449,7 @@ const ChatScreen = () => {
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-      <form onSubmit={handleTextSubmit} className="chat-input-form flex items-center">
+      <form onSubmit={handleTextSubmit} className="chat-input-form flex items-center space-x-2">
         <input
           type="text"
           value={input}
@@ -459,8 +458,15 @@ const ChatScreen = () => {
           placeholder="Введи сообщение..."
           disabled={isDisconnected || isRecording}
         />
+        <button
+          type="submit"
+          className="text-user text-xl border px-4 py-2"
+          disabled={isDisconnected || isRecording}
+        >
+          Отправить
+        </button>
         <div
-          className={`relative p-2 border ${isRecording ? 'bg-red-600 animate-pulse' : 'text-user'} ${isDisconnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          className={`relative p-1 border ${isRecording ? 'bg-red-600 animate-pulse' : 'text-user'} ${isDisconnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
           onMouseDown={startRecording}
           onMouseUp={stopRecording}
           onTouchStart={startRecording}
@@ -468,7 +474,7 @@ const ChatScreen = () => {
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className="h-5 w-5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -481,20 +487,13 @@ const ChatScreen = () => {
             />
           </svg>
           {isRecording && (
-            <div className="absolute -top-12 left-0 text-user text-sm font-mono flex items-center">
-              <span className="blink mr-2">REC</span>
+            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-user text-xs font-mono flex items-center">
+              <span className="blink mr-1">REC</span>
               <span>{formatTime(recordTime)}</span>
-              <span className="ml-2 animate-pulse">|█||█||█|</span>
+              <span className="ml-1 animate-pulse">|█|</span>
             </div>
           )}
         </div>
-        <button
-          type="submit"
-          className="text-user text-xl border px-4 py-2"
-          disabled={isDisconnected || isRecording}
-        >
-          Отправить
-        </button>
       </form>
     </div>
   );
