@@ -214,7 +214,7 @@ const ChatScreen = () => {
   // Фоновый звук из /public/music/
   const backgroundSound = new Audio('/music/fon.mp3');
   backgroundSound.loop = true;
-  backgroundSound.volume = 0.2;
+  // Убрано ограничение громкости: backgroundSound.volume = 0.2;
 
   // Обработчик взаимодействия пользователя
   const handleInteraction = () => {
