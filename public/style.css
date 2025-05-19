@@ -6,7 +6,429 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 100vh;body {
+  background: #000;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
+  background: radial-gradient(rgba(0, 255, 0, 0.1), black 70%);
+  touch-action: manipulation;
+}
+
+/* Фоновые помехи */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==');
+  animation: crt-static 0.2s infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.root-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Основное окно */
+.crt-window {
+  background: #000;
+  border: 2px solid rgba(0, 255, 0, 0.2);
+  position: relative;
+  width: 90%;
+  max-width: 600px;
+  min-height: 60vh;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px auto;
+  z-index: 1001;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ЭЛТ-помехи */
+.crt-window::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 0, 0.05) 0px,
+    rgba(0, 255, 0, 0.05) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  animation: scanline 6s linear infinite;
+  pointer-events: none;
+}
+
+/* Полноэкранный чат */
+.chat-fullscreen {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: #000;
+  padding: 20px;
+  animation: flicker 0.1s infinite;
+  overflow: hidden;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.2);
+}
+
+/* Помехи для окна и чата */
+.crt-window::after,
+.chat-fullscreen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==') repeat;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+/* Полноэкранные оверлеи */
+.error-overlay-fullscreen,
+.hack-overlay-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1002;
+  display: none;
+}
+
+.error-overlay-fullscreen.active,
+.hack-overlay-fullscreen.active {
+  display: flex;
+}
+
+.error-overlay-fullscreen {
+  background: rgba(0, 0, 0, 0.95);
+  justify-content: center;
+  align-items: center;
+  color: #FF0000;
+  font-size: 3rem;
+  text-align: center;
+  animation: error-blink 0.5s infinite;
+}
+
+.hack-overlay-fullscreen {
+  background: #000;
+}
+
+/* Эффект цифрового дождя */
+.matrix-rain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 255, 0, 0.2) 0%,
+    rgba(0, 255, 0, 0.05) 100%
+  );
+  animation: matrix-rain 10s linear infinite;
+}
+
+/* Анимация кода */
+.hack-code {
+  position: absolute;
+  white-space: nowrap;
+  animation: hack-scroll linear infinite;
+  color: #00FF00;
+  font-size: 0.8rem;
+}
+
+.hack-code::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==') repeat;
+  opacity: 0.2;
+  animation: glitch 0.5s infinite;
+}
+
+/* Кровавое стекание */
+@keyframes blood-drip {
+  0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
+  50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
+  100% { transform: translateY(0); }
+}
+
+/* Текстовые глитчи */
+@keyframes text-glitch {
+  0% { clip-path: inset(10% 0 90% 0); }
+  25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
+  50% { clip-path: inset(5% 0 80% 0); }
+  75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
+}
+
+/* Эффект демона */
+.demon-effect {
+  animation: 
+    text-glitch 0.8s steps(2) infinite,
+    blood-drip 1.2s ease-in-out;
+}
+
+/* Анимации */
+@keyframes hack-scroll {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(-100%); }
+}
+
+@keyframes glitch {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-5px, 5px); }
+  40% { transform: translate(5px, -5px); }
+  60% { transform: translate(-5px, -5px); }
+  80% { transform: translate(5px, 5px); }
+}
+
+@keyframes scanline {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 1000px; }
+}
+
+@keyframes flicker {
+  0% { opacity: 1; }
+  50% { opacity: 0.98; }
+  100% { opacity: 1; }
+}
+
+@keyframes error-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+@keyframes matrix-rain {
+  0% { transform: translateY(100vh); }
+  100% { transform: translateY(-100vh); }
+}
+
+@keyframes crt-static {
+  0% { background-position: 0 0; }
+  100% { background-position: 100px 100px; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Текстовые стили */
+.text-user {
+  color: #00FF00;
+}
+
+.text-demon {
+  color: #FF0000;
+}
+
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Поля ввода и кнопки */
+input,
+button {
+  font-family: 'Courier New', monospace;
+  background: #000;
+  border: 2px solid #00FF00;
+  color: #00FF00;
+  padding: 8px;
+  font-size: 1.25rem;
+  box-sizing: border-box;
+}
+
+button {
+  cursor: pointer;
+  width: 100px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button:disabled,
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Поле ввода */
+.input-field {
+  flex: 1;
+  max-width: 70%;
+}
+
+/* Чат */
+.chat-container {
+  max-height: 70vh;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  padding-right: 10px;
+  flex-grow: 1;
+}
+
+.chat-input-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background: #000;
+}
+
+/* Кнопка микрофона */
+.mic-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 40px;
+  border: 2px solid #00FF00;
+  cursor: pointer;
+}
+
+.mic-button svg {
+  width: 20px;
+  height: 20px;
+  stroke: #00FF00;
+}
+
+.mic-button.bg-red-600 {
+  background: #FF0000;
+  animation: pulse 1s infinite;
+}
+
+.mic-button.opacity-50 {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Анимация записи */
+.chat-input-form .absolute {
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: #00FF00;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+}
+
+.chat-input-form .blink {
+  margin-right: 4px;
+  animation: blink 0.5s infinite;
+}
+
+.chat-input-form .animate-pulse {
+  margin-left: 4px;
+  animation: pulse 1s infinite;
+}
+
+/* Аудиоплеер */
+audio {
+  max-width: 200px;
+  vertical-align: middle;
+}
+
+/* Декоративные элементы */
+.dash-line {
+  letter-spacing: 0.1em;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 600px) {
+  .crt-window {
+    width: 95%;
+    min-height: 50vh;
+    margin: 10px auto;
+    padding: 10px;
+  }
+
+  .chat-fullscreen {
+    padding: 10px;
+  }
+
+  input,
+  button {
+    font-size: 1rem;
+    padding: 6px;
+  }
+
+  button,
+  .mic-button {
+    width: 80px;
+    height: 36px;
+  }
+
+  .input-field {
+    max-width: 60%;
+  }
+
+  .chat-container {
+    max-height: 75vh;
+  }
+
+  h1,
+  p,
+  input,
+  button {
+    font-size: 1rem;
+  }
+
+  .error-overlay-fullscreen {
+    font-size: 1.5rem;
+  }
+
+  .chat-input-form {
+    padding: 8px;
+  }
+
+  .chat-input-form .absolute {
+    font-size: 0.625rem;
+    top: -28px;
+  }
+}
   background: radial-gradient(rgba(0, 255, 0, 0.1), black 70%);
   touch-action: manipulation;
 }
