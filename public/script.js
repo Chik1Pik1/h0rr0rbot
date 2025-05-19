@@ -39,21 +39,53 @@ const AccessScreen = ({ onAccessGranted }) => {
   errorSound.loop = false;
 
   useEffect(() => {
-    let timeoutId;
-    if (showErrorOverlay) {
-      errorSound.play().catch((e) => console.error('Ошибка воспроизведения signal-pojarnoy-trevogi.mp3:', e));
-      // Остановить звук через 3 секунды, синхронизированно с оверлеем
-      timeoutId = setTimeout(() => {
-        errorSound.pause();
-        errorSound.currentTime = 0;
-      }, 3000);
-    } else {
+    let timeoutId = null;
+
+    // Функция для остановки звука
+    const stopSound = () => {
+      console.log('Останавливаем errorSound');
       errorSound.pause();
       errorSound.currentTime = 0;
+    };
+
+    // Проверка готовности звука перед воспроизведением
+    const playSound = () => {
+      return new Promise((resolve, reject) => {
+        if (errorSound.readyState >= 2) { // HAVE_CURRENT_DATA или выше
+          resolve();
+        } else {
+          errorSound.oncanplay = () => resolve();
+          errorSound.onerror = () => reject(new Error('Не удалось загрузить signal-pojarnoy-trevogi.mp3'));
+        }
+      });
+    };
+
+    if (showErrorOverlay) {
+      console.log('Запускаем errorSound');
+      // Останавливаем звук перед новым воспроизведением
+      stopSound();
+      playSound()
+        .then(() => {
+          errorSound.play().catch((e) => {
+            console.error('Ошибка воспроизведения signal-pojarnoy-trevogi.mp3:', e);
+          });
+          // Остановить через 3 секунды
+          timeoutId = setTimeout(stopSound, 3000);
+        })
+        .catch((e) => {
+          console.error('Ошибка загрузки звука:', e);
+        });
+    } else {
+      stopSound();
     }
-    // Очистка таймера при размонтировании или изменении showErrorOverlay
+
+    // Очистка таймера
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutId) {
+        console.log('Очистка таймера');
+        clearTimeout(timeoutId);
+      }
+      stopSound(); // Дополнительная остановка при размонтировании
     };
   }, [showErrorOverlay]);
 
@@ -102,7 +134,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           className="hack-code"
           style={{
             top: `${top}%`,
-            left: `${top}%`,
+            left: `${left}%`,
             animationDuration: `${duration}s`,
             animationDelay: `${delay}s`
           }}
