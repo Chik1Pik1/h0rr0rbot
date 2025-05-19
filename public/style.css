@@ -259,12 +259,23 @@ button {
 
 button {
   cursor: pointer;
+  width: 100px; /* Фиксированная ширина для кнопки Отправить */
+  height: 40px; /* Фиксированная высота */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 button:disabled,
 input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Поле ввода */
+.input-field {
+  flex: 1;
+  max-width: 70%; /* Уменьшено для предотвращения переполнения */
 }
 
 /* Чат */
@@ -289,28 +300,28 @@ input:disabled {
 }
 
 /* Кнопка микрофона */
-.chat-input-form > div {
+.mic-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 100px; /* Такой же размер, как у кнопки Отправить */
+  height: 40px;
   border: 2px solid #00FF00;
   cursor: pointer;
 }
 
-.chat-input-form > div svg {
+.mic-button svg {
   width: 20px;
   height: 20px;
   stroke: #00FF00;
 }
 
-.chat-input-form > div.bg-red-600 {
+.mic-button.bg-red-600 {
   background: #FF0000;
   animation: pulse 1s infinite;
 }
 
-.chat-input-form > div.opacity-50 {
+.mic-button.opacity-50 {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -318,9 +329,9 @@ input:disabled {
 /* Анимация записи */
 .chat-input-form .absolute {
   white-space: nowrap;
-  font-size: 0.75rem; /* text-xs */
+  font-size: 0.75rem;
   color: #00FF00;
-  top: -32px; /* Сдвинуто выше для компактности */
+  top: -32px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -367,6 +378,16 @@ audio {
     padding: 6px;
   }
 
+  button,
+  .mic-button {
+    width: 80px;
+    height: 36px;
+  }
+
+  .input-field {
+    max-width: 60%;
+  }
+
   .chat-container {
     max-height: 75vh;
   }
@@ -386,18 +407,8 @@ audio {
     padding: 8px;
   }
 
-  .chat-input-form > div {
-    width: 24px;
-    height: 24px;
-  }
-
-  .chat-input-form > div svg {
-    width: 16px;
-    height: 16px;
-  }
-
   .chat-input-form .absolute {
-    font-size: 0.625rem; /* Меньше для мобильных */
+    font-size: 0.625rem;
     top: -28px;
   }
 }
