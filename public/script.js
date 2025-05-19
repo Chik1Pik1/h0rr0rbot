@@ -248,7 +248,6 @@ const ChatScreen = () => {
       setIsTyping(false);
 
       if (chatResponse.isLimitReached) {
-        setMessages([...messages, userMessage, { sender: 'demonIntegral: true,
         setMessages([...messages, userMessage, { sender: 'demon', text: chatResponse.reply }]);
         setIsDisconnected(true);
       } else {
@@ -332,7 +331,6 @@ const ChatScreen = () => {
         <input
           type="text"
           value={input}
-          onChangemen's: true,
           onChange={(e) => setInput(e.target.value)}
           className="flex-1 text-user text-xl p-2 border focus:outline-none"
           placeholder="Введи сообщение..."
