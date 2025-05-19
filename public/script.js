@@ -14,7 +14,12 @@ const getUserId = () => {
 };
 
 const App = () => {
-  const [isAccessGranted, setIsAccessGranted] = useState(false);
+  const [isAccessGranted, setIsAccessGranted] = useState(() => {
+    // Проверяем localStorage, но не сохраняем автоматически
+    const saved = localStorage.getItem('isAccessGranted');
+    console.log('Initial isAccessGranted:', saved ? JSON.parse(saved) : false);
+    return saved ? JSON.parse(saved) : false;
+  });
 
   return (
     <div className="root-container">
@@ -34,24 +39,26 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
 
-  // Звук сирены для оверлея ошибки из /public/music/
+  // Звук сирены
   const errorSound = new Audio('/music/signal-pojarnoy-trevogi.mp3');
   errorSound.loop = false;
 
   useEffect(() => {
     let timeoutId = null;
 
-    // Функция для остановки звука
     const stopSound = () => {
       console.log('Останавливаем errorSound');
-      errorSound.pause();
-      errorSound.currentTime = 0;
+      try {
+        errorSound.pause();
+        errorSound.currentTime = 0;
+      } catch (e) {
+        console.error('Ошибка остановки звука:', e);
+      }
     };
 
-    // Проверка готовности звука перед воспроизведением
     const playSound = () => {
       return new Promise((resolve, reject) => {
-        if (errorSound.readyState >= 2) { // HAVE_CURRENT_DATA или выше
+        if (errorSound.readyState >= 2) {
           resolve();
         } else {
           errorSound.oncanplay = () => resolve();
@@ -62,14 +69,12 @@ const AccessScreen = ({ onAccessGranted }) => {
 
     if (showErrorOverlay) {
       console.log('Запускаем errorSound');
-      // Останавливаем звук перед новым воспроизведением
       stopSound();
       playSound()
         .then(() => {
           errorSound.play().catch((e) => {
             console.error('Ошибка воспроизведения signal-pojarnoy-trevogi.mp3:', e);
           });
-          // Остановить через 3 секунды
           timeoutId = setTimeout(stopSound, 3000);
         })
         .catch((e) => {
@@ -79,13 +84,11 @@ const AccessScreen = ({ onAccessGranted }) => {
       stopSound();
     }
 
-    // Очистка таймера
     return () => {
       if (timeoutId) {
-        console.log('Очистка таймера');
         clearTimeout(timeoutId);
       }
-      stopSound(); // Дополнительная остановка при размонтировании
+      stopSound();
     };
   }, [showErrorOverlay]);
 
@@ -104,7 +107,11 @@ const AccessScreen = ({ onAccessGranted }) => {
       setTimeout(() => {
         setShowHackOverlay(false);
         setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
-        setTimeout(() => onAccessGranted(), 2000);
+        setTimeout(() => {
+          console.log('Вызываем onAccessGranted');
+          localStorage.setItem('isAccessGranted', 'true'); // Сохраняем только при успехе
+          onAccessGranted();
+        }, 2000);
       }, 4000);
     }, 3000);
   };
@@ -214,11 +221,11 @@ const ChatScreen = () => {
   const audioChunksRef = useRef([]);
   const timerRef = useRef(null);
 
-  // Фоновый звук из /public/music/
+  // Фоновый звук
   const backgroundSound = new Audio('/music/fon.mp3');
   backgroundSound.loop = true;
 
-  // Обработчик взаимодействия для фонового звука
+  // Обработчик взаимодействия для звука
   const handleInteraction = () => {
     setHasInteracted(true);
   };
@@ -231,37 +238,32 @@ const ChatScreen = () => {
 
     const stopSound = () => {
       console.log('Останавливаем backgroundSound');
-      backgroundSound.pause();
-      backgroundSound.currentTime = 0;
+      try {
+        backgroundSound.pause();
+        backgroundSound.currentTime = 0;
+      } catch (e) {
+        console.error('Ошибка остановки звука:', e);
+      }
     };
 
     const playSound = () => {
       return new Promise((resolve, reject) => {
-        console.log('Проверяем готовность fon.mp3, readyState:', backgroundSound.readyState);
         if (backgroundSound.readyState >= 2) {
           resolve();
         } else {
-          backgroundSound.oncanplay = () => {
-            console.log('fon.mp3 готов к воспроизведению');
-            resolve();
-          };
+          backgroundSound.oncanplay = () => resolve();
           backgroundSound.onerror = () => reject(new Error('Не удалось загрузить fon.mp3'));
-          backgroundSound.load();
         }
       });
     };
 
     const tryPlaySound = () => {
-      console.log('Попытка запустить backgroundSound, hasInteracted:', hasInteracted);
       playSound()
         .then(() => {
           backgroundSound.play()
             .then(() => console.log('backgroundSound успешно воспроизводится'))
             .catch((e) => {
               console.error('Ошибка воспроизведения fon.mp3:', e);
-              if (!hasInteracted) {
-                console.log('Ожидаем взаимодействия пользователя для воспроизведения');
-              }
             });
         })
         .catch((e) => {
@@ -291,25 +293,24 @@ const ChatScreen = () => {
     };
   }, [hasInteracted]);
 
-  // Форматирование времени (MM:SS)
+  // Форматирование времени
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
     const secs = (seconds % 60).toString().padStart(2, '0');
     return `${mins}:${secs}`;
   };
 
-  // Обработчик кнопки микрофона
+  // Обработчик микрофона
   const handleMicClick = async () => {
     if (isDisconnected) return;
 
     if (isRecording) {
-      // Остановить запись без отправки
       stopRecording(false);
     } else {
-      // Начать запись
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorderRef.current = new MediaRecorder(stream);
+        audioChunksRef = useRef([]);
         audioChunksRef.current = [];
 
         mediaRecorderRef.current.ondataavailable = (event) => {
@@ -322,7 +323,6 @@ const ChatScreen = () => {
             const audioUrl = URL.createObjectURL(audioBlob);
             handleAudioSubmit(audioUrl);
           }
-          // Очистка потока
           stream.getTracks().forEach(track => track.stop());
         };
 
@@ -330,7 +330,6 @@ const ChatScreen = () => {
         setIsRecording(true);
         setRecordTime(0);
 
-        // Запуск таймера
         timerRef.current = setInterval(() => {
           setRecordTime(prev => prev + 1);
         }, 1000);
@@ -353,7 +352,7 @@ const ChatScreen = () => {
     }
   };
 
-  // Отправка аудио и обработка демоном
+  // Отправка аудио
   const handleAudioSubmit = async (audioUrl) => {
     if (isDisconnected) return;
 
@@ -361,9 +360,9 @@ const ChatScreen = () => {
     setMessages([...messages, userMessage]);
     setIsTyping(true);
 
-    // Имитация распознавания речи (заглушка)
+    // Имитация распознавания речи
     const audioBlob = await fetch(audioUrl).then(res => res.blob());
-    const dummyText = 'Привет, это тестовое голосовое сообщение'; // Заменить на реальное распознавание
+    const dummyText = 'Привет, это тестовое голосовое сообщение';
 
     try {
       const response = await sendMessage(dummyText);
@@ -385,7 +384,7 @@ const ChatScreen = () => {
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
-        method='POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, user_id: userId })
       });
@@ -499,4 +498,3 @@ const ChatScreen = () => {
 };
 
 ReactDOM.render(<App />, document.getElementById('root'));
-              
