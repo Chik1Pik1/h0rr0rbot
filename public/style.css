@@ -11,7 +11,7 @@ body {
   touch-action: manipulation;
 }
 
-/* Фоновые помехи (из нового запроса) */
+/* Фоновые помехи */
 body::after {
   content: '';
   position: fixed;
@@ -33,7 +33,7 @@ body::after {
   align-items: center;
 }
 
-/* Основное окно (из нового запроса) */
+/* Основное окно */
 .crt-window {
   background: #000 !important;
   border: 2px solid #00ff0033;
@@ -47,10 +47,10 @@ body::after {
   justify-content: center;
   align-items: center;
   margin: 20px auto;
-  z-index: 1001; /* Сохранено для совместимости */
+  z-index: 1001;
 }
 
-/* ЭЛТ-помехи (из нового запроса) */
+/* ЭЛТ-помехи */
 .crt-window::before {
   content: '';
   position: absolute;
@@ -160,14 +160,14 @@ body::after {
   animation: glitch 0.5s infinite;
 }
 
-/* Кровавое стекание (из нового запроса) */
+/* Кровавое стекание */
 @keyframes blood-drip {
   0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
   50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
   100% { transform: translateY(0); }
 }
 
-/* Текстовые глитчи (из нового запроса) */
+/* Текстовые глитчи */
 @keyframes text-glitch {
   0% { clip-path: inset(10% 0 90% 0); }
   25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
@@ -175,7 +175,7 @@ body::after {
   75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
 }
 
-/* Эффект демона (из нового запроса) */
+/* Эффект демона */
 .demon-effect {
   animation: 
     text-glitch 0.8s steps(2) infinite,
@@ -217,7 +217,7 @@ body::after {
   100% { transform: translateY(-100vh); }
 }
 
-/* Фоновые помехи (из нового запроса) */
+/* Фоновые помехи */
 @keyframes crt-static {
   0% { background-position: 0 0; }
   100% { background-position: 100px 100px; }
@@ -251,6 +251,9 @@ input, button {
 
 button {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 button:disabled {
@@ -267,12 +270,38 @@ button:disabled {
 }
 
 .chat-input-form {
+  display: flex;
+  align-items: center;
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   padding: 10px;
   background: #000;
+  gap: 10px;
+}
+
+.chat-input-form button {
+  flex-shrink: 0;
+}
+
+/* Стили для SVG-иконок */
+.mic-button svg, .stop-button svg {
+  width: 24px;
+  height: 24px;
+  fill: #00FF00;
+  filter: drop-shadow(0 0 2px #00FF00);
+  animation: flicker 0.1s infinite;
+}
+
+.stop-button svg {
+  animation: record-blink 0.5s infinite;
+}
+
+@keyframes record-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
 }
 
 .dash-line {
@@ -306,5 +335,10 @@ button:disabled {
 
   .error-overlay-fullscreen {
     font-size: 1.5rem;
+  }
+
+  .mic-button svg, .stop-button svg {
+    width: 20px;
+    height: 20px;
   }
 }
