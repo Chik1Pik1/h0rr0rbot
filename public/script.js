@@ -14,18 +14,7 @@ const getUserId = () => {
 };
 
 const App = () => {
-  const [isAccessGranted, setIsAccessGranted] = useState(() => {
-    // Проверяем localStorage, чтобы избежать сохранения состояния
-    const saved = localStorage.getItem('isAccessGranted');
-    console.log('Initial isAccessGranted:', saved ? JSON.parse(saved) : false);
-    return saved ? JSON.parse(saved) : false;
-  });
-
-  useEffect(() => {
-    // Сохраняем состояние в localStorage (для отладки, можно убрать)
-    localStorage.setItem('isAccessGranted', JSON.stringify(isAccessGranted));
-    console.log('isAccessGranted updated:', isAccessGranted);
-  }, [isAccessGranted]);
+  const [isAccessGranted, setIsAccessGranted] = useState(false);
 
   return (
     <div className="root-container">
@@ -52,19 +41,17 @@ const AccessScreen = ({ onAccessGranted }) => {
   useEffect(() => {
     let timeoutId = null;
 
+    // Функция для остановки звука
     const stopSound = () => {
       console.log('Останавливаем errorSound');
-      try {
-        errorSound.pause();
-        errorSound.currentTime = 0;
-      } catch (e) {
-        console.error('Ошибка остановки звука:', e);
-      }
+      errorSound.pause();
+      errorSound.currentTime = 0;
     };
 
+    // Проверка готовности звука перед воспроизведением
     const playSound = () => {
       return new Promise((resolve, reject) => {
-        if (errorSound.readyState >= 2) {
+        if (errorSound.readyState >= 2) { // HAVE_CURRENT_DATA или выше
           resolve();
         } else {
           errorSound.oncanplay = () => resolve();
@@ -75,12 +62,14 @@ const AccessScreen = ({ onAccessGranted }) => {
 
     if (showErrorOverlay) {
       console.log('Запускаем errorSound');
+      // Останавливаем звук перед новым воспроизведением
       stopSound();
       playSound()
         .then(() => {
           errorSound.play().catch((e) => {
             console.error('Ошибка воспроизведения signal-pojarnoy-trevogi.mp3:', e);
           });
+          // Остановить через 3 секунды
           timeoutId = setTimeout(stopSound, 3000);
         })
         .catch((e) => {
@@ -90,12 +79,13 @@ const AccessScreen = ({ onAccessGranted }) => {
       stopSound();
     }
 
+    // Очистка таймера
     return () => {
       if (timeoutId) {
         console.log('Очистка таймера');
         clearTimeout(timeoutId);
       }
-      stopSound();
+      stopSound(); // Дополнительная остановка при размонтировании
     };
   }, [showErrorOverlay]);
 
@@ -114,10 +104,7 @@ const AccessScreen = ({ onAccessGranted }) => {
       setTimeout(() => {
         setShowHackOverlay(false);
         setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
-        setTimeout(() => {
-          console.log('Вызываем onAccessGranted');
-          onAccessGranted();
-        }, 2000);
+        setTimeout(() => onAccessGranted(), 2000);
       }, 4000);
     }, 3000);
   };
@@ -244,12 +231,8 @@ const ChatScreen = () => {
 
     const stopSound = () => {
       console.log('Останавливаем backgroundSound');
-      try {
-        backgroundSound.pause();
-        backgroundSound.currentTime = 0;
-      } catch (e) {
-        console.error('Ошибка остановки звука:', e);
-      }
+      backgroundSound.pause();
+      backgroundSound.currentTime = 0;
     };
 
     const playSound = () => {
@@ -263,6 +246,7 @@ const ChatScreen = () => {
             resolve();
           };
           backgroundSound.onerror = () => reject(new Error('Не удалось загрузить fon.mp3'));
+          backgroundSound.load();
         }
       });
     };
@@ -401,7 +385,7 @@ const ChatScreen = () => {
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
-        method: 'POST',
+        method='POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, user_id: userId })
       });
@@ -515,3 +499,4 @@ const ChatScreen = () => {
 };
 
 ReactDOM.render(<App />, document.getElementById('root'));
+              
