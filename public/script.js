@@ -1,6 +1,6 @@
 const { useState, useEffect, useRef } = React;
 
-// Generate or retrieve UUID for user
+// Генерация или получение UUID для пользователя
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -216,6 +216,15 @@ const ChatScreen = () => {
   const timerRef = useRef(null);
   const recognitionRef = useRef(null);
 
+  // Предварительный запрос разрешения микрофона
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        stream.getTracks().forEach(track => track.stop());
+      })
+      .catch(console.error);
+  }, []);
+
   // Фоновый звук из /public/music/
   const backgroundSound = new Audio('/music/fon.mp3');
   backgroundSound.loop = true;
@@ -315,14 +324,14 @@ const ChatScreen = () => {
     if (isDisconnected || isRecording) return;
 
     try {
-      let stream = audioStream;
-      if (!stream) {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Запрашиваем микрофон только один раз
+      if (!audioStream) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         setAudioStream(stream);
-        console.log('Получен новый audioStream');
       }
 
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      // Используем существующий поток
+      mediaRecorderRef.current = new MediaRecorder(audioStream);
       audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (event) => {
@@ -400,12 +409,24 @@ const ChatScreen = () => {
     setMessages([...messages, userMessage]);
     setIsTyping(true);
 
-    let transcript = recognitionRef.current?.transcript || '';
-    if (!transcript) {
-      console.warn('Текст не распознан, используется заглушка');
-      transcript = '';
+    // Отправка аудио на сервер для транскрибации
+    const audioBlob = await fetch(audioUrl).then(r => r.blob());
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.webm');
+
+    let transcript = '';
+    try {
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      transcript = data.text || '';
+    } catch (error) {
+      console.error('Transcription error:', error);
     }
 
+    // Отправка текста демону
     try {
       const response = await sendMessage(transcript || 'Голосовое сообщение');
       setIsTyping(false);
@@ -538,7 +559,7 @@ const ChatScreen = () => {
             />
           </svg>
           {isRecording && (
-            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-user text-xs font-mono flex items-center">
+            <div className="fixed bottom-24 left-0 right-0 text-center text-user text-xs font-mono flex items-center justify-center">
               <span className="blink mr-1">REC</span>
               <span>{formatTime(recordTime)}</span>
               <span className="ml-1 animate-pulse">|█|</span>
