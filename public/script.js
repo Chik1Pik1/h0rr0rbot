@@ -35,23 +35,13 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showHackOverlay, setShowHackOverlay] = useState(false);
 
   useEffect(() => {
-    const signalAudio = document.getElementById('signal-audio');
-    const bgAudio = document.getElementById('background-audio');
-    
     if (showErrorOverlay) {
-      signalAudio.play();
+      document.getElementById('signal-audio').play();
+      const bgAudio = document.getElementById('background-audio');
       setTimeout(() => {
         bgAudio.play();
       }, 3000);
-    } else {
-      signalAudio.pause();
-      signalAudio.currentTime = 0;
     }
-    
-    return () => {
-      signalAudio.pause();
-      bgAudio.pause();
-    };
   }, [showErrorOverlay]);
 
   const handleSubmit = (e) => {
@@ -319,6 +309,13 @@ const ChatScreen = () => {
           placeholder="Введи сообщение..."
           disabled={isDisconnected}
         />
+        <button
+          type="submit"
+          className="text-user text-xl border px-4 py-2"
+          disabled={isDisconnected}
+        >
+          Отправить
+        </button>
         <div 
           className={`voice-btn ${isRecording ? 'recording' : ''}`}
           onClick={() => {
@@ -336,13 +333,6 @@ const ChatScreen = () => {
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
           </svg>
         </div>
-        <button
-          type="submit"
-          className="text-user text-xl border px-4 py-2"
-          disabled={isDisconnected}
-        >
-          Отправить
-        </button>
         {isRecording && (
           <div className="recording-timer">
             {60 - recordingTime}s
