@@ -48,6 +48,7 @@ body::after {
   align-items: center;
   margin: 20px auto;
   z-index: 1001;
+  border-radius: 0; /* Убраны скругления */
 }
 
 /* ЭЛТ-помехи */
@@ -80,10 +81,12 @@ body::after {
   overflow: hidden;
   box-sizing: border-box;
   box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.2);
+  border-radius: 0; /* Убраны скругления */
 }
 
 /* Помехи для окна и чата */
-.crt-window::after, .chat-fullscreen::after {
+.crt-window::after,
+.chat-fullscreen::after {
   content: '';
   position: absolute;
   top: 0;
@@ -96,7 +99,8 @@ body::after {
 }
 
 /* Полноэкранные оверлеи */
-.error-overlay-fullscreen, .hack-overlay-fullscreen {
+.error-overlay-fullscreen,
+.hack-overlay-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
@@ -224,16 +228,14 @@ body::after {
 
 .text-user {
   color: #00FF00 !important;
-  background: #1a2b3c;
   padding: 8px 12px;
-  border-radius: 15px;
+  border-radius: 0; /* Убраны скругления */
 }
 
 .text-demon {
   color: #FF0000 !important;
-  background: #3c1a1a;
   padding: 8px 12px;
-  border-radius: 15px;
+  border-radius: 0; /* Убраны скругления */
 }
 
 .blink {
@@ -252,6 +254,7 @@ input, button {
   padding: 8px;
   font-size: 1.25rem;
   box-sizing: border-box;
+  border-radius: 0; /* Убраны скругления */
 }
 
 button {
@@ -288,7 +291,6 @@ button:disabled {
 .voice-btn {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
   background: #00ff00;
   border: 2px solid #00ff00;
   margin-left: 10px;
@@ -297,10 +299,12 @@ button:disabled {
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s;
+  border-radius: 0; /* Убраны скругления */
 }
 
 .voice-btn.recording {
   background: #ff0000;
+  border: 2px solid #ff0000;
   animation: pulse 1s infinite;
 }
 
@@ -321,8 +325,7 @@ button:disabled {
   display: flex;
   align-items: center;
   padding: 8px;
-  background: #1a2b3c;
-  border-radius: 15px;
+  border-radius: 0; /* Убраны скругления */
   margin: 5px 0;
 }
 
@@ -338,15 +341,18 @@ button:disabled {
     width: 95%;
     min-height: 50vh;
     margin: 10px auto;
+    border-radius: 0; /* Убраны скругления */
   }
 
   .chat-fullscreen {
     padding: 10px;
+    border-radius: 0; /* Убраны скругления */
   }
 
   input, button {
     font-size: 1rem;
     padding: 6px;
+    border-radius: 0; /* Убраны скругления */
   }
 
   .chat-container {
