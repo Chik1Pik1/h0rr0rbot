@@ -35,13 +35,26 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showHackOverlay, setShowHackOverlay] = useState(false);
 
   useEffect(() => {
+    const signalAudio = document.getElementById('signal-audio');
+    const bgAudio = document.getElementById('background-audio');
+    
     if (showErrorOverlay) {
-      document.getElementById('signal-audio').play();
-      const bgAudio = document.getElementById('background-audio');
+      signalAudio.play();
+    } else {
+      signalAudio.pause(); // Останавливаем signal-audio при скрытии оверлея
+      signalAudio.currentTime = 0; // Сбрасываем воспроизведение
+    }
+
+    if (showErrorOverlay) {
       setTimeout(() => {
         bgAudio.play();
       }, 3000);
     }
+    
+    return () => {
+      signalAudio.pause(); // Очистка при размонтировании
+      bgAudio.pause();
+    };
   }, [showErrorOverlay]);
 
   const handleSubmit = (e) => {
@@ -55,7 +68,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     // Этап 1: Показать ошибку на весь экран
     setShowErrorOverlay(true);
     setTimeout(() => {
-      setShowErrorOverlay(false);
+      setShowErrorOverlay(false); // Это вызовет остановку signal-audio через useEffect
       // Этап 2: Показать взлом на весь экран
       setShowHackOverlay(true);
       setTimeout(() => {
