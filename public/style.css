@@ -48,7 +48,7 @@ body::after {
   align-items: center;
   margin: 20px auto;
   z-index: 1001;
-  border-radius: 0; /* Убраны скругления */
+  border-radius: 0;
 }
 
 /* ЭЛТ-помехи */
@@ -81,7 +81,7 @@ body::after {
   overflow: hidden;
   box-sizing: border-box;
   box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.2);
-  border-radius: 0; /* Убраны скругления */
+  border-radius: 0;
 }
 
 /* Помехи для окна и чата */
@@ -139,51 +139,10 @@ body::after {
   animation: matrix-rain 10s linear infinite;
 }
 
-/* Анимация исчезновения */
+/* Анимации */
 @keyframes dissolve {
   0% { opacity: 1; filter: blur(0px); }
   100% { opacity: 0; filter: blur(20px); }
-}
-
-/* Анимация кода с glitch-эффектом */
-.hack-code {
-  position: absolute;
-  white-space: nowrap;
-  animation: hack-scroll linear infinite;
-}
-
-.hack-code::before {
-  content: '';
-  position: absolute;
-  top: -10%;
-  left: -10%;
-  width: 120%;
-  height: 120%;
-  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==') repeat;
-  opacity: 0.2;
-  animation: glitch 0.5s infinite;
-}
-
-/* Кровавое стекание */
-@keyframes blood-drip {
-  0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
-  50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
-  100% { transform: translateY(0); }
-}
-
-/* Текстовые глитчи */
-@keyframes text-glitch {
-  0% { clip-path: inset(10% 0 90% 0); }
-  25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
-  50% { clip-path: inset(5% 0 80% 0); }
-  75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
-}
-
-/* Эффект демона */
-.demon-effect {
-  animation: 
-    text-glitch 0.8s steps(2) infinite,
-    blood-drip 1.2s ease-in-out;
 }
 
 @keyframes hack-scroll {
@@ -229,13 +188,13 @@ body::after {
 .text-user {
   color: #00FF00 !important;
   padding: 8px 12px;
-  border-radius: 0; /* Убраны скругления */
+  border-radius: 0;
 }
 
 .text-demon {
   color: #FF0000 !important;
   padding: 8px 12px;
-  border-radius: 0; /* Убраны скругления */
+  border-radius: 0;
 }
 
 .blink {
@@ -254,7 +213,7 @@ input, button {
   padding: 8px;
   font-size: 1.25rem;
   box-sizing: border-box;
-  border-radius: 0; /* Убраны скругления */
+  border-radius: 0;
 }
 
 button {
@@ -281,25 +240,32 @@ button:disabled {
   right: 0;
   padding: 10px;
   background: #000;
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Добавлено расстояние между элементами формы */
 }
 
-.dash-line {
-  letter-spacing: 0.1em;
+.chat-input-form input {
+  flex: 1 1 auto; /* Поле ввода занимает доступное пространство */
+  margin-right: 8px; /* Небольшое расстояние между полем ввода и кнопками */
 }
 
-/* Голосовая кнопка */
+.chat-input-form button {
+  flex: 0 0 auto; /* Кнопка "Отправить" не растягивается */
+}
+
 .voice-btn {
   width: 40px;
   height: 40px;
   background: #00ff00;
   border: 2px solid #00ff00;
-  margin-left: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s;
-  border-radius: 0; /* Убраны скругления */
+  border-radius: 0;
+  flex: 0 0 auto; /* Кнопка записи не растягивается */
 }
 
 .voice-btn.recording {
@@ -325,7 +291,7 @@ button:disabled {
   display: flex;
   align-items: center;
   padding: 8px;
-  border-radius: 0; /* Убраны скругления */
+  border-radius: 0;
   margin: 5px 0;
 }
 
@@ -341,18 +307,18 @@ button:disabled {
     width: 95%;
     min-height: 50vh;
     margin: 10px auto;
-    border-radius: 0; /* Убраны скругления */
+    border-radius: 0;
   }
 
   .chat-fullscreen {
     padding: 10px;
-    border-radius: 0; /* Убраны скругления */
+    border-radius: 0;
   }
 
   input, button {
     font-size: 1rem;
     padding: 6px;
-    border-radius: 0; /* Убраны скругления */
+    border-radius: 0;
   }
 
   .chat-container {
@@ -365,5 +331,13 @@ button:disabled {
 
   .error-overlay-fullscreen {
     font-size: 1.5rem;
+  }
+
+  .chat-input-form {
+    gap: 6px; /* Меньший отступ для мобильных */
+  }
+
+  .chat-input-form input {
+    margin-right: 6px; /* Меньший отступ для мобильных */
   }
 }
