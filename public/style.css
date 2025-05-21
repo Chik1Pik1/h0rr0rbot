@@ -36,7 +36,7 @@ body::after {
 /* Основное окно */
 .crt-window {
   background: #000 !important;
-  border: 2px solid #00ff0033;
+  border: 3px solid #00FF44 !important;
   position: relative;
   width: 90%;
   max-width: 600px;
@@ -49,6 +49,9 @@ body::after {
   margin: 20px auto;
   z-index: 1001;
   border-radius: 0;
+  box-shadow: 
+    0 0 10px #00FF44,
+    inset 0 0 10px #00FF44;
 }
 
 /* ЭЛТ-помехи */
@@ -76,7 +79,7 @@ body::after {
   width: 100%;
   height: 100vh;
   background: #000;
-  padding: 10px; /* Уменьшено для мобильных */
+  padding: 10px;
   animation: flicker 0.1s infinite;
   overflow: hidden;
   box-sizing: border-box;
@@ -187,14 +190,16 @@ body::after {
 
 .text-user {
   color: #00FF00 !important;
-  padding: 8px 12px;
-  border-radius: 0;
+  padding: 4px 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
 }
 
 .text-demon {
   color: #FF0000 !important;
-  padding: 8px 12px;
-  border-radius: 0;
+  padding: 4px 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
 }
 
 .blink {
@@ -210,8 +215,8 @@ input, button {
   background: #000;
   border: 2px solid #00FF00;
   color: #00FF00;
-  padding: 6px; /* Уменьшено для компактности */
-  font-size: 1rem; /* Уменьшено для мобильных */
+  padding: 6px;
+  font-size: 1rem;
   box-sizing: border-box;
   border-radius: 0;
 }
@@ -238,42 +243,48 @@ button:disabled {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 8px; /* Уменьшено для компактности */
+  padding: 8px;
   background: #000;
   display: flex;
   align-items: center;
-  gap: 4px; /* Уменьшенный отступ между элементами */
-  flex-wrap: nowrap; /* Запрещаем перенос элементов */
+  gap: 4px;
+  flex-wrap: nowrap;
 }
 
 .chat-input-form input {
-  flex: 1 1 auto; /* Поле ввода занимает доступное пространство */
-  min-width: 0; /* Позволяет полю сжиматься */
-  margin-right: 4px; /* Уменьшенное расстояние */
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 2px solid #00FF00 !important;
+  margin-right: 4px;
+  order: 1;
 }
 
 .chat-input-form button {
-  flex: 0 0 auto; /* Кнопка "Отправить" не растягивается */
-  padding: 6px 10px; /* Уменьшены размеры */
+  flex: 0 0 auto;
+  padding: 6px 10px;
   font-size: 1rem;
+  order: 3;
 }
 
 .voice-btn {
-  width: 32px; /* Уменьшен размер кнопки */
+  width: 32px;
   height: 32px;
-  background: #00ff00;
-  border: 2px solid # показатели: 0px; /* Убрана граница для ЭЛТ-стиля */
+  background: #000 !important;
+  border: 2px solid #00FF00 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s;
-  border-radius: 0;
-  flex: 0 0 auto; /* Кнопка записи не растягивается */
+  border-radius: 0 !important;
+  flex: 0 0 auto;
+  order: 2;
+  margin: 0 4px;
 }
 
 .voice-btn.recording {
-  background: #ff0000;
+  background: #000 !important;
+  border: 2px solid #FF0000 !important;
   animation: pulse 1s infinite;
 }
 
@@ -285,27 +296,28 @@ button:disabled {
 
 .recording-timer {
   position: absolute;
-  bottom: 50px; /* Сдвинут выше из-за меньших элементов */
+  bottom: 50px;
   color: #ff0000;
-  font-size: 1rem; /* Уменьшен шрифт */
+  font-size: 1rem;
 }
 
 .voice-message {
   display: flex;
   align-items: center;
-  padding: 8px;
+  padding: 4px;
+  background: transparent !important;
+  border: 1px solid #00FF00;
   border-radius: 0;
   margin: 5px 0;
 }
 
 .voice-icon {
-  width: 20px; /* Уменьшен размер иконки */
+  width: 20px;
   height: 20px;
   margin-right: 8px;
 }
 
 /* Адаптивность для мобильных */
-@media (max-widthwiggle-room: 0px); /* Запрещаем перенос текста */
 @media (max-width: 600px) {
   .crt-window {
     width: 95%;
@@ -320,27 +332,31 @@ button:disabled {
   }
 
   input, button {
-    font-size: 0.9rem; /* Уменьшен шрифт */
+    font-size: 0.9rem;
     padding: 5px;
     border-radius: 0;
   }
 
   .chat-input-form {
+    flex-wrap: wrap;
     gap: 4px;
     padding: 6px;
   }
 
   .chat-input-form input {
-    margin-right: 4px;
-  }
-
-  .chat-input-form button {
-    padding: 5px 8px;
+    margin-right: 0;
+    margin-bottom: 4px;
   }
 
   .voice-btn {
-    width: 30px;
-    height: 30px;
+    order: 2;
+    margin: 4px auto;
+  }
+
+  .chat-input-form button {
+    width: 100%;
+    order: 3;
+    padding: 5px 8px;
   }
 
   .recording-timer {
