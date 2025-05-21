@@ -40,19 +40,16 @@ const AccessScreen = ({ onAccessGranted }) => {
     
     if (showErrorOverlay) {
       signalAudio.play();
-    } else {
-      signalAudio.pause(); // Останавливаем signal-audio при скрытии оверлея
-      signalAudio.currentTime = 0; // Сбрасываем воспроизведение
-    }
-
-    if (showErrorOverlay) {
       setTimeout(() => {
         bgAudio.play();
       }, 3000);
+    } else {
+      signalAudio.pause();
+      signalAudio.currentTime = 0;
     }
     
     return () => {
-      signalAudio.pause(); // Очистка при размонтировании
+      signalAudio.pause();
       bgAudio.pause();
     };
   }, [showErrorOverlay]);
@@ -68,7 +65,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     // Этап 1: Показать ошибку на весь экран
     setShowErrorOverlay(true);
     setTimeout(() => {
-      setShowErrorOverlay(false); // Это вызовет остановку signal-audio через useEffect
+      setShowErrorOverlay(false);
       // Этап 2: Показать взлом на весь экран
       setShowHackOverlay(true);
       setTimeout(() => {
@@ -313,7 +310,7 @@ const ChatScreen = () => {
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-      <form onSubmit={handleSubmit} className="chat-input-form">
+      <form onSubmit={handleSubmit} className="chat-input-form flex">
         <input
           type="text"
           value={input}
@@ -322,13 +319,6 @@ const ChatScreen = () => {
           placeholder="Введи сообщение..."
           disabled={isDisconnected}
         />
-        <button
-          type="submit"
-          className="text-user text-xl border px-4 py-2"
-          disabled={isDisconnected}
-        >
-          Отправить
-        </button>
         <div 
           className={`voice-btn ${isRecording ? 'recording' : ''}`}
           onClick={() => {
@@ -346,6 +336,13 @@ const ChatScreen = () => {
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
           </svg>
         </div>
+        <button
+          type="submit"
+          className="text-user text-xl border px-4 py-2"
+          disabled={isDisconnected}
+        >
+          Отправить
+        </button>
         {isRecording && (
           <div className="recording-timer">
             {60 - recordingTime}s
