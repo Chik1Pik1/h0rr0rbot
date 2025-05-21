@@ -13,6 +13,16 @@ const getUserId = () => {
   return userId;
 };
 
+// Функция для воспроизведения аудио
+const playAudio = (src, loop = false) => {
+  const audio = document.getElementById('audio-hack').cloneNode();
+  audio.src = src;
+  audio.loop = loop;
+  audio.muted = false; // Включаем звук после клонирования
+  audio.play().catch(error => console.log('Audio play error:', error));
+  return audio;
+};
+
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
@@ -40,19 +50,30 @@ const AccessScreen = ({ onAccessGranted }) => {
       setError('ВВЕДИТЕ КЛЮЧ.');
       return;
     }
+    
+    // Запуск звука ошибки
+    const errorSound = playAudio('/music/signal.mp3');
+    
     setIsLoading(true);
     setError('Проверка ключа...');
-    // Этап 1: Показать ошибку на весь экран
     setShowErrorOverlay(true);
+    
     setTimeout(() => {
+      errorSound.pause(); // Остановить звук ошибки
       setShowErrorOverlay(false);
-      // Этап 2: Показать взлом на весь экран
       setShowHackOverlay(true);
+      
       setTimeout(() => {
         setShowHackOverlay(false);
-        // Этап 3: Вернуть окно входа
         setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
-        setTimeout(() => onAccessGranted(), 2000);
+        
+        setTimeout(() => {
+          onAccessGranted();
+          // Запуск фоновой музыки при переходе в чат
+          const bgMusic = playAudio('/music/fon.mp3', true);
+          // Сохранить ссылку для управления музыкой
+          window.bgMusic = bgMusic;
+        }, 2000);
       }, 4000);
     }, 3000);
   };
@@ -158,7 +179,15 @@ const ChatScreen = () => {
     glitch: false 
   });
 
-  // Активация эффекvärr
+  // Остановить музыку при выходе из чата
+  useEffect(() => {
+    return () => {
+      if (window.bgMusic) {
+        window.bgMusic.pause();
+        window.bgMusic = null;
+      }
+    };
+  }, []);
 
   // Отправка сообщения
   const sendMessage = async (message) => {
