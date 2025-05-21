@@ -313,7 +313,7 @@ const ChatScreen = () => {
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-      <form onSubmit={handleSubmit} className="chat-input-form flex">
+      <form onSubmit={handleSubmit} className="chat-input-form">
         <input
           type="text"
           value={input}
