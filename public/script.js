@@ -1,6 +1,6 @@
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect } = React;
 
-// Генерация или получение UUID для пользователя
+// Generate or retrieve UUID for user
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -33,16 +33,6 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
-
-  useEffect(() => {
-    if (showErrorOverlay) {
-      document.getElementById('signal-audio').play();
-      const bgAudio = document.getElementById('background-audio');
-      setTimeout(() => {
-        bgAudio.play();
-      }, 3000);
-    }
-  }, [showErrorOverlay]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -167,70 +157,10 @@ const ChatScreen = () => {
     blood: false, 
     glitch: false 
   });
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
 
-  useEffect(() => {
-    return () => {
-      document.getElementById('background-audio').pause();
-    };
-  }, []);
+  // Активация эффекvärr
 
-  // Запуск записи
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      
-      mediaRecorderRef.current.ondataavailable = (e) => {
-        audioChunksRef.current.push(e.data);
-      };
-
-      mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        await sendVoiceMessage(audioBlob);
-        audioChunksRef.current = [];
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-    } catch (err) {
-      console.error('Ошибка доступа к микрофону:', err);
-    }
-  };
-
-  // Отправка голосового сообщения
-  const sendVoiceMessage = async (audioBlob) => {
-    const formData = new FormData();
-    formData.append('audio', audioBlob, 'recording.webm');
-    formData.append('user_id', userId);
-
-    try {
-      const response = await fetch('/api/voice', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      setMessages([...messages, { sender: 'user', text: data.text, isVoice: true }]);
-    } catch (error) {
-      console.error('Ошибка отправки голосового сообщения:', error);
-    }
-  };
-
-  // Таймер записи
-  useEffect(() => {
-    let interval;
-    if (isRecording) {
-      interval = setInterval(() => {
-        setRecordingTime((t) => (t >= 60 ? 60 : t + 1));
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRecording]);
-
-  // Отправка текстового сообщения
+  // Отправка сообщения
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
@@ -274,14 +204,7 @@ const ChatScreen = () => {
             text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
           
-          return msg.isVoice ? (
-            <div className="voice-message" key={index}>
-              <svg className="voice-icon" viewBox="0 0 24 24">
-                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-              </svg>
-              Голосовое сообщение
-            </div>
-          ) : (
+          return (
             <p
               key={index}
               className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
@@ -316,28 +239,6 @@ const ChatScreen = () => {
         >
           Отправить
         </button>
-        <div 
-          className={`voice-btn ${isRecording ? 'recording' : ''}`}
-          onClick={() => {
-            if (!isRecording) {
-              startRecording();
-            } else {
-              mediaRecorderRef.current.stop();
-              setIsRecording(false);
-              setRecordingTime(0);
-            }
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-          </svg>
-        </div>
-        {isRecording && (
-          <div className="recording-timer">
-            {60 - recordingTime}s
-          </div>
-        )}
       </form>
     </div>
   );
