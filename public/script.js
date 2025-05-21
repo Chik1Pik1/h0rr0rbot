@@ -56,17 +56,17 @@ const AccessScreen = ({ onAccessGranted }) => {
     
     setIsLoading(true);
     setError('Проверка ключа...');
+    // Этап 1: Показать ошибку на весь экран
     setShowErrorOverlay(true);
-    
     setTimeout(() => {
       errorSound.pause(); // Остановить звук ошибки
       setShowErrorOverlay(false);
+      // Этап 2: Показать взлом на весь экран
       setShowHackOverlay(true);
-      
       setTimeout(() => {
         setShowHackOverlay(false);
+        // Этап 3: Вернуть окно входа
         setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
-        
         setTimeout(() => {
           onAccessGranted();
           // Запуск фоновой музыки при переходе в чат
