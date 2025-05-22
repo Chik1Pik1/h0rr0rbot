@@ -312,3 +312,32 @@ button:disabled {
   0% { transform: translateY(-100vh); }
   100% { transform: translateY(100vh); }
 }
+
+/* Стили для кнопок управления и SVG-иконок */
+.control-button {
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.control-button:hover {
+  background: rgba(0, 255, 0, 0.1) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+}
+
+.control-button svg {
+  width: 24px;
+  height: 24px;
+  fill: #00ff00;
+  transition: all 0.3s ease;
+}
+
+.control-button:hover svg {
+  filter: drop-shadow(0 0 3px #00ff00);
+}
+
+@media (max-width: 600px) {
+  .control-button svg {
+    width: 20px;
+    height: 20px;
+  }
+}
