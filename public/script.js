@@ -1,5 +1,33 @@
 const { useState, useEffect } = React;
 
+// Audio context for sound management
+const AudioContext = React.createContext(null);
+
+const AudioProvider = ({ children }) => {
+  const [signalAudio, setSignalAudio] = useState(null);
+  const [backgroundAudio, setBackgroundAudio] = useState(null);
+
+  useEffect(() => {
+    const signal = new Audio('/music/signal.mp3');
+    const background = new Audio('/music/fon.mp3');
+    background.loop = true;
+    
+    setSignalAudio(signal);
+    setBackgroundAudio(background);
+
+    return () => {
+      signal.pause();
+      background.pause();
+    };
+  }, []);
+
+  return (
+    <AudioContext.Provider value={{ signalAudio, backgroundAudio }}>
+      {children}
+    </AudioContext.Provider>
+  );
+};
+
 // Generate or retrieve UUID for user
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
@@ -17,17 +45,20 @@ const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
   return (
-    <div className="root-container">
-      {isAccessGranted ? (
-        <ChatScreen />
-      ) : (
-        <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
-      )}
-    </div>
+    <AudioProvider>
+      <div className="root-container">
+        {isAccessGranted ? (
+          <ChatScreen />
+        ) : (
+          <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
+        )}
+      </div>
+    </AudioProvider>
   );
 };
 
 const AccessScreen = ({ onAccessGranted }) => {
+  const { signalAudio } = React.useContext(AudioContext);
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,16 +73,25 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
     setIsLoading(true);
     setError('Проверка ключа...');
-    // Этап 1: Показать ошибку на весь экран
+
+    // Stage 1: Show error and play alarm
     setShowErrorOverlay(true);
+    if (signalAudio) {
+      signalAudio.currentTime = 0;
+      signalAudio.play();
+    }
+
     setTimeout(() => {
       setShowErrorOverlay(false);
-      // Этап 2: Показать взлом на весь экран
+      if (signalAudio) {
+        signalAudio.pause();
+      }
+      // Stage 2: Show hack screen
       setShowHackOverlay(true);
       setTimeout(() => {
         setShowHackOverlay(false);
-        // Этап 3: Вернуть окно входа
-        setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
+        // Stage 3: Return to login window
+        setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ...');
         setTimeout(() => onAccessGranted(), 2000);
       }, 4000);
     }, 3000);
@@ -96,7 +136,6 @@ const AccessScreen = ({ onAccessGranted }) => {
 
   return (
     <>
-      {/* Полноэкранные анимации */}
       {showErrorOverlay && (
         <div className="error-overlay-fullscreen">
           ВНИМАНИЕ! ОШИБКА!
@@ -108,7 +147,6 @@ const AccessScreen = ({ onAccessGranted }) => {
           {generateHackCode()}
         </div>
       )}
-      {/* Окно входа */}
       <div className="crt-window">
         <div className="flex flex-col items-center justify-center h-full text-center">
           <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
@@ -146,6 +184,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 };
 
 const ChatScreen = () => {
+  const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
     { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
   ]);
@@ -158,9 +197,17 @@ const ChatScreen = () => {
     glitch: false 
   });
 
-  // Активация эффекvärr
+  useEffect(() => {
+    if (backgroundAudio) {
+      backgroundAudio.play();
+    }
+    return () => {
+      if (backgroundAudio) {
+        backgroundAudio.pause();
+      }
+    };
+  }, [backgroundAudio]);
 
-  // Отправка сообщения
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
