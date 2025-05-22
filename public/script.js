@@ -1,6 +1,6 @@
 const { useState, useEffect } = React;
 
-// Создаем аудио контекст
+// Audio context для управления звуком
 const AudioContext = React.createContext(null);
 
 // Список всех возможных ключей
@@ -29,33 +29,6 @@ const DEMON_KEYS = [
   "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
 ];
 
-// Иконки для голосовых сообщений
-const MicIcon = () => (
-  <svg viewBox="0 0 24 24">
-    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-  </svg>
-);
-
-const StopIcon = () => (
-  <svg viewBox="0 0 24 24">
-    <path d="M6 6h12v12H6z"/>
-  </svg>
-);
-
-const PlayIcon = () => (
-  <svg viewBox="0 0 24 24">
-    <path d="M8 5v14l11-7z"/>
-  </svg>
-);
-
-const PauseIcon = () => (
-  <svg viewBox="0 0 24 24">
-    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-  </svg>
-);
-
-// Audio Provider
 const AudioProvider = ({ children }) => {
   const [signalAudio, setSignalAudio] = useState(null);
   const [backgroundAudio, setBackgroundAudio] = useState(null);
@@ -81,19 +54,23 @@ const AudioProvider = ({ children }) => {
   );
 };
 
-// Генерация ключа
 const generateDailyKey = () => {
   const date = "2025-05-22"; // Фиксированная дата
   const USER_LOGIN = "Chik1Pik1"; // Фиксированный логин
   
+  // Создаем соль на основе логина пользователя
   const SALT = USER_LOGIN.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  
+  // Вычисляем сумму чисел из даты
   let seed = date.split('-').reduce((acc, num) => acc + parseInt(num), 0);
+  
+  // Применяем соль и получаем индекс
   seed = (seed * SALT) % DEMON_KEYS.length;
   
   return DEMON_KEYS[seed];
 };
 
-// Функции для работы с localStorage
+// Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -110,6 +87,7 @@ const setBlockedUntil = (date) => {
   localStorage.setItem('blockedUntil', date);
 };
 
+// Форматирование даты и времени
 const formatDateTime = (date) => {
   return date.toLocaleString('ru-RU', {
     year: 'numeric',
@@ -121,7 +99,7 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
-// Генерация ID пользователя
+// Generate or retrieve UUID for user
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -134,41 +112,6 @@ const getUserId = () => {
   return userId;
 };
 
-// Компонент голосового сообщения
-const VoiceMessage = ({ audioUrl, duration }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(null);
-
-  const handlePlayPause = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const formatDuration = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  return (
-    <div className="voice-message">
-      <button className="voice-message-play" onClick={handlePlayPause}>
-        {isPlaying ? <PauseIcon /> : <PlayIcon />}
-      </button>
-      <div className="voice-message-waveform"></div>
-      <span className="voice-message-duration">{formatDuration(duration)}</span>
-      <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
-    </div>
-  );
-};
-
-// Основной компонент приложения
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
@@ -185,7 +128,6 @@ const App = () => {
   );
 };
 
-// Компонент экрана доступа
 const AccessScreen = ({ onAccessGranted }) => {
   const { signalAudio } = React.useContext(AudioContext);
   const [key, setKey] = useState('');
@@ -256,31 +198,28 @@ const AccessScreen = ({ onAccessGranted }) => {
 
     const correctKey = generateDailyKey();
     
-    if (key === correctKey || key.toLowerCase() === 'admin') {
+    if (key === correctKey) {
       setShowErrorOverlay(true);
       if (signalAudio) {
         signalAudio.currentTime = 0;
         signalAudio.play();
       }
 
-      // Первая фаза - показ ошибки
+      setAttemptsLeft(3);
+      localStorage.removeItem('blockedUntil');
+
       setTimeout(() => {
         setShowErrorOverlay(false);
         if (signalAudio) {
           signalAudio.pause();
         }
-        
-        // Вторая фаза - показ взлома
         setShowHackOverlay(true);
         setTimeout(() => {
           setShowHackOverlay(false);
-          // Сразу переходим к чату без дополнительных задержек
-          onAccessGranted();
+          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ...');
+          setTimeout(() => onAccessGranted(), 2000);
         }, 4000);
       }, 3000);
-
-      setAttemptsLeft(3);
-      localStorage.removeItem('blockedUntil');
     } else {
       const newAttempts = attemptsLeft - 1;
       setAttempts(newAttempts);
@@ -370,36 +309,6 @@ const ChatScreen = () => {
     glitch: false 
   });
 
-  // Состояния для голосовых сообщений
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [audioStream, setAudioStream] = useState(null);
-  
-  const recordingTimerRef = useRef(null);
-  const audioChunksRef = useRef([]);
-
-  // Инициализация микрофона при монтировании
-  useEffect(() => {
-    const initializeMicrophone = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        setAudioStream(stream);
-      } catch (error) {
-        console.error('Error accessing microphone:', error);
-      }
-    };
-
-    initializeMicrophone();
-
-    return () => {
-      if (audioStream) {
-        audioStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
-
-  // Запуск фоновой музыки
   useEffect(() => {
     if (backgroundAudio) {
       backgroundAudio.play();
@@ -411,115 +320,6 @@ const ChatScreen = () => {
     };
   }, [backgroundAudio]);
 
-  const startRecording = () => {
-    if (!audioStream) {
-      console.error('No audio stream available');
-      return;
-    }
-
-    audioChunksRef.current = [];
-    const recorder = new MediaRecorder(audioStream);
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        audioChunksRef.current.push(e.data);
-      }
-    };
-
-    recorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      try {
-        // Загрузка аудио
-        const uploadResponse = await fetch('/api/upload-audio', {
-          method: 'POST',
-          body: audioBlob
-        });
-        
-        const { upload_url } = await uploadResponse.json();
-
-        // Запрос транскрипции
-        const transcriptResponse = await fetch('/api/transcribe-audio', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ audio_url: upload_url })
-        });
-
-        const { id } = await transcriptResponse.json();
-
-        // Получение результата
-        let transcriptionResult;
-        while (true) {
-          const pollResponse = await fetch(`/api/get-transcription?id=${id}`);
-          transcriptionResult = await pollResponse.json();
-          
-          if (transcriptionResult.status === 'completed') {
-            break;
-          } else if (transcriptionResult.status === 'error') {
-            throw new Error('Transcription failed');
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-
-        // Добавление голосового сообщения
-        setMessages(prev => [...prev, {
-          sender: 'user',
-          type: 'voice',
-          audioUrl,
-          duration: recordingTime,
-          text: transcriptionResult.text
-        }]);
-
-        // Отправка текста боту
-        setIsTyping(true);
-        const botResponse = await sendMessage(transcriptionResult.text);
-        setIsTyping(false);
-
-        if (botResponse.isLimitReached) {
-          setMessages(prev => [...prev, { sender: 'demon', text: botResponse.reply }]);
-          setIsDisconnected(true);
-        } else {
-          setMessages(prev => [...prev, { sender: 'demon', text: botResponse.reply }]);
-        }
-
-      } catch (error) {
-        console.error('Error processing voice message:', error);
-        setMessages(prev => [...prev, {
-          sender: 'demon',
-          text: 'Произошла ошибка при обработке голосового сообщения. Попробуйте еще раз.'
-        }]);
-      }
-    };
-
-    recorder.start();
-    setMediaRecorder(recorder);
-    setIsRecording(true);
-    setRecordingTime(0);
-
-    recordingTimerRef.current = setInterval(() => {
-      setRecordingTime(prev => {
-        if (prev >= 60) {
-          stopRecording();
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, 1000);
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-      clearInterval(recordingTimerRef.current);
-      setIsRecording(false);
-      setRecordingTime(0);
-    }
-  };
-
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
@@ -530,11 +330,7 @@ const ChatScreen = () => {
       const data = await response.json();
       return data;
     } catch (error) {
-      return { 
-        reply: 'Я всё ещё здесь... Попробуй снова.', 
-        isLimitReached: false, 
-        isTimeLimitReached: false 
-      };
+      return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false, isTimeLimitReached: false };
     }
   };
 
@@ -562,18 +358,15 @@ const ChatScreen = () => {
     <div className="flex flex-col h-full p-4 relative chat-fullscreen">
       <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
         {messages.map((msg, index) => {
-          if (msg.type === 'voice') {
-            return (
-              <div key={index} className={`flex mb-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <VoiceMessage audioUrl={msg.audioUrl} duration={msg.duration} />
-              </div>
-            );
-          }
-
           let text = msg.text;
           if (effects.glitch) {
             text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
+          
+          const messageStyle = {
+            color: msg.sender === 'user' ? '#00ff00' : (effects.blood ? '#ff2222' : '#ff0000'),
+            transform: effects.blood ? 'skew(-2deg)' : 'none'
+          };
           
           return (
             <p
@@ -581,10 +374,7 @@ const ChatScreen = () => {
               className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
                 (effects.blood || effects.glitch) ? 'demon-effect' : ''
               }`}
-              style={{
-                color: msg.sender === 'user' ? '#00ff00' : (effects.blood ? '#ff2222' : '#ff0000'),
-                transform: effects.blood ? 'skew(-2deg)' : 'none'
-              }}
+              style={messageStyle}
             >
               {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
             </p>
@@ -595,32 +385,19 @@ const ChatScreen = () => {
         )}
       </div>
       <form onSubmit={handleSubmit} className="chat-input-form flex">
-        {isRecording && (
-          <div className="voice-timer">
-            {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
-          </div>
-        )}
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           className="flex-1 text-xl p-2 border focus:outline-none"
           placeholder="Введи сообщение..."
-          disabled={isDisconnected || isRecording}
+          disabled={isDisconnected}
           style={{ color: '#00ff00', borderColor: '#00ff00' }}
         />
         <button
-          type="button"
-          className={`voice-record-button ${isRecording ? 'recording' : ''}`}
-          onClick={isRecording ? stopRecording : startRecording}
-          disabled={isDisconnected}
-        >
-          {isRecording ? <StopIcon /> : <MicIcon />}
-        </button>
-        <button
           type="submit"
           className="text-xl border px-4 py-2"
-          disabled={isDisconnected || isRecording}
+          disabled={isDisconnected}
           style={{ color: '#00ff00', borderColor: '#00ff00' }}
         >
           Отправить
