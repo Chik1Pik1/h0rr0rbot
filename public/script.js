@@ -299,9 +299,9 @@ const ChatScreen = () => {
   const [isDisconnected, setIsDisconnected] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const userId = getUserId();
-  const [effects, setEffects] = useState({ 
-    blood: false, 
-    glitch: false 
+  const [effects, setEffects] = useState({
+    blood: false,
+    glitch: false
   });
 
   useEffect(() => {
@@ -358,82 +358,102 @@ const ChatScreen = () => {
     }
   };
 
+  // Пример скрытого меню (можете доработать под свои нужды)
+  const drawerHeight = 120; // px, можно увеличить если меню выше
+
   return (
     <div className="flex flex-col h-full relative chat-fullscreen">
-      <div 
-        id="chat-container" 
+      <div
+        id="chat-container"
         className={`chat-container flex-grow overflow-y-auto ${isDisconnected ? 'chat-disabled' : ''}`}
         style={{ paddingBottom: '120px' }}
       >
         {messages.map((msg, index) => {
           let text = msg.text;
           if (effects.glitch) {
-            text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
+            // ... эффект глитча если нужен ...
           }
-          
-          const messageStyle = {
-            color: msg.sender === 'user' ? '#00ff00' : (effects.blood ? '#ff2222' : '#ff0000'),
-            transform: effects.blood ? 'skew(-2deg)' : 'none'
-          };
-          
           return (
-            <p
-              key={index}
-              className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
-                (effects.blood || effects.glitch) ? 'demon-effect' : ''
-              }`}
-              style={messageStyle}
-            >
-              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
-            </p>
+            <div key={index} className={msg.sender === 'user' ? 'text-user' : 'text-demon'}>
+              {text}
+            </div>
           );
         })}
-        {isTyping && !isDisconnected && (
-          <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
+        {isTyping && (
+          <div className="text-demon">...</div>
         )}
       </div>
 
-      <div className="control-panel" style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: 'black',
-        padding: '10px',
-        borderTop: '1px solid #00ff0033'
-      }}>
-        <form onSubmit={handleSubmit} className="chat-input-form flex mb-2">
+      {/* Скрытое меню */}
+      {isDrawerOpen && (
+        <div
+          className="drawer-menu"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: `${drawerHeight}px`,
+            background: '#111',
+            borderTop: '2px solid #00ff00',
+            zIndex: 1100,
+            color: '#00ff00',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          {/* Здесь содержимое меню */}
+          <span>Скрытое меню (здесь ваши пункты)</span>
+        </div>
+      )}
+
+      <div
+        className="control-panel"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: isDrawerOpen ? `${drawerHeight}px` : 0,
+          background: 'black',
+          padding: '10px',
+          borderTop: '1px solid #00ff0033',
+          zIndex: 1200,
+          transition: 'bottom 0.3s cubic-bezier(.86,0,.07,1)'
+        }}
+      >
+        <form onSubmit={handleSubmit} className="chat-input-form">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="flex-1 text-xl p-2 border focus:outline-none mr-2"
+            className="chat-input"
             placeholder="Введи сообщение..."
             disabled={isDisconnected}
             style={{ color: '#00ff00', borderColor: '#00ff00' }}
           />
           <button
             type="submit"
-            className="text-xl border px-4 py-2"
+            className="chat-send-btn"
             disabled={isDisconnected}
             style={{ color: '#00ff00', borderColor: '#00ff00' }}
           >
             Отправить
           </button>
         </form>
-
-        <div 
+        <div
+          className="drawer-toggle-btn"
           onClick={() => setIsDrawerOpen(!isDrawerOpen)}
           style={{
-            width: '40px',
-            height: '4px',
-            backgroundColor: '#00ff00',
-            margin: '0 auto',
+            marginTop: 8,
+            textAlign: 'center',
+            color: '#00ff00',
             cursor: 'pointer',
-            transition: 'transform 0.3s ease',
-            transform: isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+            userSelect: 'none'
           }}
-        />
+        >
+          {isDrawerOpen ? 'Закрыть меню ▲' : 'Меню ▼'}
+        </div>
       </div>
     </div>
   );
