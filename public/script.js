@@ -1,5 +1,31 @@
 const { useState, useEffect } = React;
 
+// Список всех возможных ключей
+const DEMON_KEYS = [
+  "Astaroth", "Baphomet", "Choronzon", "Dantalion", "Eligos", "Furfur", "Gremory", 
+  "Haagenti", "Incubus", "Jinn", "Kobold", "Leviathan", "Mammon", "Naberius", 
+  "Oriax", "Paimon", "Raum", "Samael", "Tannin", "Ukobach", "Valac", "Wendigo", 
+  "Xaphan", "Yaksha", "Zagan", "Necronomicon", "Goetia", "Qliphoth", "ArsGoetia", 
+  "Azazel", "Belial", "Beelzebub", "Asmodeus", "Lilith", "Moloch", "Abaddon", 
+  "Amon", "Andras", "Agares", "Barbatos", "Buer", "Caim", "Decarabia", "Forneus", 
+  "Gamigin", "Ipos", "Leraje", "Malphas", "Orobas", "Phenex", "Ronove", "Sabnock", 
+  "Seere", "Shax", "Stolas", "Vepar", "Zepar", "Nyarlathotep", "Cthulhu", 
+  "YogSothoth", "Dagon", "ShubNiggurath", "Akuma", "Oni", "Kitsune", "Djinn", 
+  "Ifrit", "Marid", "Ghul", "Dybbuk", "Nephilim", "Grigori", "Archon", "Aeon", 
+  "Egregore", "Goetic", "Enochian", "Theurgy", "Necromancy", "Thaumaturgy", 
+  "Solomonic", "Hexagram", "Pentacle", "Sigil", "Abraxas", "Akasha", "Chthonic", 
+  "Erebus", "Hecate", "Infernal", "Lemegethon", "Mephisto", "Pandemonium", 
+  "Stygian", "Tartarus", "Zoroaster", "Banshee", "Doppelganger", "Poltergeist", 
+  "Wraith", "Shadowman", "Skinwalker", "Wendigo", "Ouija", "Exorcism", 
+  "Possession", "Divination", "Scrying", "Familiar", "Coven", "Sabbat", 
+  "Akelarre", "Athame", "Boline", "Chalice", "Grimoire", "Mandrake", "Obsidian", 
+  "Runes", "Talisman", "Vortex", "Ziggurat", "BlackMass", "BloodPact", 
+  "DarkRite", "Infernum", "Nocturnal", "Occultus", "Phantasm", "Seraphim", 
+  "Tenebrae", "Umbra", "Voodoo", "Witching", "Xibalba", "Yatagarasu", 
+  "Zephyrus", "Maleficium", "Strigoi", "Karcist", "Qlippoth", "Sephirot", 
+  "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
+];
+
 // Audio context for sound management
 const AudioContext = React.createContext(null);
 
@@ -26,6 +52,43 @@ const AudioProvider = ({ children }) => {
       {children}
     </AudioContext.Provider>
   );
+};
+
+// Функции для работы с ключами и попытками
+const generateDailyKey = () => {
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+  let seed = dateStr.split('-').reduce((acc, num) => acc + parseInt(num), 0);
+  const salt = "Chik1Pik1".split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  seed = (seed * salt) % DEMON_KEYS.length;
+  return DEMON_KEYS[seed];
+};
+
+const getAttemptsLeft = () => {
+  return parseInt(localStorage.getItem('attemptsLeft') || '3');
+};
+
+const setAttemptsLeft = (attempts) => {
+  localStorage.setItem('attemptsLeft', attempts.toString());
+};
+
+const getBlockedUntil = () => {
+  return localStorage.getItem('blockedUntil') || '';
+};
+
+const setBlockedUntil = (date) => {
+  localStorage.setItem('blockedUntil', date);
+};
+
+const formatDateTime = (date) => {
+  return date.toLocaleString('ru-RU', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }).replace(',', '');
 };
 
 // Generate or retrieve UUID for user
@@ -64,38 +127,23 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
+  const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!key.trim()) {
-      setError('ВВЕДИТЕ КЛЮЧ.');
-      return;
-    }
-    setIsLoading(true);
-    setError('Проверка ключа...');
-
-    // Stage 1: Show error and play alarm
-    setShowErrorOverlay(true);
-    if (signalAudio) {
-      signalAudio.currentTime = 0;
-      signalAudio.play();
-    }
-
-    setTimeout(() => {
-      setShowErrorOverlay(false);
-      if (signalAudio) {
-        signalAudio.pause();
+  useEffect(() => {
+    const blockedUntil = getBlockedUntil();
+    if (blockedUntil) {
+      const blockDate = new Date(blockedUntil);
+      if (blockDate > new Date()) {
+        const formattedDate = formatDateTime(blockDate);
+        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formattedDate}`);
+        setAttempts(0);
+      } else {
+        localStorage.removeItem('blockedUntil');
+        setAttemptsLeft(3);
+        setAttempts(3);
       }
-      // Stage 2: Show hack screen
-      setShowHackOverlay(true);
-      setTimeout(() => {
-        setShowHackOverlay(false);
-        // Stage 3: Return to login window
-        setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ...');
-        setTimeout(() => onAccessGranted(), 2000);
-      }, 4000);
-    }, 3000);
-  };
+    }
+  }, []);
 
   const generateHackCode = () => {
     const snippets = [
@@ -134,6 +182,54 @@ const AccessScreen = ({ onAccessGranted }) => {
     return codes;
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!key.trim() || attemptsLeft <= 0) return;
+
+    setIsLoading(true);
+    setError('Проверка ключа...');
+
+    const correctKey = generateDailyKey();
+    
+    if (key === correctKey) {
+      setShowErrorOverlay(true);
+      if (signalAudio) {
+        signalAudio.currentTime = 0;
+        signalAudio.play();
+      }
+
+      setAttemptsLeft(3);
+      localStorage.removeItem('blockedUntil');
+
+      setTimeout(() => {
+        setShowErrorOverlay(false);
+        if (signalAudio) {
+          signalAudio.pause();
+        }
+        setShowHackOverlay(true);
+        setTimeout(() => {
+          setShowHackOverlay(false);
+          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ...');
+          setTimeout(() => onAccessGranted(), 2000);
+        }, 4000);
+      }, 3000);
+    } else {
+      const newAttempts = attemptsLeft - 1;
+      setAttempts(newAttempts);
+      setAttemptsLeft(newAttempts);
+      
+      if (newAttempts <= 0) {
+        const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        setBlockedUntil(blockUntil.toISOString());
+        const formattedDate = formatDateTime(blockUntil);
+        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formattedDate}`);
+      } else {
+        setError(`НЕВЕРНЫЙ КЛЮЧ. ОСТАЛОСЬ ПОПЫТОК: ${newAttempts}`);
+      }
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
       {showErrorOverlay && (
@@ -152,26 +248,33 @@ const AccessScreen = ({ onAccessGranted }) => {
           <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
           <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
-          <form onSubmit={handleSubmit} className="w-full max-w-sm">
-            <div className="flex items-center mb-4">
-              <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
-              <input
-                type="text"
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                className="flex-1 text-user text-xl p-2 border focus:outline-none"
-                placeholder="_________"
+          {attemptsLeft > 0 ? (
+            <form onSubmit={handleSubmit} className="w-full max-w-sm">
+              <div className="flex items-center mb-4">
+                <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
+                <input
+                  type="text"
+                  value={key}
+                  onChange={(e) => setKey(e.target.value)}
+                  className="flex-1 text-user text-xl p-2 border focus:outline-none"
+                  placeholder="_________"
+                  disabled={isLoading}
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full text-user text-xl border px-4 py-2"
                 disabled={isLoading}
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full text-user text-xl border px-4 py-2"
-              disabled={isLoading}
-            >
-              Подтвердить
-            </button>
-          </form>
+              >
+                Подтвердить
+              </button>
+              <p className="text-demon text-xl mt-2">
+                Осталось попыток: {attemptsLeft}
+              </p>
+            </form>
+          ) : (
+            <p className="text-demon text-xl mt-4 blink">ДОСТУП ЗАБЛОКИРОВАН</p>
+          )}
           {error && (
             <p className="text-demon text-xl mt-4 blink" style={{ whiteSpace: 'pre-line' }}>
               {error}
