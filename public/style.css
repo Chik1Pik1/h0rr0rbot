@@ -1,46 +1,33 @@
-body {
-  background: #000;
-  font-family: 'Special Elite', monospace;
-  overflow: hidden;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: radial-gradient(rgba(0, 255, 0, 0.1), black 70%);
-  touch-action: manipulation;
-}
+/* --- Основные стили проекта Зеркало --- */
 
-/* Фоновые помехи */
-body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==');
-  animation: crt-static 0.2s infinite;
-  pointer-events: none;
-  z-index: -1;
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
+body, html {
+  font-family: 'Special Elite', monospace;
+  background: #000;
+  color: #00ff00;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .root-container {
-  width: 100%;
-  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
 }
 
-/* Основное окно */
+/* CRT окно */
 .crt-window {
-  background: #000 !important;
-  border: 2px solid #00ff0033;
   position: relative;
-  width: 90%;
-  max-width: 600px;
-  min-height: 60vh;
+  background: #000;
+  border: 2px solid #00ff00;
+  box-shadow: 0 0 32px #00ff0033, inset 0 0 24px #00ff0033;
+  border-radius: 10px;
   padding: 20px;
   box-sizing: border-box;
   display: flex;
@@ -82,7 +69,6 @@ body::after {
   box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.2);
 }
 
-/* Помехи для окна и чата */
 .crt-window::after, .chat-fullscreen::after {
   content: '';
   position: absolute;
@@ -129,7 +115,7 @@ body::after {
   color: #ff0000;
 }
 
-/* Стили для форм */
+/* --- Формы и инпуты --- */
 input, button {
   font-family: 'Special Elite', monospace;
   background: #000;
@@ -150,47 +136,91 @@ button:hover:not(:disabled) {
   cursor: pointer;
 }
 
-button:disabled {
+button:disabled, input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* Контейнер чата */
 .chat-container {
-  max-height: 70vh;
+  height: calc(100vh - 120px);
   overflow-y: auto;
-  margin-bottom: 10px;
-  padding-right: 10px;
-  flex-grow: 1;
+  padding-bottom: 120px;
   scrollbar-width: thin;
   scrollbar-color: #00ff00 #000000;
 }
 
-/* Стили для скроллбара */
 .chat-container::-webkit-scrollbar {
   width: 8px;
 }
-
 .chat-container::-webkit-scrollbar-track {
   background: #000000;
 }
-
 .chat-container::-webkit-scrollbar-thumb {
   background: #00ff00;
   border-radius: 4px;
 }
 
-/* Форма ввода чата */
-.chat-input-form {
+/* --- Новые стили для control-panel и chat-input-form --- */
+.control-panel {
   position: absolute;
-  bottom: 0;
   left: 0;
   right: 0;
+  bottom: 0;
+  background: black;
   padding: 10px;
-  background: #000;
+  border-top: 1px solid #00ff0033;
+  z-index: 1200;
+  transition: bottom 0.3s cubic-bezier(.86,0,.07,1);
 }
 
-/* Дополнительные эффекты */
+/* Отступ между полем ввода и кнопкой */
+.chat-input-form {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.chat-input {
+  flex: 1;
+  font-size: 1.25rem;
+  padding: 8px;
+  border: 2px solid #00ff00;
+  background: #000;
+  color: #00ff00;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  min-width: 0;
+}
+
+.chat-send-btn {
+  min-width: 120px;
+  font-size: 1.25rem;
+  padding: 8px;
+  border: 2px solid #00ff00;
+  background: #000;
+  color: #00ff00;
+  transition: all 0.3s ease;
+}
+
+/* --- Drawer (скрытое меню) --- */
+.drawer-menu {
+  /* Основные стили заданы inline, можно дополнить тут */
+}
+
+/* Кнопка открытия/закрытия меню */
+.drawer-toggle-btn {
+  margin-top: 8px;
+  color: #00ff00;
+  cursor: pointer;
+  font-size: 1rem;
+  user-select: none;
+  text-align: center;
+}
+
+/* --- Вспомогательные эффекты и анимации --- */
 .blink {
   animation: blink 1s step-end infinite;
 }
@@ -200,168 +230,46 @@ button:disabled {
 }
 
 .demon-effect {
-  animation: 
-    text-glitch 0.8s steps(2) infinite,
-    blood-drip 1.2s ease-in-out;
-}
-
-/* Анимации */
-@keyframes blink {
-  50% { opacity: 0; }
+  animation: text-glitch 0.8s steps(2) infinite, color-flicker 1.2s linear infinite;
 }
 
 @keyframes scanline {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(100vh); }
+  0% { background-position-y: 0; }
+  100% { background-position-y: 100px; }
 }
 
 @keyframes flicker {
-  0% { opacity: 1; }
-  50% { opacity: 0.98; }
-  100% { opacity: 1; }
+  0% { opacity: 1 }
+  50% { opacity: 0.97 }
+  80% { opacity: 1 }
+  100% { opacity: 0.98 }
+}
+
+@keyframes blink {
+  50% { opacity: 0.2; }
 }
 
 @keyframes error-blink {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
-  100% { opacity: 1; }
+  0% { color: #FF0000; }
+  50% { color: #800000; }
+  100% { color: #FF0000; }
 }
 
-@keyframes crt-static {
-  0% { background-position: 0 0; }
-  100% { background-position: 100px 100px; }
-}
-
+/* Глитч и прочие декоративные эффекты */
 @keyframes text-glitch {
-  0% { clip-path: inset(10% 0 90% 0); }
-  25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
-  50% { clip-path: inset(5% 0 80% 0); }
-  75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
+  0%, 100% { text-shadow: 2px 0 #ff0000, -2px 0 #00ffea; }
+  20% { text-shadow: 2px 2px #ff0000, -2px -2px #00ffea; }
+  40% { text-shadow: -2px 2px #ff0000, 2px -2px #00ffea; }
+  60% { text-shadow: 2px -2px #ff0000, -2px 2px #00ffea; }
+  80% { text-shadow: -2px -2px #ff0000, 2px 2px #00ffea; }
 }
 
-@keyframes blood-drip {
-  0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
-  50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
-  100% { transform: translateY(0); }
+@keyframes color-flicker {
+  0% { filter: brightness(1); }
+  20% { filter: brightness(1.1) drop-shadow(0 0 4px #ff0000); }
+  40% { filter: brightness(0.9); }
+  60% { filter: brightness(1.15) drop-shadow(0 0 8px #00ff00);}
+  100% { filter: brightness(1); }
 }
 
-/* Адаптивность для мобильных устройств */
-@media (max-width: 600px) {
-  .crt-window {
-    width: 95%;
-    min-height: 50vh;
-    margin: 10px auto;
-  }
-
-  .chat-fullscreen {
-    padding: 10px;
-  }
-
-  input, button {
-    font-size: 1rem;
-    padding: 6px;
-  }
-
-  .chat-container {
-    max-height: 75vh;
-  }
-
-  h1, p, input, button {
-    font-size: 1rem !important;
-  }
-
-  .error-overlay-fullscreen {
-    font-size: 1.5rem;
-  }
-
-  .hack-code {
-    font-size: 0.8rem;
-  }
-}
-
-/* Анимация матричного кода */
-.matrix-rain {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 255, 0, 0.2) 0%,
-    rgba(0, 255, 0, 0.05) 100%
-  );
-  animation: matrix-rain 10s linear infinite;
-}
-
-.hack-code {
-  position: absolute;
-  white-space: nowrap;
-  color: #00ff00;
-  text-shadow: 0 0 5px #00ff00;
-  animation: hack-scroll linear infinite;
-  font-family: monospace;
-}
-
-@keyframes hack-scroll {
-  0% { transform: translateY(100%); }
-  100% { transform: translateY(-100%); }
-}
-
-@keyframes matrix-rain {
-  0% { transform: translateY(-100vh); }
-  100% { transform: translateY(100vh); }
-}
-
-/* Стили для кнопок управления и SVG-иконок */
-.control-button {
-  transition: all 0.3s ease;
-  background: rgba(0, 0, 0, 0.3) !important;
-}
-
-.control-button:hover {
-  background: rgba(0, 255, 0, 0.1) !important;
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
-}
-
-.control-button svg {
-  width: 24px;
-  height: 24px;
-  fill: #00ff00;
-  transition: all 0.3s ease;
-}
-
-.control-button:hover svg {
-  filter: drop-shadow(0 0 3px #00ff00);
-}
-
-@media (max-width: 600px) {
-  .control-button svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  /* Добавьте эти стили в ваш существующий CSS файл */
-.control-panel {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: black;
-  padding: 10px;
-  border-top: 1px solid #00ff0033;
-  z-index: 1000;
-}
-
-.chat-input-form {
-  margin-bottom: 8px;
-}
-
-.chat-container {
-  height: calc(100vh - 120px);
-  overflow-y: auto;
-  padding-bottom: 120px;
-  scrollbar-width: thin;
-  scrollbar-color: #00ff00 #000000;
-}
-}
+/* Matrix rain, blood, и другие кастомные спецэффекты — добавить свои классы и анимации при необходимости */
