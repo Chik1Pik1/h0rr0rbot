@@ -37,6 +37,7 @@ const AudioProvider = ({ children }) => {
     const signal = new Audio('/music/signal.mp3');
     const background = new Audio('/music/fon.mp3');
     background.loop = true;
+    background.volume = 1.0;
     
     setSignalAudio(signal);
     setBackgroundAudio(background);
@@ -55,34 +56,17 @@ const AudioProvider = ({ children }) => {
 };
 
 const generateDailyKey = () => {
-  // Получаем текущую дату и время UTC
-  const now = new Date();
+  const today = new Date();
+  const date = today.toISOString().split('T')[0]; // Получаем текущую дату в формате YYYY-MM-DD
+  const USER_LOGIN = "Chik1Pik1";
   
-  // Формируем компоненты даты UTC
-  const year = now.getUTCFullYear();
-  const month = now.getUTCMonth() + 1;        // JavaScript месяцы начинаются с 0
-  const day = now.getUTCDate();
-  
-  // Создаем числовое значение только из даты (без времени)
-  // Это обеспечит одинаковый ключ в течение всего дня
-  const dateValue = year + month + day;
-  
-  // Создаем seed на основе только даты
-  let seed = dateValue % DEMON_KEYS.length;
-  
-  // Убеждаемся, что seed положительный
-  seed = Math.abs(seed);
-  
-  // Для отладки
-  console.log("Debug - Current UTC Date:", `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`);
-  console.log("Debug - Date Value:", dateValue);
-  console.log("Debug - Seed:", seed);
-  console.log("Debug - Selected Key:", DEMON_KEYS[seed]);
+  const SALT = USER_LOGIN.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  let seed = date.split('-').reduce((acc, num) => acc + parseInt(num), 0);
+  seed = (seed * SALT) % DEMON_KEYS.length;
   
   return DEMON_KEYS[seed];
 };
 
-// Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -98,23 +82,7 @@ const getBlockedUntil = () => {
 const setBlockedUntil = (date) => {
   localStorage.setItem('blockedUntil', date);
 };
-// Словарь для русских названий месяцев
-const RUSSIAN_MONTHS = {
-  1: "января",
-  2: "февраля",
-  3: "марта",
-  4: "апреля",
-  5: "мая",
-  6: "июня",
-  7: "июля",
-  8: "августа",
-  9: "сентября",
-  10: "октября",
-  11: "ноября",
-  12: "декабря"
-};
 
-// Форматирование даты и времени
 const formatDateTime = (date) => {
   return date.toLocaleString('ru-RU', {
     year: 'numeric',
@@ -126,13 +94,11 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
-// Генерация или получение UUID для пользователя
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
     userId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
     });
     localStorage.setItem('user_id', userId);
@@ -216,6 +182,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
     return codes;
   };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!key.trim() || attemptsLeft <= 0) return;
@@ -223,7 +190,6 @@ const AccessScreen = ({ onAccessGranted }) => {
     setIsLoading(true);
     setError('Проверка ключа...');
 
-    // Получаем правильный ключ на основе текущей даты UTC
     const correctKey = generateDailyKey();
     
     if (key === correctKey) {
@@ -233,7 +199,6 @@ const AccessScreen = ({ onAccessGranted }) => {
         signalAudio.play();
       }
 
-      // Сброс попыток при успешном входе
       setAttemptsLeft(3);
       localStorage.removeItem('blockedUntil');
 
@@ -245,7 +210,7 @@ const AccessScreen = ({ onAccessGranted }) => {
         setShowHackOverlay(true);
         setTimeout(() => {
           setShowHackOverlay(false);
-          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПЕРЕКЛЮЧЕНИЕ НА АВАРИЙНЫЙ ДОСТУП...');
+          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\n[...]');
           setTimeout(() => onAccessGranted(), 2000);
         }, 4000);
       }, 3000);
@@ -323,6 +288,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     </>
   );
 };
+
 const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
@@ -331,18 +297,25 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
     glitch: false 
   });
 
-  // Эффект для воспроизведения фоновой музыки
   useEffect(() => {
     if (backgroundAudio) {
-      backgroundAudio.play().catch(error => {
-        console.log("Ошибка воспроизведения аудио:", error);
-      });
+      backgroundAudio.volume = 1.0;
+      backgroundAudio.loop = true;
+      const playAudio = async () => {
+        try {
+          await backgroundAudio.play();
+        } catch (error) {
+          console.log("Autoplay prevented:", error);
+        }
+      };
+      playAudio();
     }
     return () => {
       if (backgroundAudio) {
@@ -351,174 +324,119 @@ const ChatScreen = () => {
     };
   }, [backgroundAudio]);
 
-  // Функция для отправки сообщения на сервер
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          message, 
-          user_id: userId,
-          timestamp: new Date().toISOString() // Добавляем временную метку
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, user_id: userId })
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Error sending message:", error);
-      return { 
-        reply: 'Я всё ещё здесь... Попробуй снова.', 
-        isLimitReached: false, 
-        isTimeLimitReached: false 
-      };
+      return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false, isTimeLimitReached: false };
     }
   };
 
-  // Обработчик отправки сообщения
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isDisconnected) return;
 
-    const userMessage = { 
-      sender: 'user', 
-      text: input,
-      timestamp: new Date().toISOString()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage = { sender: 'user', text: input };
+    setMessages([...messages, userMessage]);
     setInput('');
     setIsTyping(true);
 
-    // Добавляем случайную задержку для эффекта печатания (1-3 секунды)
-    const typingDelay = Math.random() * 2000 + 1000;
-    
-    try {
-      const response = await sendMessage(input);
-      
-      // Ждем окончания эффекта печатания
-      await new Promise(resolve => setTimeout(resolve, typingDelay));
-      
-      setIsTyping(false);
+    const response = await sendMessage(input);
+    setIsTyping(false);
 
-      if (response.isLimitReached) {
-        const demonMessage = { 
-          sender: 'demon', 
-          text: response.reply,
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, demonMessage]);
-        setIsDisconnected(true);
-      } else {
-        // Применяем случайные эффекты к сообщению демона
-        const shouldApplyBloodEffect = Math.random() < 0.3;
-        const shouldApplyGlitchEffect = Math.random() < 0.2;
-
-        setEffects({
-          blood: shouldApplyBloodEffect,
-          glitch: shouldApplyGlitchEffect
-        });
-
-        const demonMessage = { 
-          sender: 'demon', 
-          text: response.reply,
-          timestamp: new Date().toISOString(),
-          effects: {
-            blood: shouldApplyBloodEffect,
-            glitch: shouldApplyGlitchEffect
-          }
-        };
-
-        setMessages(prev => [...prev, demonMessage]);
-      }
-    } catch (error) {
-      console.error("Error in handleSubmit:", error);
-      setIsTyping(false);
-      setMessages(prev => [...prev, {
-        sender: 'demon',
-        text: 'Произошла ошибка... Но я всё ещё здесь.',
-        timestamp: new Date().toISOString()
-      }]);
+    if (response.isLimitReached) {
+      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      setIsDisconnected(true);
+    } else {
+      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
     }
-  };
-
-  // Функция для применения эффектов к тексту
-  const applyTextEffects = (text, messageEffects) => {
-    if (!messageEffects) return text;
-    
-    let processedText = text;
-    
-    if (messageEffects.glitch) {
-      processedText = processedText.split('').map(c => 
-        Math.random() < 0.15 ? '█' : c
-      ).join('');
-    }
-    
-    return processedText;
   };
 
   return (
-    <div className="flex flex-col h-full p-4 relative chat-fullscreen">
-      <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
+    <div className="flex flex-col h-full relative chat-fullscreen">
+      <div 
+        id="chat-container" 
+        className={`chat-container flex-grow overflow-y-auto ${isDisconnected ? 'chat-disabled' : ''}`}
+        style={{ paddingBottom: '120px' }}
+      >
         {messages.map((msg, index) => {
-          const processedText = applyTextEffects(msg.text, msg.effects);
+          let text = msg.text;
+          if (effects.glitch) {
+            text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
+          }
           
           const messageStyle = {
-            color: msg.sender === 'user' ? '#00ff00' : 
-                  (msg.effects?.blood ? '#ff2222' : '#ff0000'),
-            transform: msg.effects?.blood ? 'skew(-2deg)' : 'none'
+            color: msg.sender === 'user' ? '#00ff00' : (effects.blood ? '#ff2222' : '#ff0000'),
+            transform: effects.blood ? 'skew(-2deg)' : 'none'
           };
           
           return (
             <p
               key={index}
-              className={`text-xl mb-2 ${
-                msg.sender === 'user' ? 'text-user' : 'text-demon'
-              } ${
-                (msg.effects?.blood || msg.effects?.glitch) ? 'demon-effect' : ''
+              className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
+                (effects.blood || effects.glitch) ? 'demon-effect' : ''
               }`}
               style={messageStyle}
             >
-              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}
-              {processedText}
+              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
             </p>
           );
         })}
         {isTyping && !isDisconnected && (
-          <p className="text-demon text-xl blink">
-            [Сущность #7]: ...печатает...
-          </p>
+          <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-      <form onSubmit={handleSubmit} className="chat-input-form flex">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="flex-1 text-xl p-2 border focus:outline-none"
-          placeholder="Введи сообщение..."
-          disabled={isDisconnected}
-          style={{ color: '#00ff00', borderColor: '#00ff00' }}
+
+      <div className="control-panel" style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: 'black',
+        padding: '10px',
+        borderTop: '1px solid #00ff0033'
+      }}>
+        <form onSubmit={handleSubmit} className="chat-input-form flex mb-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            className="flex-1 text-xl p-2 border focus:outline-none mr-2"
+            placeholder="Введи сообщение..."
+            disabled={isDisconnected}
+            style={{ color: '#00ff00', borderColor: '#00ff00' }}
+          />
+          <button
+            type="submit"
+            className="text-xl border px-4 py-2"
+            disabled={isDisconnected}
+            style={{ color: '#00ff00', borderColor: '#00ff00' }}
+          >
+            Отправить
+          </button>
+        </form>
+
+        <div 
+          onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+          style={{
+            width: '40px',
+            height: '4px',
+            backgroundColor: '#00ff00',
+            margin: '0 auto',
+            cursor: 'pointer',
+            transition: 'transform 0.3s ease',
+            transform: isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+          }}
         />
-        <button
-          type="submit"
-          className="text-xl border px-4 py-2"
-          disabled={isDisconnected}
-          style={{ color: '#00ff00', borderColor: '#00ff00' }}
-        >
-          Отправить
-        </button>
-      </form>
+      </div>
     </div>
   );
 };
 
-// Рендеринг приложения
 ReactDOM.render(<App />, document.getElementById('root'));
