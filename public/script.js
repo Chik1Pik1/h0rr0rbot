@@ -1,5 +1,8 @@
 const { useState, useEffect } = React;
 
+// Audio context для управления звуком
+const AudioContext = React.createContext(null);
+
 // Список всех возможных ключей
 const DEMON_KEYS = [
   "Astaroth", "Baphomet", "Choronzon", "Dantalion", "Eligos", "Furfur", "Gremory", 
@@ -26,9 +29,6 @@ const DEMON_KEYS = [
   "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
 ];
 
-// Audio context for sound management
-const AudioContext = React.createContext(null);
-
 const AudioProvider = ({ children }) => {
   const [signalAudio, setSignalAudio] = useState(null);
   const [backgroundAudio, setBackgroundAudio] = useState(null);
@@ -54,16 +54,23 @@ const AudioProvider = ({ children }) => {
   );
 };
 
-// Функции для работы с ключами и попытками
 const generateDailyKey = () => {
-  const now = new Date();
-  const dateStr = now.toISOString().split('T')[0];
-  let seed = dateStr.split('-').reduce((acc, num) => acc + parseInt(num), 0);
-  const salt = "Chik1Pik1".split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  seed = (seed * salt) % DEMON_KEYS.length;
+  const date = "2025-05-22"; // Фиксированная дата
+  const USER_LOGIN = "Chik1Pik1"; // Фиксированный логин
+  
+  // Создаем соль на основе логина пользователя
+  const SALT = USER_LOGIN.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  
+  // Вычисляем сумму чисел из даты
+  let seed = date.split('-').reduce((acc, num) => acc + parseInt(num), 0);
+  
+  // Применяем соль и получаем индекс
+  seed = (seed * SALT) % DEMON_KEYS.length;
+  
   return DEMON_KEYS[seed];
 };
 
+// Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -80,6 +87,7 @@ const setBlockedUntil = (date) => {
   localStorage.setItem('blockedUntil', date);
 };
 
+// Форматирование даты и времени
 const formatDateTime = (date) => {
   return date.toLocaleString('ru-RU', {
     year: 'numeric',
@@ -134,8 +142,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     if (blockedUntil) {
       const blockDate = new Date(blockedUntil);
       if (blockDate > new Date()) {
-        const formattedDate = formatDateTime(blockDate);
-        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formattedDate}`);
+        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockDate)}`);
         setAttempts(0);
       } else {
         localStorage.removeItem('blockedUntil');
@@ -259,12 +266,14 @@ const AccessScreen = ({ onAccessGranted }) => {
                   className="flex-1 text-user text-xl p-2 border focus:outline-none"
                   placeholder="_________"
                   disabled={isLoading}
+                  style={{ color: '#00ff00', borderColor: '#00ff00' }}
                 />
               </div>
               <button
                 type="submit"
                 className="w-full text-user text-xl border px-4 py-2"
                 disabled={isLoading}
+                style={{ color: '#00ff00', borderColor: '#00ff00' }}
               >
                 Подтвердить
               </button>
@@ -354,16 +363,18 @@ const ChatScreen = () => {
             text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
           
+          const messageStyle = {
+            color: msg.sender === 'user' ? '#00ff00' : (effects.blood ? '#ff2222' : '#ff0000'),
+            transform: effects.blood ? 'skew(-2deg)' : 'none'
+          };
+          
           return (
             <p
               key={index}
               className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
                 (effects.blood || effects.glitch) ? 'demon-effect' : ''
               }`}
-              style={{
-                color: effects.blood ? '#ff2222' : '#ff0000',
-                transform: effects.blood ? 'skew(-2deg)' : 'none'
-              }}
+              style={messageStyle}
             >
               {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
             </p>
@@ -378,14 +389,16 @@ const ChatScreen = () => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="flex-1 text-user text-xl p-2 border focus:outline-none"
+          className="flex-1 text-xl p-2 border focus:outline-none"
           placeholder="Введи сообщение..."
           disabled={isDisconnected}
+          style={{ color: '#00ff00', borderColor: '#00ff00' }}
         />
         <button
           type="submit"
-          className="text-user text-xl border px-4 py-2"
+          className="text-xl border px-4 py-2"
           disabled={isDisconnected}
+          style={{ color: '#00ff00', borderColor: '#00ff00' }}
         >
           Отправить
         </button>
