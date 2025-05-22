@@ -13,16 +13,6 @@ const getUserId = () => {
   return userId;
 };
 
-// Функция для воспроизведения аудио
-const playAudio = (src, loop = false) => {
-  const audio = document.getElementById('audio-hack').cloneNode();
-  audio.src = src;
-  audio.loop = loop;
-  audio.muted = false; // Включаем звук после клонирования
-  audio.play().catch(error => console.log('Audio play error:', error));
-  return audio;
-};
-
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
@@ -44,30 +34,15 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
 
-  // Сигнал ошибки управляется только оверлеем
-  useEffect(() => {
-    let audio = null;
-    if (showErrorOverlay) {
-      audio = playAudio('/music/signal.mp3');
-    }
-    return () => {
-      if (audio) {
-        audio.pause();
-        audio.currentTime = 0;
-      }
-    };
-  }, [showErrorOverlay]);
-
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!key.trim()) {
       setError('ВВЕДИТЕ КЛЮЧ.');
       return;
     }
-
     setIsLoading(true);
     setError('Проверка ключа...');
-    // Этап 1: Показать ошибку на весь экран (звук стартанёт через useEffect)
+    // Этап 1: Показать ошибку на весь экран
     setShowErrorOverlay(true);
     setTimeout(() => {
       setShowErrorOverlay(false);
@@ -76,11 +51,8 @@ const AccessScreen = ({ onAccessGranted }) => {
       setTimeout(() => {
         setShowHackOverlay(false);
         // Этап 3: Вернуть окно входа
-        setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПРОДОЛЖЕНИЕ...');
-        setIsLoading(false);
-        setTimeout(() => {
-          onAccessGranted();
-        }, 2000);
+        setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
+        setTimeout(() => onAccessGranted(), 2000);
       }, 4000);
     }, 3000);
   };
@@ -186,17 +158,7 @@ const ChatScreen = () => {
     glitch: false 
   });
 
-  // Фоновая музыка: запуск только в чате
-  useEffect(() => {
-    const bgMusic = playAudio('/music/fon.mp3', true);
-    window.bgMusic = bgMusic;
-    return () => {
-      if (window.bgMusic) {
-        window.bgMusic.pause();
-        window.bgMusic = null;
-      }
-    };
-  }, []);
+  // Активация эффекvärr
 
   // Отправка сообщения
   const sendMessage = async (message) => {
