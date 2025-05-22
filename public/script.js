@@ -55,15 +55,22 @@ const AudioProvider = ({ children }) => {
 };
 
 const generateDailyKey = () => {
-  const date = "2025-05-22"; // Текущая фиксированная дата
-  const USER_LOGIN = "Chik1Pik1"; // Текущий фиксированный логин
+  // Используем текущую дату
+  const date = new Date().toISOString().split('T')[0]; // Получаем текущую дату в формате YYYY-MM-DD
+  const USER_LOGIN = "Chik1Pik1"; // Фиксированный логин
   
+  // Создаем соль на основе логина пользователя
   const SALT = USER_LOGIN.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  
+  // Вычисляем сумму чисел из даты
   let seed = date.split('-').reduce((acc, num) => acc + parseInt(num), 0);
+  
+  // Применяем соль и получаем индекс
   seed = (seed * SALT) % DEMON_KEYS.length;
   
   return DEMON_KEYS[seed];
 };
+
 // Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
@@ -210,7 +217,7 @@ const AccessScreen = ({ onAccessGranted }) => {
         setShowHackOverlay(true);
         setTimeout(() => {
           setShowHackOverlay(false);
-          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\n[...]');
+          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\n[...]\nСОЕДИНЕНИЕ УСТАНОВЛЕНО.');
           setTimeout(() => onAccessGranted(), 2000);
         }, 4000);
       }, 3000);
@@ -288,6 +295,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     </>
   );
 };
+
 const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
@@ -296,57 +304,44 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
     glitch: false 
   });
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   useEffect(() => {
     if (backgroundAudio) {
-      backgroundAudio.volume = 0.3;
-      const playAudio = async () => {
-        try {
-          await backgroundAudio.play();
-          setIsAudioPlaying(true);
-        } catch (error) {
-          console.log("Autoplay prevented:", error);
-          setIsAudioPlaying(false);
-        }
-      };
-      playAudio();
+      backgroundAudio.play();
     }
     return () => {
       if (backgroundAudio) {
         backgroundAudio.pause();
-        setIsAudioPlaying(false);
       }
     };
   }, [backgroundAudio]);
-
-  const toggleAudio = async () => {
-    if (backgroundAudio) {
-      try {
-        if (isAudioPlaying) {
-          backgroundAudio.pause();
-          setIsAudioPlaying(false);
-        } else {
-          await backgroundAudio.play();
-          setIsAudioPlaying(true);
-        }
-      } catch (error) {
-        console.log("Audio toggle failed:", error);
-      }
-    }
-  };
-
-  const toggleFullscreen = () => {
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.expand();
-    }
-  };
 
   const sendMessage = async (message) => {
     try {
@@ -384,12 +379,7 @@ const ChatScreen = () => {
 
   return (
     <div className="flex flex-col h-full p-4 relative chat-fullscreen">
-      {/* Чат контейнер */}
-      <div 
-        id="chat-container" 
-        className={`chat-container flex-grow overflow-auto mb-4 ${isDisconnected ? 'chat-disabled' : ''}`}
-        style={{ marginBottom: '16px' }}
-      >
+      <div id="chat-container" className={`chat-container flex-grow overflow-y-auto ${isDisconnected ? 'chat-disabled' : ''}`}>
         {messages.map((msg, index) => {
           let text = msg.text;
           if (effects.glitch) {
@@ -417,10 +407,7 @@ const ChatScreen = () => {
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-
-      {/* Нижняя панель с вводом и меню */}
-      <div className="chat-bottom-panel" style={{ marginTop: 'auto' }}>
-        {/* Форма ввода */}
+      <div className="mt-4">
         <form onSubmit={handleSubmit} className="chat-input-form flex mb-2">
           <input
             type="text"
@@ -429,11 +416,7 @@ const ChatScreen = () => {
             className="flex-1 text-xl p-2 border focus:outline-none"
             placeholder="Введи сообщение..."
             disabled={isDisconnected}
-            style={{ 
-              color: '#00ff00', 
-              borderColor: '#00ff00',
-              marginRight: '8px' // Отступ между инпутом и кнопкой
-            }}
+            style={{ color: '#00ff00', borderColor: '#00ff00' }}
           />
           <button
             type="submit"
@@ -444,86 +427,14 @@ const ChatScreen = () => {
             Отправить
           </button>
         </form>
-
-        {/* Выдвижное меню */}
-        <div className="drawer-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          {/* Штрих для открытия меню */}
-          <div 
-            className="drawer-handle"
-            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            style={{
-              width: '40px',
-              height: '4px',
-              backgroundColor: '#00ff00',
-              borderRadius: '2px',
-              cursor: 'pointer',
-              transition: 'transform 0.3s ease',
-              transform: isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-            }}
-          />
-
-          {/* Содержимое выдвижного меню */}
-          <div 
-            className="drawer-content"
-            style={{
-              width: '100%',
-              maxHeight: isDrawerOpen ? '200px' : '0',
-              overflow: 'hidden',
-              transition: 'max-height 0.3s ease',
-              display: 'flex',
-              justifyContent: 'center',
-              padding: isDrawerOpen ? '8px 0' : '0'
-            }}
+        <div className="flex justify-center">
+          <button
+            onClick={toggleFullscreen}
+            className="text-xl border px-4 py-2"
+            style={{ color: '#00ff00', borderColor: '#00ff00' }}
           >
-            <div
-              className="drawer-buttons"
-              style={{
-                display: 'flex',
-                gap: '16px',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: '1px solid #00ff00'
-              }}
-            >
-              <button
-                onClick={toggleAudio}
-                className="control-button"
-                style={{
-                  background: 'none',
-                  border: '1px solid #00ff00',
-                  color: '#00ff00',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                {isAudioPlaying ? '🔊' : '🔇'} Звук
-              </button>
-              
-              <button
-                onClick={toggleFullscreen}
-                className="control-button"
-                style={{
-                  background: 'none',
-                  border: '1px solid #00ff00',
-                  color: '#00ff00',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                📺 Полный экран
-              </button>
-            </div>
-          </div>
+            {isFullscreen ? 'Выйти из полноэкранного режима' : 'Полноэкранный режим'}
+          </button>
         </div>
       </div>
     </div>
