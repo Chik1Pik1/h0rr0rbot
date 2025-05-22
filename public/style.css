@@ -261,3 +261,83 @@ button:disabled {
     font-size: 1rem;
     padding: 6px;
   }
+
+  .chat-container {
+    max-height: 75vh;
+  }
+
+  h1, p, input, button {
+    font-size: 1rem !important;
+  }
+
+  .error-overlay-fullscreen {
+    font-size: 1.5rem;
+  }
+
+  .hack-code {
+    font-size: 0.8rem;
+  }
+}
+
+/* Анимация матричного кода */
+.matrix-rain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 255, 0, 0.2) 0%,
+    rgba(0, 255, 0, 0.05) 100%
+  );
+  animation: matrix-rain 10s linear infinite;
+}
+
+.hack-code {
+  position: absolute;
+  white-space: nowrap;
+  color: #00ff00;
+  text-shadow: 0 0 5px #00ff00;
+  animation: hack-scroll linear infinite;
+  font-family: monospace;
+}
+
+@keyframes hack-scroll {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(-100%); }
+}
+
+@keyframes matrix-rain {
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Стили для кнопок управления и SVG-иконок */
+.control-button {
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.control-button:hover {
+  background: rgba(0, 255, 0, 0.1) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+}
+
+.control-button svg {
+  width: 24px;
+  height: 24px;
+  fill: #00ff00;
+  transition: all 0.3s ease;
+}
+
+.control-button:hover svg {
+  filter: drop-shadow(0 0 3px #00ff00);
+}
+
+@media (max-width: 600px) {
+  .control-button svg {
+    width: 20px;
+    height: 20px;
+  }
+}
