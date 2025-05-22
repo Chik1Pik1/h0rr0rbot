@@ -64,6 +64,7 @@ const generateDailyKey = () => {
   
   return DEMON_KEYS[seed];
 };
+
 // Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
@@ -288,6 +289,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     </>
   );
 };
+
 const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
@@ -343,8 +345,10 @@ const ChatScreen = () => {
   };
 
   const toggleFullscreen = () => {
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.expand();
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen().catch(console.error);
     }
   };
 
@@ -419,7 +423,7 @@ const ChatScreen = () => {
       </div>
 
       {/* Нижняя панель с вводом и меню */}
-      <div className="chat-bottom-panel" style={{ marginTop: 'auto' }}>
+      <div className="chat-bottom-panel" style={{ marginTop: 'auto', position: 'relative' }}>
         {/* Форма ввода */}
         <form onSubmit={handleSubmit} className="chat-input-form flex mb-2">
           <input
@@ -432,7 +436,7 @@ const ChatScreen = () => {
             style={{ 
               color: '#00ff00', 
               borderColor: '#00ff00',
-              marginRight: '8px' // Отступ между инпутом и кнопкой
+              marginRight: '8px'
             }}
           />
           <button
@@ -446,7 +450,14 @@ const ChatScreen = () => {
         </form>
 
         {/* Выдвижное меню */}
-        <div className="drawer-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div className="drawer-container" style={{ 
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          position: 'absolute',
+          bottom: '-30px'
+        }}>
           {/* Штрих для открытия меню */}
           <div 
             className="drawer-handle"
@@ -502,7 +513,14 @@ const ChatScreen = () => {
                   gap: '8px'
                 }}
               >
-                {isAudioPlaying ? '🔊' : '🔇'} Звук
+                <svg viewBox="0 0 24 24">
+                  {isAudioPlaying ? (
+                    <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77zm-4 0l-4 4-4-4-3 3 4 4-4 4 3 3 4-4 4 4 3-3-4-4 4-4-3-3-4 4zM12 7v10l-3.2-3.2-2.8 2.8-2-2 2.8-2.8-2.8-2.8 2-2 2.8 2.8 3.2-3.2z"/>
+                  ) : (
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51c.66-1.24 1.03-2.65 1.03-4.15s-.37-2.91-1.03-4.15l-1.51 1.51c.34.82.54 1.7.54 2.64zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                  )}
+                </svg>
+                Звук
               </button>
               
               <button
@@ -520,7 +538,10 @@ const ChatScreen = () => {
                   gap: '8px'
                 }}
               >
-                📺 Полный экран
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
+                Полный экран
               </button>
             </div>
           </div>
