@@ -37,7 +37,6 @@ const AudioProvider = ({ children }) => {
     const signal = new Audio('/music/signal.mp3');
     const background = new Audio('/music/fon.mp3');
     background.loop = true;
-    background.volume = 1.0;
     
     setSignalAudio(signal);
     setBackgroundAudio(background);
@@ -56,9 +55,8 @@ const AudioProvider = ({ children }) => {
 };
 
 const generateDailyKey = () => {
-  const today = new Date();
-  const date = today.toISOString().split('T')[0]; // Получаем текущую дату в формате YYYY-MM-DD
-  const USER_LOGIN = "Chik1Pik1";
+  const date = "2025-05-22"; // Текущая фиксированная дата
+  const USER_LOGIN = "Chik1Pik1"; // Текущий фиксированный логин
   
   const SALT = USER_LOGIN.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   let seed = date.split('-').reduce((acc, num) => acc + parseInt(num), 0);
@@ -67,6 +65,7 @@ const generateDailyKey = () => {
   return DEMON_KEYS[seed];
 };
 
+// Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -83,6 +82,7 @@ const setBlockedUntil = (date) => {
   localStorage.setItem('blockedUntil', date);
 };
 
+// Форматирование даты и времени
 const formatDateTime = (date) => {
   return date.toLocaleString('ru-RU', {
     year: 'numeric',
@@ -94,6 +94,7 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
+// Generate or retrieve UUID for user
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -297,22 +298,24 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const userId = getUserId();
-  const [effects, setEffects] = useState({
-    blood: false,
-    glitch: false
+  const [effects, setEffects] = useState({ 
+    blood: false, 
+    glitch: false 
   });
 
   useEffect(() => {
     if (backgroundAudio) {
-      backgroundAudio.volume = 1.0;
-      backgroundAudio.loop = true;
+      backgroundAudio.volume = 0.3;
       const playAudio = async () => {
         try {
           await backgroundAudio.play();
+          setIsAudioPlaying(true);
         } catch (error) {
           console.log("Autoplay prevented:", error);
+          setIsAudioPlaying(false);
         }
       };
       playAudio();
@@ -320,9 +323,34 @@ const ChatScreen = () => {
     return () => {
       if (backgroundAudio) {
         backgroundAudio.pause();
+        setIsAudioPlaying(false);
       }
     };
   }, [backgroundAudio]);
+
+  const toggleAudio = async () => {
+    if (backgroundAudio) {
+      try {
+        if (isAudioPlaying) {
+          backgroundAudio.pause();
+          setIsAudioPlaying(false);
+        } else {
+          await backgroundAudio.play();
+          setIsAudioPlaying(true);
+        }
+      } catch (error) {
+        console.log("Audio toggle failed:", error);
+      }
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen().catch(console.error);
+    }
+  };
 
   const sendMessage = async (message) => {
     try {
@@ -358,101 +386,165 @@ const ChatScreen = () => {
     }
   };
 
-  // Пример скрытого меню (можете доработать под свои нужды)
-  const drawerHeight = 120; // px, можно увеличить если меню выше
-
   return (
-    <div className="flex flex-col h-full relative chat-fullscreen">
-      <div
-        id="chat-container"
-        className={`chat-container flex-grow overflow-y-auto ${isDisconnected ? 'chat-disabled' : ''}`}
-        style={{ paddingBottom: '120px' }}
+    <div className="flex flex-col h-full p-4 relative chat-fullscreen">
+      {/* Чат контейнер */}
+      <div 
+        id="chat-container" 
+        className={`chat-container flex-grow overflow-auto mb-4 ${isDisconnected ? 'chat-disabled' : ''}`}
+        style={{ marginBottom: '16px' }}
       >
         {messages.map((msg, index) => {
           let text = msg.text;
           if (effects.glitch) {
-            // ... эффект глитча если нужен ...
+            text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
+          
+          const messageStyle = {
+            color: msg.sender === 'user' ? '#00ff00' : (effects.blood ? '#ff2222' : '#ff0000'),
+            transform: effects.blood ? 'skew(-2deg)' : 'none'
+          };
+          
           return (
-            <div key={index} className={msg.sender === 'user' ? 'text-user' : 'text-demon'}>
-              {text}
-            </div>
+            <p
+              key={index}
+              className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
+                (effects.blood || effects.glitch) ? 'demon-effect' : ''
+              }`}
+              style={messageStyle}
+            >
+              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
+            </p>
           );
         })}
-        {isTyping && (
-          <div className="text-demon">...</div>
+        {isTyping && !isDisconnected && (
+          <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
 
-      {/* Скрытое меню */}
-      {isDrawerOpen && (
-        <div
-          className="drawer-menu"
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: `${drawerHeight}px`,
-            background: '#111',
-            borderTop: '2px solid #00ff00',
-            zIndex: 1100,
-            color: '#00ff00',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          {/* Здесь содержимое меню */}
-          <span>Скрытое меню (здесь ваши пункты)</span>
-        </div>
-      )}
-
-      <div
-        className="control-panel"
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: isDrawerOpen ? `${drawerHeight}px` : 0,
-          background: 'black',
-          padding: '10px',
-          borderTop: '1px solid #00ff0033',
-          zIndex: 1200,
-          transition: 'bottom 0.3s cubic-bezier(.86,0,.07,1)'
-        }}
-      >
-        <form onSubmit={handleSubmit} className="chat-input-form">
+      {/* Нижняя панель с вводом и меню */}
+      <div className="chat-bottom-panel" style={{ marginTop: 'auto', position: 'relative' }}>
+        {/* Форма ввода */}
+        <form onSubmit={handleSubmit} className="chat-input-form flex mb-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="chat-input"
+            className="flex-1 text-xl p-2 border focus:outline-none"
             placeholder="Введи сообщение..."
             disabled={isDisconnected}
-            style={{ color: '#00ff00', borderColor: '#00ff00' }}
+            style={{ 
+              color: '#00ff00', 
+              borderColor: '#00ff00',
+              marginRight: '8px'
+            }}
           />
           <button
             type="submit"
-            className="chat-send-btn"
+            className="text-xl border px-4 py-2"
             disabled={isDisconnected}
             style={{ color: '#00ff00', borderColor: '#00ff00' }}
           >
             Отправить
           </button>
         </form>
-        <div
-          className="drawer-toggle-btn"
-          onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-          style={{
-            marginTop: 8,
-            textAlign: 'center',
-            color: '#00ff00',
-            cursor: 'pointer',
-            userSelect: 'none'
-          }}
-        >
-          {isDrawerOpen ? 'Закрыть меню ▲' : 'Меню ▼'}
+
+        {/* Выдвижное меню */}
+        <div className="drawer-container" style={{ 
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          position: 'absolute',
+          bottom: '-30px'
+        }}>
+          {/* Штрих для открытия меню */}
+          <div 
+            className="drawer-handle"
+            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+            style={{
+              width: '40px',
+              height: '4px',
+              backgroundColor: '#00ff00',
+              borderRadius: '2px',
+              cursor: 'pointer',
+              transition: 'transform 0.3s ease',
+              transform: isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+            }}
+          />
+
+          {/* Содержимое выдвижного меню */}
+          <div 
+            className="drawer-content"
+            style={{
+              width: '100%',
+              maxHeight: isDrawerOpen ? '200px' : '0',
+              overflow: 'hidden',
+              transition: 'max-height 0.3s ease',
+              display: 'flex',
+              justifyContent: 'center',
+              padding: isDrawerOpen ? '8px 0' : '0'
+            }}
+          >
+            <div
+              className="drawer-buttons"
+              style={{
+                display: 'flex',
+                gap: '16px',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                border: '1px solid #00ff00'
+              }}
+            >
+              <button
+                onClick={toggleAudio}
+                className="control-button"
+                style={{
+                  background: 'none',
+                  border: '1px solid #00ff00',
+                  color: '#00ff00',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <svg viewBox="0 0 24 24">
+                  {isAudioPlaying ? (
+                    <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77zm-4 0l-4 4-4-4-3 3 4 4-4 4 3 3 4-4 4 4 3-3-4-4 4-4-3-3-4 4zM12 7v10l-3.2-3.2-2.8 2.8-2-2 2.8-2.8-2.8-2.8 2-2 2.8 2.8 3.2-3.2z"/>
+                  ) : (
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51c.66-1.24 1.03-2.65 1.03-4.15s-.37-2.91-1.03-4.15l-1.51 1.51c.34.82.54 1.7.54 2.64zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                  )}
+                </svg>
+                Звук
+              </button>
+              
+              <button
+                onClick={toggleFullscreen}
+                className="control-button"
+                style={{
+                  background: 'none',
+                  border: '1px solid #00ff00',
+                  color: '#00ff00',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
+                Полный экран
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
