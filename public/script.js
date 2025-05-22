@@ -1,7 +1,103 @@
 const { useState, useEffect } = React;
 
-// Audio Context
-const AudioContext = React.createContext();
+// Audio context для управления звуком
+const AudioContext = React.createContext(null);
+
+// Список всех возможных ключей
+const DEMON_KEYS = [
+  "Astaroth", "Baphomet", "Choronzon", "Dantalion", "Eligos", "Furfur", "Gremory", 
+  "Haagenti", "Incubus", "Jinn", "Kobold", "Leviathan", "Mammon", "Naberius", 
+  "Oriax", "Paimon", "Raum", "Samael", "Tannin", "Ukobach", "Valac", "Wendigo", 
+  "Xaphan", "Yaksha", "Zagan", "Necronomicon", "Goetia", "Qliphoth", "ArsGoetia", 
+  "Azazel", "Belial", "Beelzebub", "Asmodeus", "Lilith", "Moloch", "Abaddon", 
+  "Amon", "Andras", "Agares", "Barbatos", "Buer", "Caim", "Decarabia", "Forneus", 
+  "Gamigin", "Ipos", "Leraje", "Malphas", "Orobas", "Phenex", "Ronove", "Sabnock", 
+  "Seere", "Shax", "Stolas", "Vepar", "Zepar", "Nyarlathotep", "Cthulhu", 
+  "YogSothoth", "Dagon", "ShubNiggurath", "Akuma", "Oni", "Kitsune", "Djinn", 
+  "Ifrit", "Marid", "Ghul", "Dybbuk", "Nephilim", "Grigori", "Archon", "Aeon", 
+  "Egregore", "Goetic", "Enochian", "Theurgy", "Necromancy", "Thaumaturgy", 
+  "Solomonic", "Hexagram", "Pentacle", "Sigil", "Abraxas", "Akasha", "Chthonic", 
+  "Erebus", "Hecate", "Infernal", "Lemegethon", "Mephisto", "Pandemonium", 
+  "Stygian", "Tartarus", "Zoroaster", "Banshee", "Doppelganger", "Poltergeist", 
+  "Wraith", "Shadowman", "Skinwalker", "Wendigo", "Ouija", "Exorcism", 
+  "Possession", "Divination", "Scrying", "Familiar", "Coven", "Sabbat", 
+  "Akelarre", "Athame", "Boline", "Chalice", "Grimoire", "Mandrake", "Obsidian", 
+  "Runes", "Talisman", "Vortex", "Ziggurat", "BlackMass", "BloodPact", 
+  "DarkRite", "Infernum", "Nocturnal", "Occultus", "Phantasm", "Seraphim", 
+  "Tenebrae", "Umbra", "Voodoo", "Witching", "Xibalba", "Yatagarasu", 
+  "Zephyrus", "Maleficium", "Strigoi", "Karcist", "Qlippoth", "Sephirot", 
+  "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
+];
+
+const AudioProvider = ({ children }) => {
+  const [signalAudio, setSignalAudio] = useState(null);
+  const [backgroundAudio, setBackgroundAudio] = useState(null);
+
+  useEffect(() => {
+    const signal = new Audio('/music/signal.mp3');
+    const background = new Audio('/music/fon.mp3');
+    background.loop = true;
+    
+    setSignalAudio(signal);
+    setBackgroundAudio(background);
+
+    return () => {
+      signal.pause();
+      background.pause();
+    };
+  }, []);
+
+  return (
+    <AudioContext.Provider value={{ signalAudio, backgroundAudio }}>
+      {children}
+    </AudioContext.Provider>
+  );
+};
+
+const generateDailyKey = () => {
+  const date = "2025-05-22"; // Фиксированная дата
+  const USER_LOGIN = "Chik1Pik1"; // Фиксированный логин
+  
+  // Создаем соль на основе логина пользователя
+  const SALT = USER_LOGIN.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  
+  // Вычисляем сумму чисел из даты
+  let seed = date.split('-').reduce((acc, num) => acc + parseInt(num), 0);
+  
+  // Применяем соль и получаем индекс
+  seed = (seed * SALT) % DEMON_KEYS.length;
+  
+  return DEMON_KEYS[seed];
+};
+
+// Функции для работы с попытками и блокировкой
+const getAttemptsLeft = () => {
+  return parseInt(localStorage.getItem('attemptsLeft') || '3');
+};
+
+const setAttemptsLeft = (attempts) => {
+  localStorage.setItem('attemptsLeft', attempts.toString());
+};
+
+const getBlockedUntil = () => {
+  return localStorage.getItem('blockedUntil') || '';
+};
+
+const setBlockedUntil = (date) => {
+  localStorage.setItem('blockedUntil', date);
+};
+
+// Форматирование даты и времени
+const formatDateTime = (date) => {
+  return date.toLocaleString('ru-RU', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }).replace(',', '');
+};
 
 // Generate or retrieve UUID for user
 const getUserId = () => {
@@ -14,39 +110,6 @@ const getUserId = () => {
     localStorage.setItem('user_id', userId);
   }
   return userId;
-};
-
-// Audio Provider Component
-const AudioProvider = ({ children }) => {
-  const [backgroundAudio, setBackgroundAudio] = useState(null);
-
-  useEffect(() => {
-    const background = new Audio('/music/fon.mp3');
-    background.loop = true;
-    background.volume = 0.5;
-    
-    const preloadAudio = async () => {
-      try {
-        await background.load();
-      } catch (error) {
-        console.warn("Audio preload failed:", error);
-      }
-    };
-    
-    preloadAudio();
-    setBackgroundAudio(background);
-
-    return () => {
-      background.pause();
-      background.src = '';
-    };
-  }, []);
-
-  return (
-    <AudioContext.Provider value={{ backgroundAudio }}>
-      {children}
-    </AudioContext.Provider>
-  );
 };
 
 const App = () => {
@@ -66,45 +129,28 @@ const App = () => {
 };
 
 const AccessScreen = ({ onAccessGranted }) => {
+  const { signalAudio } = React.useContext(AudioContext);
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
-  const { backgroundAudio } = React.useContext(AudioContext);
+  const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!key.trim()) {
-      setError('ВВЕДИТЕ КЛЮЧ.');
-      return;
+  useEffect(() => {
+    const blockedUntil = getBlockedUntil();
+    if (blockedUntil) {
+      const blockDate = new Date(blockedUntil);
+      if (blockDate > new Date()) {
+        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockDate)}`);
+        setAttempts(0);
+      } else {
+        localStorage.removeItem('blockedUntil');
+        setAttemptsLeft(3);
+        setAttempts(3);
+      }
     }
-    setIsLoading(true);
-    setError('Проверка ключа...');
-
-    // Этап 1: Показать ошибку на весь экран
-    setShowErrorOverlay(true);
-    setTimeout(() => {
-      setShowErrorOverlay(false);
-      
-      // Этап 2: Показать взлом на весь экран
-      setShowHackOverlay(true);
-      setTimeout(() => {
-        setShowHackOverlay(false);
-        
-        // Этап 3: Вернуть окно входа и запустить звук
-        setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.');
-        setTimeout(() => {
-          if (backgroundAudio) {
-            backgroundAudio.play().catch(error => {
-              console.warn("Autoplay prevented:", error);
-            });
-          }
-          onAccessGranted();
-        }, 2000);
-      }, 4000);
-    }, 3000);
-  };
+  }, []);
 
   const generateHackCode = () => {
     const snippets = [
@@ -143,6 +189,54 @@ const AccessScreen = ({ onAccessGranted }) => {
     return codes;
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!key.trim() || attemptsLeft <= 0) return;
+
+    setIsLoading(true);
+    setError('Проверка ключа...');
+
+    const correctKey = generateDailyKey();
+    
+    if (key === correctKey) {
+      setShowErrorOverlay(true);
+      if (signalAudio) {
+        signalAudio.currentTime = 0;
+        signalAudio.play();
+      }
+
+      setAttemptsLeft(3);
+      localStorage.removeItem('blockedUntil');
+
+      setTimeout(() => {
+        setShowErrorOverlay(false);
+        if (signalAudio) {
+          signalAudio.pause();
+        }
+        setShowHackOverlay(true);
+        setTimeout(() => {
+          setShowHackOverlay(false);
+          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ...');
+          setTimeout(() => onAccessGranted(), 2000);
+        }, 4000);
+      }, 3000);
+    } else {
+      const newAttempts = attemptsLeft - 1;
+      setAttempts(newAttempts);
+      setAttemptsLeft(newAttempts);
+      
+      if (newAttempts <= 0) {
+        const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        setBlockedUntil(blockUntil.toISOString());
+        const formattedDate = formatDateTime(blockUntil);
+        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formattedDate}`);
+      } else {
+        setError(`НЕВЕРНЫЙ КЛЮЧ. ОСТАЛОСЬ ПОПЫТОК: ${newAttempts}`);
+      }
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
       {showErrorOverlay && (
@@ -161,26 +255,35 @@ const AccessScreen = ({ onAccessGranted }) => {
           <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
           <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
-          <form onSubmit={handleSubmit} className="w-full max-w-sm">
-            <div className="flex items-center mb-4">
-              <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
-              <input
-                type="text"
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                className="flex-1 text-user text-xl p-2 border focus:outline-none"
-                placeholder="_________"
+          {attemptsLeft > 0 ? (
+            <form onSubmit={handleSubmit} className="w-full max-w-sm">
+              <div className="flex items-center mb-4">
+                <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
+                <input
+                  type="text"
+                  value={key}
+                  onChange={(e) => setKey(e.target.value)}
+                  className="flex-1 text-user text-xl p-2 border focus:outline-none"
+                  placeholder="_________"
+                  disabled={isLoading}
+                  style={{ color: '#00ff00', borderColor: '#00ff00' }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full text-user text-xl border px-4 py-2"
                 disabled={isLoading}
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full text-user text-xl border px-4 py-2"
-              disabled={isLoading}
-            >
-              Подтвердить
-            </button>
-          </form>
+                style={{ color: '#00ff00', borderColor: '#00ff00' }}
+              >
+                Подтвердить
+              </button>
+              <p className="text-demon text-xl mt-2">
+                Осталось попыток: {attemptsLeft}
+              </p>
+            </form>
+          ) : (
+            <p className="text-demon text-xl mt-4 blink">ДОСТУП ЗАБЛОКИРОВАН</p>
+          )}
           {error && (
             <p className="text-demon text-xl mt-4 blink" style={{ whiteSpace: 'pre-line' }}>
               {error}
@@ -207,6 +310,9 @@ const ChatScreen = () => {
   });
 
   useEffect(() => {
+    if (backgroundAudio) {
+      backgroundAudio.play();
+    }
     return () => {
       if (backgroundAudio) {
         backgroundAudio.pause();
@@ -257,16 +363,18 @@ const ChatScreen = () => {
             text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
           
+          const messageStyle = {
+            color: msg.sender === 'user' ? '#00ff00' : (effects.blood ? '#ff2222' : '#ff0000'),
+            transform: effects.blood ? 'skew(-2deg)' : 'none'
+          };
+          
           return (
             <p
               key={index}
               className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
                 (effects.blood || effects.glitch) ? 'demon-effect' : ''
               }`}
-              style={{
-                color: effects.blood ? '#ff2222' : '#ff0000',
-                transform: effects.blood ? 'skew(-2deg)' : 'none'
-              }}
+              style={messageStyle}
             >
               {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
             </p>
@@ -281,14 +389,16 @@ const ChatScreen = () => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="flex-1 text-user text-xl p-2 border focus:outline-none"
+          className="flex-1 text-xl p-2 border focus:outline-none"
           placeholder="Введи сообщение..."
           disabled={isDisconnected}
+          style={{ color: '#00ff00', borderColor: '#00ff00' }}
         />
         <button
           type="submit"
-          className="text-user text-xl border px-4 py-2"
+          className="text-xl border px-4 py-2"
           disabled={isDisconnected}
+          style={{ color: '#00ff00', borderColor: '#00ff00' }}
         >
           Отправить
         </button>
