@@ -28,6 +28,7 @@ const DEMON_KEYS = [
   "Zephyrus", "Maleficium", "Strigoi", "Karcist", "Qlippoth", "Sephirot", 
   "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
 ];
+
 const AudioProvider = ({ children }) => {
   const [signalAudio, setSignalAudio] = useState(null);
   const [backgroundAudio, setBackgroundAudio] = useState(null);
@@ -54,21 +55,15 @@ const AudioProvider = ({ children }) => {
 };
 
 const generateDailyKey = () => {
-  const date = "2025-05-22"; // Фиксированная дата
-  const USER_LOGIN = "Chik1Pik1"; // Фиксированный логин
+  const date = "2025-05-22"; // Текущая фиксированная дата
+  const USER_LOGIN = "Chik1Pik1"; // Текущий фиксированный логин
   
-  // Создаем соль на основе логина пользователя
   const SALT = USER_LOGIN.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  
-  // Вычисляем сумму чисел из даты
   let seed = date.split('-').reduce((acc, num) => acc + parseInt(num), 0);
-  
-  // Применяем соль и получаем индекс
   seed = (seed * SALT) % DEMON_KEYS.length;
   
   return DEMON_KEYS[seed];
 };
-
 // Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
@@ -126,6 +121,7 @@ const App = () => {
     </AudioProvider>
   );
 };
+
 const AccessScreen = ({ onAccessGranted }) => {
   const { signalAudio } = React.useContext(AudioContext);
   const [key, setKey] = useState('');
@@ -300,6 +296,8 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
@@ -308,14 +306,14 @@ const ChatScreen = () => {
 
   useEffect(() => {
     if (backgroundAudio) {
-      // Устанавливаем громкость на комфортный уровень
       backgroundAudio.volume = 0.3;
-      // Включаем автоматическое воспроизведение
       const playAudio = async () => {
         try {
           await backgroundAudio.play();
+          setIsAudioPlaying(true);
         } catch (error) {
           console.log("Autoplay prevented:", error);
+          setIsAudioPlaying(false);
         }
       };
       playAudio();
@@ -323,9 +321,32 @@ const ChatScreen = () => {
     return () => {
       if (backgroundAudio) {
         backgroundAudio.pause();
+        setIsAudioPlaying(false);
       }
     };
   }, [backgroundAudio]);
+
+  const toggleAudio = async () => {
+    if (backgroundAudio) {
+      try {
+        if (isAudioPlaying) {
+          backgroundAudio.pause();
+          setIsAudioPlaying(false);
+        } else {
+          await backgroundAudio.play();
+          setIsAudioPlaying(true);
+        }
+      } catch (error) {
+        console.log("Audio toggle failed:", error);
+      }
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.expand();
+    }
+  };
 
   const sendMessage = async (message) => {
     try {
@@ -363,7 +384,12 @@ const ChatScreen = () => {
 
   return (
     <div className="flex flex-col h-full p-4 relative chat-fullscreen">
-      <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
+      {/* Чат контейнер */}
+      <div 
+        id="chat-container" 
+        className={`chat-container flex-grow overflow-auto mb-4 ${isDisconnected ? 'chat-disabled' : ''}`}
+        style={{ marginBottom: '16px' }}
+      >
         {messages.map((msg, index) => {
           let text = msg.text;
           if (effects.glitch) {
@@ -391,25 +417,115 @@ const ChatScreen = () => {
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-      <form onSubmit={handleSubmit} className="chat-input-form flex">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="flex-1 text-xl p-2 border focus:outline-none"
-          placeholder="Введи сообщение..."
-          disabled={isDisconnected}
-          style={{ color: '#00ff00', borderColor: '#00ff00' }}
-        />
-        <button
-          type="submit"
-          className="text-xl border px-4 py-2"
-          disabled={isDisconnected}
-          style={{ color: '#00ff00', borderColor: '#00ff00' }}
-        >
-          Отправить
-        </button>
-      </form>
+
+      {/* Нижняя панель с вводом и меню */}
+      <div className="chat-bottom-panel" style={{ marginTop: 'auto' }}>
+        {/* Форма ввода */}
+        <form onSubmit={handleSubmit} className="chat-input-form flex mb-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            className="flex-1 text-xl p-2 border focus:outline-none"
+            placeholder="Введи сообщение..."
+            disabled={isDisconnected}
+            style={{ 
+              color: '#00ff00', 
+              borderColor: '#00ff00',
+              marginRight: '8px' // Отступ между инпутом и кнопкой
+            }}
+          />
+          <button
+            type="submit"
+            className="text-xl border px-4 py-2"
+            disabled={isDisconnected}
+            style={{ color: '#00ff00', borderColor: '#00ff00' }}
+          >
+            Отправить
+          </button>
+        </form>
+
+        {/* Выдвижное меню */}
+        <div className="drawer-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Штрих для открытия меню */}
+          <div 
+            className="drawer-handle"
+            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+            style={{
+              width: '40px',
+              height: '4px',
+              backgroundColor: '#00ff00',
+              borderRadius: '2px',
+              cursor: 'pointer',
+              transition: 'transform 0.3s ease',
+              transform: isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+            }}
+          />
+
+          {/* Содержимое выдвижного меню */}
+          <div 
+            className="drawer-content"
+            style={{
+              width: '100%',
+              maxHeight: isDrawerOpen ? '200px' : '0',
+              overflow: 'hidden',
+              transition: 'max-height 0.3s ease',
+              display: 'flex',
+              justifyContent: 'center',
+              padding: isDrawerOpen ? '8px 0' : '0'
+            }}
+          >
+            <div
+              className="drawer-buttons"
+              style={{
+                display: 'flex',
+                gap: '16px',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                border: '1px solid #00ff00'
+              }}
+            >
+              <button
+                onClick={toggleAudio}
+                className="control-button"
+                style={{
+                  background: 'none',
+                  border: '1px solid #00ff00',
+                  color: '#00ff00',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isAudioPlaying ? '🔊' : '🔇'} Звук
+              </button>
+              
+              <button
+                onClick={toggleFullscreen}
+                className="control-button"
+                style={{
+                  background: 'none',
+                  border: '1px solid #00ff00',
+                  color: '#00ff00',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                📺 Полный экран
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
