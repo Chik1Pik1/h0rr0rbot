@@ -44,35 +44,42 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
 
+  // Сигнал ошибки управляется только оверлеем
+  useEffect(() => {
+    let audio = null;
+    if (showErrorOverlay) {
+      audio = playAudio('/music/signal.mp3');
+    }
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    };
+  }, [showErrorOverlay]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!key.trim()) {
       setError('ВВЕДИТЕ КЛЮЧ.');
       return;
     }
-    
-    // Запуск звука ошибки
-    const errorSound = playAudio('/music/signal.mp3');
-    
+
     setIsLoading(true);
     setError('Проверка ключа...');
-    // Этап 1: Показать ошибку на весь экран
+    // Этап 1: Показать ошибку на весь экран (звук стартанёт через useEffect)
     setShowErrorOverlay(true);
     setTimeout(() => {
-      errorSound.pause(); // Остановить звук ошибки
       setShowErrorOverlay(false);
       // Этап 2: Показать взлом на весь экран
       setShowHackOverlay(true);
       setTimeout(() => {
         setShowHackOverlay(false);
         // Этап 3: Вернуть окно входа
-        setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
+        setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПРОДОЛЖЕНИЕ...');
+        setIsLoading(false);
         setTimeout(() => {
           onAccessGranted();
-          // Запуск фоновой музыки при переходе в чат
-          const bgMusic = playAudio('/music/fon.mp3', true);
-          // Сохранить ссылку для управления музыкой
-          window.bgMusic = bgMusic;
         }, 2000);
       }, 4000);
     }, 3000);
@@ -179,8 +186,10 @@ const ChatScreen = () => {
     glitch: false 
   });
 
-  // Остановить музыку при выходе из чата
+  // Фоновая музыка: запуск только в чате
   useEffect(() => {
+    const bgMusic = playAudio('/music/fon.mp3', true);
+    window.bgMusic = bgMusic;
     return () => {
       if (window.bgMusic) {
         window.bgMusic.pause();
