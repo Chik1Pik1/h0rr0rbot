@@ -340,4 +340,28 @@ button:disabled {
     width: 20px;
     height: 20px;
   }
+
+  /* Добавьте эти стили в ваш существующий CSS файл */
+.control-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: black;
+  padding: 10px;
+  border-top: 1px solid #00ff0033;
+  z-index: 1000;
+}
+
+.chat-input-form {
+  margin-bottom: 8px;
+}
+
+.chat-container {
+  height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding-bottom: 120px;
+  scrollbar-width: thin;
+  scrollbar-color: #00ff00 #000000;
+}
 }
