@@ -18,42 +18,32 @@ const getUserId = () => {
 
 // Audio Provider Component
 const AudioProvider = ({ children }) => {
-  const [signalAudio, setSignalAudio] = useState(null);
   const [backgroundAudio, setBackgroundAudio] = useState(null);
 
   useEffect(() => {
-    const signal = new Audio('/music/signal.mp3');
     const background = new Audio('/music/fon.mp3');
-    
-    // Настройка фоновой музыки
     background.loop = true;
     background.volume = 0.5;
     
-    // Предзагружаем аудио
     const preloadAudio = async () => {
       try {
         await background.load();
-        await signal.load();
       } catch (error) {
         console.warn("Audio preload failed:", error);
       }
     };
     
     preloadAudio();
-    
-    setSignalAudio(signal);
     setBackgroundAudio(background);
 
     return () => {
-      signal.pause();
       background.pause();
-      signal.src = '';
       background.src = '';
     };
   }, []);
 
   return (
-    <AudioContext.Provider value={{ signalAudio, backgroundAudio }}>
+    <AudioContext.Provider value={{ backgroundAudio }}>
       {children}
     </AudioContext.Provider>
   );
@@ -105,7 +95,6 @@ const AccessScreen = ({ onAccessGranted }) => {
         // Этап 3: Вернуть окно входа и запустить звук
         setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.');
         setTimeout(() => {
-          // Запускаем фоновую музыку перед переходом к чату
           if (backgroundAudio) {
             backgroundAudio.play().catch(error => {
               console.warn("Autoplay prevented:", error);
@@ -211,23 +200,11 @@ const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
     glitch: false 
   });
-
-  const handleToggleSound = () => {
-    if (backgroundAudio) {
-      if (isMuted) {
-        backgroundAudio.play().catch(console.error);
-      } else {
-        backgroundAudio.pause();
-      }
-      setIsMuted(!isMuted);
-    }
-  };
 
   useEffect(() => {
     return () => {
@@ -273,12 +250,6 @@ const ChatScreen = () => {
 
   return (
     <div className="flex flex-col h-full p-4 relative chat-fullscreen">
-      <button
-        onClick={handleToggleSound}
-        className="sound-control"
-      >
-        {isMuted ? 'Включить звук' : 'Выключить звук'}
-      </button>
       <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
         {messages.map((msg, index) => {
           let text = msg.text;
