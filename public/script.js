@@ -1,6 +1,6 @@
 const { useState, useEffect } = React;
 
-// Audio context для управления звуком
+// Аудио контекст для управления звуком
 const AudioContext = React.createContext(null);
 
 // Список всех возможных ключей
@@ -29,18 +29,24 @@ const DEMON_KEYS = [
   "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
 ];
 
+// Провайдер для управления аудио
 const AudioProvider = ({ children }) => {
   const [signalAudio, setSignalAudio] = useState(null);
   const [backgroundAudio, setBackgroundAudio] = useState(null);
 
   useEffect(() => {
+    // Создаем аудио элементы
     const signal = new Audio('/music/signal.mp3');
     const background = new Audio('/music/fon.mp3');
+    
+    // Настраиваем фоновую музыку
     background.loop = true;
+    background.volume = 1.0; // Громкость 100%
     
     setSignalAudio(signal);
     setBackgroundAudio(background);
 
+    // Очистка при размонтировании
     return () => {
       signal.pause();
       background.pause();
@@ -54,23 +60,19 @@ const AudioProvider = ({ children }) => {
   );
 };
 
+// Генерация ежедневного ключа
 const generateDailyKey = () => {
   const date = "2025-05-22"; // Фиксированная дата
   const USER_LOGIN = "Chik1Pik1"; // Фиксированный логин
   
-  // Создаем соль на основе логина пользователя
   const SALT = USER_LOGIN.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  
-  // Вычисляем сумму чисел из даты
   let seed = date.split('-').reduce((acc, num) => acc + parseInt(num), 0);
-  
-  // Применяем соль и получаем индекс
   seed = (seed * SALT) % DEMON_KEYS.length;
   
   return DEMON_KEYS[seed];
 };
 
-// Функции для работы с попытками и блокировкой
+// Функции для работы с попытками входа
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -99,7 +101,7 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
-// Generate or retrieve UUID for user
+// Генерация или получение UUID пользователя
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -112,6 +114,7 @@ const getUserId = () => {
   return userId;
 };
 
+// Основной компонент приложения
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
@@ -128,6 +131,7 @@ const App = () => {
   );
 };
 
+// Экран доступа
 const AccessScreen = ({ onAccessGranted }) => {
   const { signalAudio } = React.useContext(AudioContext);
   const [key, setKey] = useState('');
@@ -137,6 +141,7 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showHackOverlay, setShowHackOverlay] = useState(false);
   const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
 
+  // Проверка блокировки при загрузке
   useEffect(() => {
     const blockedUntil = getBlockedUntil();
     if (blockedUntil) {
@@ -152,6 +157,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
   }, []);
 
+  // Генерация кода для эффекта взлома
   const generateHackCode = () => {
     const snippets = [
       'INITIALIZE BACKDOOR: 0xDEADBEEF',
@@ -189,6 +195,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     return codes;
   };
 
+  // Обработка отправки формы
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!key.trim() || attemptsLeft <= 0) return;
@@ -216,7 +223,7 @@ const AccessScreen = ({ onAccessGranted }) => {
         setShowHackOverlay(true);
         setTimeout(() => {
           setShowHackOverlay(false);
-          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ...');
+          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\n[...]');
           setTimeout(() => onAccessGranted(), 2000);
         }, 4000);
       }, 3000);
@@ -295,6 +302,7 @@ const AccessScreen = ({ onAccessGranted }) => {
   );
 };
 
+// Экран чата
 const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
@@ -309,17 +317,22 @@ const ChatScreen = () => {
     glitch: false 
   });
 
+  // Управление фоновой музыкой
   useEffect(() => {
     if (backgroundAudio) {
-      backgroundAudio.play();
+      backgroundAudio.play().catch(error => {
+        console.log('Ошибка воспроизведения фоновой музыки:', error);
+      });
     }
     return () => {
       if (backgroundAudio) {
         backgroundAudio.pause();
+        backgroundAudio.currentTime = 0;
       }
     };
   }, [backgroundAudio]);
 
+  // Отправка сообщения
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
@@ -334,6 +347,7 @@ const ChatScreen = () => {
     }
   };
 
+  // Обработка отправки сообщения
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isDisconnected) return;
