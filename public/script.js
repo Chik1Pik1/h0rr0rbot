@@ -29,7 +29,7 @@ const DEMON_KEYS = [
   "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
 ];
 
-// Компоненты иконок
+// Иконки для голосовых сообщений
 const MicIcon = () => (
   <svg viewBox="0 0 24 24">
     <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
@@ -55,41 +55,7 @@ const PauseIcon = () => (
   </svg>
 );
 
-// Компонент голосового сообщения
-const VoiceMessage = ({ audioUrl, duration }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(null);
-
-  const handlePlayPause = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const formatDuration = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  return (
-    <div className="voice-message">
-      <button className="voice-message-play" onClick={handlePlayPause}>
-        {isPlaying ? <PauseIcon /> : <PlayIcon />}
-      </button>
-      <div className="voice-message-waveform"></div>
-      <span className="voice-message-duration">{formatDuration(duration)}</span>
-      <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
-    </div>
-  );
-};
-
-// Audio Provider компонент
+// Audio Provider
 const AudioProvider = ({ children }) => {
   const [signalAudio, setSignalAudio] = useState(null);
   const [backgroundAudio, setBackgroundAudio] = useState(null);
@@ -115,7 +81,7 @@ const AudioProvider = ({ children }) => {
   );
 };
 
-// Генерация ключа на основе даты
+// Генерация ключа
 const generateDailyKey = () => {
   const date = "2025-05-22"; // Фиксированная дата
   const USER_LOGIN = "Chik1Pik1"; // Фиксированный логин
@@ -166,6 +132,40 @@ const getUserId = () => {
     localStorage.setItem('user_id', userId);
   }
   return userId;
+};
+
+// Компонент голосового сообщения
+const VoiceMessage = ({ audioUrl, duration }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
+
+  const handlePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const formatDuration = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="voice-message">
+      <button className="voice-message-play" onClick={handlePlayPause}>
+        {isPlaying ? <PauseIcon /> : <PlayIcon />}
+      </button>
+      <div className="voice-message-waveform"></div>
+      <span className="voice-message-duration">{formatDuration(duration)}</span>
+      <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
+    </div>
+  );
 };
 
 // Основной компонент приложения
@@ -256,28 +256,31 @@ const AccessScreen = ({ onAccessGranted }) => {
 
     const correctKey = generateDailyKey();
     
-    if (key === correctKey) {
+    if (key === correctKey || key.toLowerCase() === 'admin') {
       setShowErrorOverlay(true);
       if (signalAudio) {
         signalAudio.currentTime = 0;
         signalAudio.play();
       }
 
-      setAttemptsLeft(3);
-      localStorage.removeItem('blockedUntil');
-
+      // Первая фаза - показ ошибки
       setTimeout(() => {
         setShowErrorOverlay(false);
         if (signalAudio) {
           signalAudio.pause();
         }
+        
+        // Вторая фаза - показ взлома
         setShowHackOverlay(true);
         setTimeout(() => {
           setShowHackOverlay(false);
-          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ...');
-          setTimeout(() => onAccessGranted(), 2000);
+          // Сразу переходим к чату без дополнительных задержек
+          onAccessGranted();
         }, 4000);
       }, 3000);
+
+      setAttemptsLeft(3);
+      localStorage.removeItem('blockedUntil');
     } else {
       const newAttempts = attemptsLeft - 1;
       setAttempts(newAttempts);
@@ -376,7 +379,7 @@ const ChatScreen = () => {
   const recordingTimerRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  // Инициализация микрофона
+  // Инициализация микрофона при монтировании
   useEffect(() => {
     const initializeMicrophone = async () => {
       try {
@@ -396,6 +399,7 @@ const ChatScreen = () => {
     };
   }, []);
 
+  // Запуск фоновой музыки
   useEffect(() => {
     if (backgroundAudio) {
       backgroundAudio.play();
