@@ -391,8 +391,7 @@ const ChatScreen = () => {
       {/* Чат контейнер */}
       <div 
         id="chat-container" 
-        className={`chat-container flex-grow overflow-auto mb-4 ${isDisconnected ? 'chat-disabled' : ''}`}
-        style={{ marginBottom: '16px' }}
+        className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
       >
         {messages.map((msg, index) => {
           let text = msg.text;
@@ -423,9 +422,9 @@ const ChatScreen = () => {
       </div>
 
       {/* Нижняя панель с вводом и меню */}
-      <div className="chat-bottom-panel" style={{ marginTop: 'auto', position: 'relative' }}>
+      <div className={`chat-bottom-panel ${isDrawerOpen ? 'drawer-open' : ''}`}>
         {/* Форма ввода */}
-        <form onSubmit={handleSubmit} className="chat-input-form flex mb-2">
+        <form onSubmit={handleSubmit} className="chat-input-form">
           <input
             type="text"
             value={input}
@@ -433,11 +432,7 @@ const ChatScreen = () => {
             className="flex-1 text-xl p-2 border focus:outline-none"
             placeholder="Введи сообщение..."
             disabled={isDisconnected}
-            style={{ 
-              color: '#00ff00', 
-              borderColor: '#00ff00',
-              marginRight: '8px'
-            }}
+            style={{ color: '#00ff00', borderColor: '#00ff00' }}
           />
           <button
             type="submit"
@@ -450,54 +445,22 @@ const ChatScreen = () => {
         </form>
 
         {/* Выдвижное меню */}
-        <div className="drawer-container" style={{ 
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          position: 'absolute',
-          bottom: '-30px'
-        }}>
-          {/* Штрих для открытия меню */}
+        <div className="drawer-container">
           <div 
             className="drawer-handle"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             style={{
-              width: '40px',
-              height: '4px',
-              backgroundColor: '#00ff00',
-              borderRadius: '2px',
-              cursor: 'pointer',
-              transition: 'transform 0.3s ease',
               transform: isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
             }}
           />
-
-          {/* Содержимое выдвижного меню */}
+          
           <div 
             className="drawer-content"
             style={{
-              width: '100%',
-              maxHeight: isDrawerOpen ? '200px' : '0',
-              overflow: 'hidden',
-              transition: 'max-height 0.3s ease',
-              display: 'flex',
-              justifyContent: 'center',
-              padding: isDrawerOpen ? '8px 0' : '0'
+              height: isDrawerOpen ? '60px' : '0'
             }}
           >
-            <div
-              className="drawer-buttons"
-              style={{
-                display: 'flex',
-                gap: '16px',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                border: '1px solid #00ff00'
-              }}
-            >
+            <div className="drawer-buttons">
               <button
                 onClick={toggleAudio}
                 className="control-button"
