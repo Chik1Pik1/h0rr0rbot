@@ -55,13 +55,16 @@ const AudioProvider = ({ children }) => {
 };
 
 const generateDailyKey = () => {
-  const date = "2025-05-22"; // Текущая фиксированная дата
-  const USER_LOGIN = "Chik1Pik1"; // Текущий фиксированный логин
+  // Получаем текущую дату
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // getMonth() возвращает 0-11
+  const day = now.getDate();
   
-  const SALT = USER_LOGIN.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  let seed = date.split('-').reduce((acc, num) => acc + parseInt(num), 0);
-  seed = (seed * SALT) % DEMON_KEYS.length;
+  // Создаем детерминированный seed на основе даты
+  const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
   
+  // Возвращаем ключ из массива по индексу
   return DEMON_KEYS[seed];
 };
 
