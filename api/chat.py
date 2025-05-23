@@ -141,6 +141,44 @@ def make_openrouter_request(api_key, model, messages):
         logger.error(f"OpenRouter request failed: {str(e)}")
         return None
 
+@app.route('/api/check-block', methods=['POST'])
+def check_block():
+    try:
+        body = request.get_json()
+        user_id = body.get('user_id')
+        
+        if not user_id:
+            return jsonify({'error': 'User ID is required'}), 400, {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+
+        result = supabase.table("access_blocks").select("blocked_until").eq("user_id", user_id).order('created_at', desc=True).limit(1).execute()
+        
+        if result.data:
+            blocked_until = result.data[0]["blocked_until"]
+            now = datetime.now(pytz.timezone('Europe/Moscow'))
+            if datetime.fromisoformat(blocked_until.replace('Z', '+00:00')) > now:
+                return jsonify({
+                    'isBlocked': True,
+                    'blockedUntil': blocked_until
+                }), 200, {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
+
+        return jsonify({'isBlocked': False}), 200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        }
+
+    except Exception as e:
+        logger.error(f"Error checking block: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        }
+
 @app.route('/api/chat', methods=['POST'])
 def chat_handler():
     logger.info(f"Received request: {request.json}")
@@ -151,7 +189,10 @@ def chat_handler():
         
         if not message or not user_id:
             logger.error("Missing message or user_id")
-            return jsonify({'error': 'Message and user_id are required'}), 400
+            return jsonify({'error': 'Message and user_id are required'}), 400, {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
 
         # Ensure user profile exists
         logger.info(f"Checking profile for user_id: {user_id}")
