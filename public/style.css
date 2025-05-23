@@ -80,6 +80,8 @@ body::after {
   overflow: hidden;
   box-sizing: border-box;
   box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.2);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Помехи для окна и чата */
@@ -157,11 +159,10 @@ button:disabled {
 
 /* Контейнер чата */
 .chat-container {
-  max-height: 70vh;
+  flex: 1;
   overflow-y: auto;
   margin-bottom: 10px;
   padding-right: 10px;
-  flex-grow: 1;
   scrollbar-width: thin;
   scrollbar-color: #00ff00 #000000;
 }
@@ -180,14 +181,63 @@ button:disabled {
   border-radius: 4px;
 }
 
+/* Нижняя панель с вводом и меню */
+.chat-bottom-panel {
+  position: relative;
+  margin-top: auto;
+  transition: transform 0.3s ease;
+}
+
 /* Форма ввода чата */
 .chat-input-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 30px;
+  transition: transform 0.3s ease;
+}
+
+/* Выдвижное меню */
+.drawer-container {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 10px;
-  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Ручка выдвижного меню */
+.drawer-handle {
+  width: 40px;
+  height: 4px;
+  background-color: #00ff00;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  margin-bottom: 8px;
+}
+
+/* Содержимое выдвижного меню */
+.drawer-content {
+  width: 100%;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Стили для открытого состояния меню */
+.chat-bottom-panel.drawer-open {
+  transform: translateY(-60px);
+}
+
+/* Стили для кнопок в выдвижном меню */
+.drawer-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  padding: 16px;
+  border-top: 1px solid #00ff0033;
 }
 
 /* Дополнительные эффекты */
@@ -235,7 +285,7 @@ button:disabled {
 @keyframes text-glitch {
   0% { clip-path: inset(10% 0 90% 0); }
   25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
-  50% { clip-path: inset(5% 0 80% 0); }
+  50% { clip-path:evidence inset(5% 0 80% 0); }
   75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
 }
 
