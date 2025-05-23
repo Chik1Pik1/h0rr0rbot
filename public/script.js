@@ -1,10 +1,7 @@
-const { useState, useEffect, createContext, useContext } = React;
+const { useState, useEffect } = React;
 
 // Audio context для управления звуком
-const AudioContext = createContext(null);
-
-// Создаем контекст для Supabase
-const SupabaseContext = createContext(null);
+const AudioContext = React.createContext(null);
 
 // Список всех возможных ключей
 const DEMON_KEYS = [
@@ -54,32 +51,6 @@ const AudioProvider = ({ children }) => {
     <AudioContext.Provider value={{ signalAudio, backgroundAudio }}>
       {children}
     </AudioContext.Provider>
-  );
-};
-
-// Создаем провайдер для Supabase
-const SupabaseProvider = ({ children }) => {
-  const [supabaseClient, setSupabaseClient] = useState(null);
-
-  useEffect(() => {
-    // Инициализация Supabase
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-    
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      setSupabaseClient(client);
-    }
-  }, []);
-
-  if (!supabaseClient) {
-    return <div>Загрузка...</div>;
-  }
-
-  return (
-    <SupabaseContext.Provider value={supabaseClient}>
-      {children}
-    </SupabaseContext.Provider>
   );
 };
 
@@ -143,23 +114,20 @@ const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
   return (
-    <SupabaseProvider>
-      <AudioProvider>
-        <div className="root-container">
-          {isAccessGranted ? (
-            <ChatScreen />
-          ) : (
-            <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
-          )}
-        </div>
-      </AudioProvider>
-    </SupabaseProvider>
+    <AudioProvider>
+      <div className="root-container">
+        {isAccessGranted ? (
+          <ChatScreen />
+        ) : (
+          <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
+        )}
+      </div>
+    </AudioProvider>
   );
 };
 
 const AccessScreen = ({ onAccessGranted }) => {
-  const { signalAudio } = useContext(AudioContext);
-  const supabase = useContext(SupabaseContext);
+  const { signalAudio } = React.useContext(AudioContext);
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -217,7 +185,7 @@ const AccessScreen = ({ onAccessGranted }) => {
   useEffect(() => {
     const userId = getUserId();
     checkUserBlock(userId);
-  }, [supabase]);
+  }, []);
 
   const generateHackCode = () => {
     const snippets = [
@@ -364,8 +332,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 };
 
 const ChatScreen = () => {
-  const { backgroundAudio } = useContext(AudioContext);
-  const supabase = useContext(SupabaseContext);
+  const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
     { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
   ]);
@@ -427,12 +394,6 @@ const ChatScreen = () => {
   };
 
   const sendMessage = async (message) => {
-    if (!supabase) return { 
-      reply: 'Я всё ещё здесь... Попробуй снова.', 
-      isLimitReached: false, 
-      isTimeLimitReached: false 
-    };
-    
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -442,11 +403,7 @@ const ChatScreen = () => {
       const data = await response.json();
       return data;
     } catch (error) {
-      return { 
-        reply: 'Я всё ещё здесь... Попробуй снова.', 
-        isLimitReached: false, 
-        isTimeLimitReached: false 
-      };
+      return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false, isTimeLimitReached: false };
     }
   };
 
