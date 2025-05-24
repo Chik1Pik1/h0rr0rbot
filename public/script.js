@@ -1,5 +1,11 @@
 const { useState, useEffect } = React;
 
+// Инициализация Supabase
+const supabase = supabase.createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
 // Audio context для управления звуком
 const AudioContext = React.createContext(null);
 
@@ -11,7 +17,7 @@ const DEMON_KEYS = [
   "Xaphan", "Yaksha", "Zagan", "Necronomicon", "Goetia", "Qliphoth", "ArsGoetia", 
   "Azazel", "Belial", "Beelzebub", "Asmodeus", "Lilith", "Moloch", "Abaddon", 
   "Amon", "Andras", "Agares", "Barbatos", "Buer", "Caim", "Decarabia", "Forneus", 
-  "Gamigin", "Ipos", "Leraje", "Malphas", "Orobas", "Phenex", "Ronove", "Sabnock", 
+  "Gamigin", "Ipos", "Leraje", "Malphas", brothers", "Phenex", "Ronove", "Sabnock", 
   "Seere", "Shax", "Stolas", "Vepar", "Zepar", "Nyarlathotep", "Cthulhu", 
   "YogSothoth", "Dagon", "ShubNiggurath", "Akuma", "Oni", "Kitsune", "Djinn", 
   "Ifrit", "Marid", "Ghul", "Dybbuk", "Nephilim", "Grigori", "Archon", "Aeon", 
@@ -21,7 +27,7 @@ const DEMON_KEYS = [
   "Stygian", "Tartarus", "Zoroaster", "Banshee", "Doppelganger", "Poltergeist", 
   "Wraith", "Shadowman", "Skinwalker", "Wendigo", "Ouija", "Exorcism", 
   "Possession", "Divination", "Scrying", "Familiar", "Coven", "Sabbat", 
-  "Akelarre", "Athame", "Boline", "Chalice", "Grimoire", "Mandrake", "Obsidian", 
+  "Akelarre", "Athame", "Boline", cryptocurrencies, "Grimoire", "Mandrake", "Obsidian", 
   "Runes", "Talisman", "Vortex", "Ziggurat", "BlackMass", "BloodPact", 
   "DarkRite", "Infernum", "Nocturnal", "Occultus", "Phantasm", "Seraphim", 
   "Tenebrae", "Umbra", "Voodoo", "Witching", "Xibalba", "Yatagarasu", 
@@ -55,17 +61,72 @@ const AudioProvider = ({ children }) => {
 };
 
 const generateDailyKey = () => {
-  // Получаем текущую дату
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth() + 1; // getMonth() возвращает 0-11
+  const month = now.getMonth() + 1;
   const day = now.getDate();
   
-  // Создаем детерминированный seed на основе даты
   const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
   
-  // Возвращаем ключ из массива по индексу
   return DEMON_KEYS[seed];
+};
+
+// Функции работы с Supabase
+const checkUserBlock = async (userId) => {
+  const { data, error } = await supabase
+    .from('access_blocks')
+    .select('blocked_until')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (data?.length > 0) {
+    const blockDate = new Date(data[0].blocked_until);
+    if (blockDate > new Date()) return blockDate;
+  }
+  return null;
+};
+
+const logSession = async (userId) => {
+  await supabase
+    .from('user_sessions')
+    .insert([{ 
+      user_id: userId, 
+      session_start: new Date().toISOString() 
+    }]);
+};
+
+const incrementRequestCount = async (userId) => {
+  const { data } = await supabase
+    .from('request_counter')
+    .select('*')
+    .eq('user_id', userId)
+    .order('last_reset_date', { ascending: false })
+    .limit(1);
+
+  const newCount = data?.length ? data[0].request_count + 1 : 1;
+  
+  await supabase
+    .from('request_counter')
+    .insert([{ 
+      user_id: userId, 
+      request_count: newCount,
+      last_reset_date: new Date().toISOString().split('T')[0]
+    }]);
+};
+
+const getChatHistory = async (userId) => {
+  const { data } = await supabase
+    .from('chat_history')
+    .select('message, sender, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+
+  return data?.map(msg => ({
+    sender: msg.sender,
+    text: msg.message,
+    created_at: msg.created_at
+  })) || [];
 };
 
 // Функции для работы с попытками и блокировкой
@@ -77,12 +138,23 @@ const setAttemptsLeft = (attempts) => {
   localStorage.setItem('attemptsLeft', attempts.toString());
 };
 
-const getBlockedUntil = () => {
-  return localStorage.getItem('blockedUntil') || '';
-};
+const setUserBlock = async (userId) => {
+  const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  try {
+    const { error } = await supabase
+      .from('access_blocks')
+      .insert({
+        user_id: userId,
+        blocked_until: blockUntil.toISOString()
+      });
 
-const setBlockedUntil = (date) => {
-  localStorage.setItem('blockedUntil', date);
+    if (error) throw error;
+
+    return blockUntil;
+  } catch (error) {
+    console.error('Error setting user block:', error);
+    throw error;
+  }
 };
 
 // Форматирование даты и времени
@@ -113,6 +185,11 @@ const getUserId = () => {
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
+  useEffect(() => {
+    const userId = getUserId();
+    logSession(userId);
+  }, []);
+
   return (
     <AudioProvider>
       <div className="root-container">
@@ -135,56 +212,14 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showHackOverlay, setShowHackOverlay] = useState(false);
   const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
 
-  const checkUserBlock = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('access_blocks')
-        .select('blocked_until')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        const blockDate = new Date(data.blocked_until);
-        if (blockDate > new Date()) {
-          setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockDate)}`);
-          setAttempts(0);
-          return true;
-        }
-      }
-      return false;
-    } catch (error) {
-      console.error('Error checking user block:', error);
-      return false;
-    }
-  };
-
-  const setUserBlock = async (userId) => {
-    const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    try {
-      const { error } = await supabase
-        .from('access_blocks')
-        .insert({
-          user_id: userId,
-          blocked_until: blockUntil.toISOString()
-        });
-
-      if (error) throw error;
-
-      setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockUntil)}`);
-      setAttempts(0);
-    } catch (error) {
-      console.error('Error setting user block:', error);
-      setError('СИСТЕМНАЯ ОШИБКА: ПОПРОБУЙТЕ ПОЗЖЕ');
-    }
-  };
-
   useEffect(() => {
     const userId = getUserId();
-    checkUserBlock(userId);
+    checkUserBlock(userId).then(blockDate => {
+      if (blockDate) {
+        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockDate)}`);
+        setAttempts(0);
+      }
+    });
   }, []);
 
   const generateHackCode = () => {
@@ -229,8 +264,11 @@ const AccessScreen = ({ onAccessGranted }) => {
     if (!key.trim() || attemptsLeft <= 0) return;
 
     const userId = getUserId();
-    const isBlocked = await checkUserBlock(userId);
-    if (isBlocked) return;
+    const blockDate = await checkUserBlock(userId);
+    if (blockDate) {
+      setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockDate)}`);
+      return;
+    }
 
     setIsLoading(true);
     setError('Проверка ключа...');
@@ -265,7 +303,8 @@ const AccessScreen = ({ onAccessGranted }) => {
       setAttemptsLeft(newAttempts);
       
       if (newAttempts <= 0) {
-        await setUserBlock(userId);
+        const blockUntil = await setUserBlock(userId);
+        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockUntil)}`);
       } else {
         setError(`НЕВЕРНЫЙ КЛЮЧ. ОСТАЛОСЬ ПОПЫТОК: ${newAttempts}`);
       }
@@ -333,9 +372,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 
 const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
-  const [messages, setMessages] = useState([
-    { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
@@ -348,6 +385,12 @@ const ChatScreen = () => {
   });
 
   useEffect(() => {
+    const loadHistory = async () => {
+      const history = await getChatHistory(userId);
+      setMessages(history);
+    };
+    loadHistory();
+
     if (backgroundAudio) {
       backgroundAudio.volume = 0.3;
       const playAudio = async () => {
@@ -395,15 +438,45 @@ const ChatScreen = () => {
 
   const sendMessage = async (message) => {
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, user_id: userId })
-      });
-      const data = await response.json();
-      return data;
+      // Сохранение сообщения пользователя
+      await supabase
+        .from('chat_history')
+        .insert([{
+          user_id: userId,
+          message: message,
+          sender: 'user',
+          created_at: new Date().toISOString()
+        }]);
+
+      // Увеличение счетчика запросов
+      await incrementRequestCount(userId);
+
+      // Получение случайного ответа демона из истории
+      const { data } = await supabase
+        .from('chat_history')
+        .select('message')
+        .eq('sender', 'demon')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      const randomResponse = data?.length 
+        ? data[Math.floor(Math.random() * data.length)].message 
+        : '...';
+
+      // Сохранение ответа демона
+      await supabase
+        .from('chat_history')
+        .insert([{
+          user_id: userId,
+          message: randomResponse,
+          sender: 'demon',
+          created_at: new Date().toISOString()
+        }]);
+
+      return { reply: randomResponse, isLimitReached: false };
     } catch (error) {
-      return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false, isTimeLimitReached: false };
+      console.error('Error sending message:', error);
+      return { reply: 'Ошибка соединения...', isLimitReached: false };
     }
   };
 
@@ -411,7 +484,7 @@ const ChatScreen = () => {
     e.preventDefault();
     if (!input.trim() || isDisconnected) return;
 
-    const userMessage = { sender: 'user', text: input };
+    const userMessage = { sender: 'user', text: input, created_at: new Date().toISOString() };
     setMessages([...messages, userMessage]);
     setInput('');
     setIsTyping(true);
@@ -420,16 +493,15 @@ const ChatScreen = () => {
     setIsTyping(false);
 
     if (response.isLimitReached) {
-      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply, created_at: new Date().toISOString() }]);
       setIsDisconnected(true);
     } else {
-      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply, created_at: new Date().toISOString() }]);
     }
   };
 
   return (
     <div className="flex flex-col h-full p-4 relative chat-fullscreen">
-      {/* Чат контейнер */}
       <div 
         id="chat-container" 
         className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
@@ -462,9 +534,7 @@ const ChatScreen = () => {
         )}
       </div>
 
-      {/* Нижняя панель с вводом и меню */}
       <div className={`chat-bottom-panel ${isDrawerOpen ? 'drawer-open' : ''}`}>
-        {/* Форма ввода */}
         <form onSubmit={handleSubmit} className="chat-input-form">
           <input
             type="text"
@@ -485,7 +555,6 @@ const ChatScreen = () => {
           </button>
         </form>
 
-        {/* Выдвижное меню */}
         <div className="drawer-container">
           <div 
             className="drawer-handle"
