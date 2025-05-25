@@ -2,8 +2,8 @@ const { useState, useEffect } = React;
 
 // Инициализация Supabase
 const supabase = supabase.createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
 );
 
 // Audio context для управления звуком
