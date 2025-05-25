@@ -471,7 +471,7 @@ const ChatScreen = () => {
           className={`mic-button p-2 border ${isRecording ? 'bg-red-600 animate-pulse' : 'text-user'} ${isDisconnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
           onClick={handleMicClick}
         >
-          <svg
+          </svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-5 w-5"
             fill="none"
