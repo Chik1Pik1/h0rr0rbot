@@ -1,8 +1,12 @@
-const { useState, useEffect } = React;
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { createRoot } from 'react-dom/client';
+
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL, // Для Vite
+  import.meta.env.VITE_SUPABASE_URL, 
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
+
+const { useState, useEffect } = React;
 
 // Audio context для управления звуком
 const AudioContext = React.createContext(null);
@@ -59,20 +63,16 @@ const AudioProvider = ({ children }) => {
 };
 
 const generateDailyKey = () => {
-  // Получаем текущую дату
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth() + 1; // getMonth() возвращает 0-11
+  const month = now.getMonth() + 1;
   const day = now.getDate();
   
-  // Создаем детерминированный seed на основе даты
   const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
   
-  // Возвращаем ключ из массива по индексу
   return DEMON_KEYS[seed];
 };
 
-// Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -89,7 +89,6 @@ const setBlockedUntil = (date) => {
   localStorage.setItem('blockedUntil', date);
 };
 
-// Форматирование даты и времени
 const formatDateTime = (date) => {
   return date.toLocaleString('ru-RU', {
     year: 'numeric',
@@ -101,7 +100,6 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
-// Generate or retrieve UUID for user
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -433,7 +431,6 @@ const ChatScreen = () => {
 
   return (
     <div className="flex flex-col h-full p-4 relative chat-fullscreen">
-      {/* Чат контейнер */}
       <div 
         id="chat-container" 
         className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
@@ -466,9 +463,7 @@ const ChatScreen = () => {
         )}
       </div>
 
-      {/* Нижняя панель с вводом и меню */}
       <div className={`chat-bottom-panel ${isDrawerOpen ? 'drawer-open' : ''}`}>
-        {/* Форма ввода */}
         <form onSubmit={handleSubmit} className="chat-input-form">
           <input
             type="text"
@@ -489,7 +484,6 @@ const ChatScreen = () => {
           </button>
         </form>
 
-        {/* Выдвижное меню */}
         <div className="drawer-container">
           <div 
             className="drawer-handle"
@@ -559,4 +553,5 @@ const ChatScreen = () => {
   );
 };
 
-ReactDOM.render(<App />, document.getElementById('root'));
+const root = createRoot(document.getElementById('root'));
+root.render(<App />);
