@@ -1,6 +1,6 @@
 body {
   background: #000;
-  font-family: 'Courier New', monospace;
+  font-family: 'Special Elite', monospace;
   overflow: hidden;
   margin: 0;
   display: flex;
@@ -35,8 +35,8 @@ body::after {
 
 /* Основное окно */
 .crt-window {
-  background: #000;
-  border: 2px solid rgba(0, 255, 0, 0.2);
+  background: #000 !important;
+  border: 2px solid #00ff0033;
   position: relative;
   width: 90%;
   max-width: 600px;
@@ -83,8 +83,7 @@ body::after {
 }
 
 /* Помехи для окна и чата */
-.crt-window::after,
-.chat-fullscreen::after {
+.crt-window::after, .chat-fullscreen::after {
   content: '';
   position: absolute;
   top: 0;
@@ -97,8 +96,7 @@ body::after {
 }
 
 /* Полноэкранные оверлеи */
-.error-overlay-fullscreen,
-.hack-overlay-fullscreen {
+.error-overlay-fullscreen, .hack-overlay-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
@@ -137,13 +135,17 @@ body::after {
   animation: matrix-rain 10s linear infinite;
 }
 
-/* Анимация кода */
+/* Анимация исчезновения */
+@keyframes dissolve {
+  0% { opacity: 1; filter: blur(0px); }
+  100% { opacity: 0; filter: blur(20px); }
+}
+
+/* Анимация кода с glitch-эффектом */
 .hack-code {
   position: absolute;
   white-space: nowrap;
   animation: hack-scroll linear infinite;
-  color: #00FF00;
-  font-size: 0.8rem;
 }
 
 .hack-code::before {
@@ -180,7 +182,6 @@ body::after {
     blood-drip 1.2s ease-in-out;
 }
 
-/* Анимации */
 @keyframes hack-scroll {
   0% { transform: translateY(100%); }
   100% { transform: translateY(-100%); }
@@ -221,34 +222,30 @@ body::after {
   100% { background-position: 100px 100px; }
 }
 
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
-}
-
-/* Текстовые стили */
 .text-user {
-  color: #00FF00;
+  color: #00FF00 !important;
+  background: #1a2b3c;
+  padding: 8px 12px;
+  border-radius: 15px;
 }
 
 .text-demon {
-  color: #FF0000;
+  color: #FF0000 !important;
+  background: #3c1a1a;
+  padding: 8px 12px;
+  border-radius: 15px;
 }
 
 .blink {
   animation: blink 1s step-end infinite;
 }
 
-/* Поля ввода и кнопки */
-input,
-button {
-  font-family: 'Courier New', monospace;
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+input, button {
+  font-family: 'Special Elite', monospace;
   background: #000;
   border: 2px solid #00FF00;
   color: #00FF00;
@@ -259,38 +256,22 @@ button {
 
 button {
   cursor: pointer;
-  width: 100px; /* Фиксированная ширина для кнопки Отправить */
-  height: 40px; /* Фиксированная высота */
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-button:disabled,
-input:disabled {
+button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Поле ввода */
-.input-field {
-  flex: 1;
-  max-width: 70%; /* Уменьшено для предотвращения переполнения */
-}
-
-/* Чат */
 .chat-container {
   max-height: 70vh;
   overflow-y: auto;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   padding-right: 10px;
   flex-grow: 1;
 }
 
 .chat-input-form {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   position: absolute;
   bottom: 0;
   left: 0;
@@ -299,64 +280,56 @@ input:disabled {
   background: #000;
 }
 
-/* Кнопка микрофона */
-.mic-button {
+.dash-line {
+  letter-spacing: 0.1em;
+}
+
+/* Голосовая кнопка */
+.voice-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #00ff00;
+  border: 2px solid #00ff00;
+  margin-left: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100px; /* Такой же размер, как у кнопки Отправить */
-  height: 40px;
-  border: 2px solid #00FF00;
   cursor: pointer;
+  transition: all 0.3s;
 }
 
-.mic-button svg {
-  width: 20px;
-  height: 20px;
-  stroke: #00FF00;
-}
-
-.mic-button.bg-red-600 {
-  background: #FF0000;
+.voice-btn.recording {
+  background: #ff0000;
   animation: pulse 1s infinite;
 }
 
-.mic-button.opacity-50 {
-  opacity: 0.5;
-  cursor: not-allowed;
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,0,0,0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255,0,0,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,0,0,0); }
 }
 
-/* Анимация записи */
-.chat-input-form .absolute {
-  white-space: nowrap;
-  font-size: 0.75rem;
-  color: #00FF00;
-  top: -32px;
-  left: 50%;
-  transform: translateX(-50%);
+.recording-timer {
+  position: absolute;
+  bottom: 60px;
+  color: #ff0000;
+  font-size: 1.2rem;
+}
+
+.voice-message {
   display: flex;
   align-items: center;
+  padding: 8px;
+  background: #1a2b3c;
+  border-radius: 15px;
+  margin: 5px 0;
 }
 
-.chat-input-form .blink {
-  margin-right: 4px;
-  animation: blink 0.5s infinite;
-}
-
-.chat-input-form .animate-pulse {
-  margin-left: 4px;
-  animation: pulse 1s infinite;
-}
-
-/* Аудиоплеер */
-audio {
-  max-width: 200px;
-  vertical-align: middle;
-}
-
-/* Декоративные элементы */
-.dash-line {
-  letter-spacing: 0.1em;
+.voice-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
 }
 
 /* Адаптивность для мобильных */
@@ -365,50 +338,26 @@ audio {
     width: 95%;
     min-height: 50vh;
     margin: 10px auto;
-    padding: 10px;
   }
 
   .chat-fullscreen {
     padding: 10px;
   }
 
-  input,
-  button {
+  input, button {
     font-size: 1rem;
     padding: 6px;
-  }
-
-  button,
-  .mic-button {
-    width: 80px;
-    height: 36px;
-  }
-
-  .input-field {
-    max-width: 60%;
   }
 
   .chat-container {
     max-height: 75vh;
   }
 
-  h1,
-  p,
-  input,
-  button {
+  h1, p, input, button {
     font-size: 1rem;
   }
 
   .error-overlay-fullscreen {
     font-size: 1.5rem;
-  }
-
-  .chat-input-form {
-    padding: 8px;
-  }
-
-  .chat-input-form .absolute {
-    font-size: 0.625rem;
-    top: -28px;
   }
 }
