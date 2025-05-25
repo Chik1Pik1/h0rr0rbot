@@ -1,4 +1,10 @@
+import { createClient } from '@supabase/supabase-js';
 const { useState, useEffect } = React;
+
+// Инициализация Supabase клиента
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Audio context для управления звуком
 const AudioContext = React.createContext(null);
@@ -55,20 +61,14 @@ const AudioProvider = ({ children }) => {
 };
 
 const generateDailyKey = () => {
-  // Получаем текущую дату
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth() + 1; // getMonth() возвращает 0-11
+  const month = now.getMonth() + 1;
   const day = now.getDate();
-  
-  // Создаем детерминированный seed на основе даты
   const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
-  
-  // Возвращаем ключ из массива по индексу
   return DEMON_KEYS[seed];
 };
 
-// Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -77,15 +77,6 @@ const setAttemptsLeft = (attempts) => {
   localStorage.setItem('attemptsLeft', attempts.toString());
 };
 
-const getBlockedUntil = () => {
-  return localStorage.getItem('blockedUntil') || '';
-};
-
-const setBlockedUntil = (date) => {
-  localStorage.setItem('blockedUntil', date);
-};
-
-// Форматирование даты и времени
 const formatDateTime = (date) => {
   return date.toLocaleString('ru-RU', {
     year: 'numeric',
@@ -97,7 +88,6 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
-// Generate or retrieve UUID for user
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -106,12 +96,30 @@ const getUserId = () => {
       return v.toString(16);
     });
     localStorage.setItem('user_id', userId);
+    // Регистрируем нового пользователя в profiles
+    supabase
+      .from('profiles')
+      .insert({ id: userId, created_at: new Date().toISOString() })
+      .then(({ error }) => {
+        if (error) console.error('Ошибка при создании профиля:', error);
+      });
   }
   return userId;
 };
 
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
+
+  useEffect(() => {
+    const userId = getUserId();
+    // Регистрируем новую сессию
+    supabase
+      .from('user_sessions')
+      .insert({ user_id: userId, session_start: new Date().toISOString() })
+      .then(({ error }) => {
+        if (error) console.error('Ошибка при регистрации сессии:', error);
+      });
+  }, []);
 
   return (
     <AudioProvider>
@@ -145,7 +153,7 @@ const AccessScreen = ({ onAccessGranted }) => {
         .limit(1)
         .single();
 
-      if (error) throw error;
+      if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
         const blockDate = new Date(data.blocked_until);
@@ -157,7 +165,8 @@ const AccessScreen = ({ onAccessGranted }) => {
       }
       return false;
     } catch (error) {
-      console.error('Error checking user block:', error);
+      console.error('Ошибка при проверке блокировки:', error);
+      setError('СИСТЕМНАЯ ОШИБКА: ПОПРОБУЙТЕ ПОЗЖЕ');
       return false;
     }
   };
@@ -177,7 +186,7 @@ const AccessScreen = ({ onAccessGranted }) => {
       setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockUntil)}`);
       setAttempts(0);
     } catch (error) {
-      console.error('Error setting user block:', error);
+      console.error('Ошибка при установке блокировки:', error);
       setError('СИСТЕМНАЯ ОШИБКА: ПОПРОБУЙТЕ ПОЗЖЕ');
     }
   };
@@ -333,9 +342,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 
 const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
-  const [messages, setMessages] = useState([
-    { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
@@ -347,6 +354,32 @@ const ChatScreen = () => {
     glitch: false 
   });
 
+  // Загрузка истории чата при монтировании компонента
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('chat_history')
+          .select('message, sender, created_at')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        const formattedMessages = data.map(item => ({
+          sender: item.sender,
+          text: item.message
+        }));
+        setMessages(formattedMessages);
+      } catch (error) {
+        console.error('Ошибка при загрузке истории чата:', error);
+      }
+    };
+
+    fetchChatHistory();
+  }, [userId]);
+
+  // Управление аудио
   useEffect(() => {
     if (backgroundAudio) {
       backgroundAudio.volume = 0.3;
@@ -355,7 +388,7 @@ const ChatScreen = () => {
           await backgroundAudio.play();
           setIsAudioPlaying(true);
         } catch (error) {
-          console.log("Autoplay prevented:", error);
+          console.log("Автопроигрывание предотвращено:", error);
           setIsAudioPlaying(false);
         }
       };
@@ -380,7 +413,7 @@ const ChatScreen = () => {
           setIsAudioPlaying(true);
         }
       } catch (error) {
-        console.log("Audio toggle failed:", error);
+        console.log("Не удалось переключить аудио:", error);
       }
     }
   };
@@ -393,16 +426,74 @@ const ChatScreen = () => {
     }
   };
 
+  const updateRequestCounter = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('request_counter')
+        .select('request_count, last_reset_date')
+        .eq('user_id', userId)
+        .eq('last_reset_date', today)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data) {
+        await supabase
+          .from('request_counter')
+          .update({ request_count: data.request_count + 1 })
+          .eq('user_id', userId)
+          .eq('last_reset_date', today);
+      } else {
+        await supabase
+          .from('request_counter')
+          .insert({
+            user_id: userId,
+            request_count: 1,
+            last_reset_date: today
+          });
+      }
+    } catch (error) {
+      console.error('Ошибка при обновлении счётчика запросов:', error);
+    }
+  };
+
   const sendMessage = async (message) => {
     try {
+      // Сохраняем сообщение пользователя в chat_history
+      await supabase
+        .from('chat_history')
+        .insert({
+          user_id: userId,
+          message,
+          sender: 'user',
+          created_at: new Date().toISOString()
+        });
+
+      // Обновляем счётчик запросов
+      await updateRequestCounter();
+
+      // Отправляем сообщение на сервер
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, user_id: userId })
       });
       const data = await response.json();
+
+      // Сохраняем ответ демона в chat_history
+      await supabase
+        .from('chat_history')
+        .insert({
+          user_id: userId,
+          message: data.reply,
+          sender: 'demon',
+          created_at: new Date().toISOString()
+        });
+
       return data;
     } catch (error) {
+      console.error('Ошибка при отправке сообщения:', error);
       return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false, isTimeLimitReached: false };
     }
   };
@@ -412,7 +503,7 @@ const ChatScreen = () => {
     if (!input.trim() || isDisconnected) return;
 
     const userMessage = { sender: 'user', text: input };
-    setMessages([...messages, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
 
@@ -420,16 +511,15 @@ const ChatScreen = () => {
     setIsTyping(false);
 
     if (response.isLimitReached) {
-      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      setMessages(prev => [...prev, userMessage, { sender: 'demon', text: response.reply }]);
       setIsDisconnected(true);
     } else {
-      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      setMessages(prev => [...prev, userMessage, { sender: 'demon', text: response.reply }]);
     }
   };
 
   return (
     <div className="flex flex-col h-full p-4 relative chat-fullscreen">
-      {/* Чат контейнер */}
       <div 
         id="chat-container" 
         className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
@@ -462,9 +552,7 @@ const ChatScreen = () => {
         )}
       </div>
 
-      {/* Нижняя панель с вводом и меню */}
       <div className={`chat-bottom-panel ${isDrawerOpen ? 'drawer-open' : ''}`}>
-        {/* Форма ввода */}
         <form onSubmit={handleSubmit} className="chat-input-form">
           <input
             type="text"
@@ -485,7 +573,6 @@ const ChatScreen = () => {
           </button>
         </form>
 
-        {/* Выдвижное меню */}
         <div className="drawer-container">
           <div 
             className="drawer-handle"
