@@ -1,94 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
-import React, { useState, useEffect } from 'react'; // Убедитесь, что React импортируется
-import ReactDOM from 'react-dom';
+const { useState, useEffect, useRef } = React;
 
-// Инициализация Supabase клиента
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Audio context для управления звуком
-const AudioContext = React.createContext(null);
-
-// Список всех возможных ключей
-const DEMON_KEYS = [
-  "Astaroth", "Baphomet", "Choronzon", "Dantalion", "Eligos", "Furfur", "Gremory", 
-  "Haagenti", "Incubus", "Jinn", "Kobold", "Leviathan", "Mammon", "Naberius", 
-  "Oriax", "Paimon", "Raum", "Samael", "Tannin", "Ukobach", "Valac", "Wendigo", 
-  "Xaphan", "Yaksha", "Zagan", "Necronomicon", "Goetia", "Qliphoth", "ArsGoetia", 
-  "Azazel", "Belial", "Beelzebub", "Asmodeus", "Lilith", "Moloch", "Abaddon", 
-  "Amon", "Andras", "Agares", "Barbatos", "Buer", "Caim", "Decarabia", "Forneus", 
-  "Gamigin", "Ipos", "Leraje", "Malphas", "Orobas", "Phenex", "Ronove", "Sabnock", 
-  "Seere", "Shax", "Stolas", "Vepar", "Zepar", "Nyarlathotep", "Cthulhu", 
-  "YogSothoth", "Dagon", "ShubNiggurath", "Akuma", "Oni", "Kitsune", "Djinn", 
-  "Ifrit", "Marid", "Ghul", "Dybbuk", "Nephilim", "Grigori", "Archon", "Aeon", 
-  "Egregore", "Goetic", "Enochian", "Theurgy", "Necromancy", "Thaumaturgy", 
-  "Solomonic", "Hexagram", "Pentacle", "Sigil", "Abraxas", "Akasha", "Chthonic", 
-  "Erebus", "Hecate", "Infernal", "Lemegethon", "Mephisto", "Pandemonium", 
-  "Stygian", "Tartarus", "Zoroaster", "Banshee", "Doppelganger", "Poltergeist", 
-  "Wraith", "Shadowman", "Skinwalker", "Wendigo", "Ouija", "Exorcism", 
-  "Possession", "Divination", "Scrying", "Familiar", "Coven", "Sabbat", 
-  "Akelarre", "Athame", "Boline", "Chalice", "Grimoire", "Mandrake", "Obsidian", 
-  "Runes", "Talisman", "Vortex", "Ziggurat", "BlackMass", "BloodPact", 
-  "DarkRite", "Infernum", "Nocturnal", "Occultus", "Phantasm", "Seraphim", 
-  "Tenebrae", "Umbra", "Voodoo", "Witching", "Xibalba", "Yatagarasu", 
-  "Zephyrus", "Maleficium", "Strigoi", "Karcist", "Qlippoth", "Sephirot", 
-  "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
-];
-
-const AudioProvider = ({ children }) => {
-  const [signalAudio, setSignalAudio] = useState(null);
-  const [backgroundAudio, setBackgroundAudio] = useState(null);
-
-  useEffect(() => {
-    const signal = new Audio('/music/signal.mp3');
-    const background = new Audio('/music/fon.mp3');
-    background.loop = true;
-    
-    setSignalAudio(signal);
-    setBackgroundAudio(background);
-
-    return () => {
-      signal.pause();
-      background.pause();
-    };
-  }, []);
-
-  return (
-    <AudioContext.Provider value={{ signalAudio, backgroundAudio }}>
-      {children}
-    </AudioContext.Provider>
-  );
-};
-
-const generateDailyKey = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
-  const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
-  return DEMON_KEYS[seed];
-};
-
-const getAttemptsLeft = () => {
-  return parseInt(localStorage.getItem('attemptsLeft') || '3');
-};
-
-const setAttemptsLeft = (attempts) => {
-  localStorage.setItem('attemptsLeft', attempts.toString());
-};
-
-const formatDateTime = (date) => {
-  return date.toLocaleString('ru-RU', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  }).replace(',', '');
-};
-
+// Генерация или получение UUID для пользователя
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -97,13 +9,6 @@ const getUserId = () => {
       return v.toString(16);
     });
     localStorage.setItem('user_id', userId);
-    // Регистрируем нового пользователя в profiles
-    supabase
-      .from('profiles')
-      .insert({ id: userId, created_at: new Date().toISOString() })
-      .then(({ error }) => {
-        if (error) console.error('Ошибка при создании профиля:', error);
-      });
   }
   return userId;
 };
@@ -111,91 +16,98 @@ const getUserId = () => {
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
-  useEffect(() => {
-    const userId = getUserId();
-    // Регистрируем новую сессию
-    supabase
-      .from('user_sessions')
-      .insert({ user_id: userId, session_start: new Date().toISOString() })
-      .then(({ error }) => {
-        if (error) console.error('Ошибка при регистрации сессии:', error);
-      });
-  }, []);
-
   return (
-    <AudioProvider>
-      <div className="root-container">
-        {isAccessGranted ? (
-          <ChatScreen />
-        ) : (
-          <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
-        )}
-      </div>
-    </AudioProvider>
+    <div className="root-container">
+      {isAccessGranted ? (
+        <ChatScreen />
+      ) : (
+        <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
+      )}
+    </div>
   );
 };
 
 const AccessScreen = ({ onAccessGranted }) => {
-  const { signalAudio } = React.useContext(AudioContext);
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
-  const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
 
-  const checkUserBlock = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('access_blocks')
-        .select('blocked_until')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
-
-      if (data) {
-        const blockDate = new Date(data.blocked_until);
-        if (blockDate > new Date()) {
-          setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockDate)}`);
-          setAttempts(0);
-          return true;
-        }
-      }
-      return false;
-    } catch (error) {
-      console.error('Ошибка при проверке блокировки:', error);
-      setError('СИСТЕМНАЯ ОШИБКА: ПОПРОБУЙТЕ ПОЗЖЕ');
-      return false;
-    }
-  };
-
-  const setUserBlock = async (userId) => {
-    const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    try {
-      const { error } = await supabase
-        .from('access_blocks')
-        .insert({
-          user_id: userId,
-          blocked_until: blockUntil.toISOString()
-        });
-
-      if (error) throw error;
-
-      setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockUntil)}`);
-      setAttempts(0);
-    } catch (error) {
-      console.error('Ошибка при установке блокировки:', error);
-      setError('СИСТЕМНАЯ ОШИБКА: ПОПРОБУЙТЕ ПОЗЖЕ');
-    }
-  };
+  // Звук сирены для оверлея ошибки из /public/music/
+  const errorSound = new Audio('/music/signal-pojarnoy-trevogi.mp3');
+  errorSound.loop = false;
 
   useEffect(() => {
-    const userId = getUserId();
-    checkUserBlock(userId);
-  }, []);
+    let timeoutId = null;
+
+    // Функция для остановки звука
+    const stopSound = () => {
+      console.log('Останавливаем errorSound');
+      errorSound.pause();
+      errorSound.currentTime = 0;
+    };
+
+    // Проверка готовности звука перед воспроизведением
+    const playSound = () => {
+      return new Promise((resolve, reject) => {
+        if (errorSound.readyState >= 2) {
+          resolve();
+        } else {
+          errorSound.oncanplay = () => resolve();
+          errorSound.onerror = () => reject(new Error('Не удалось загрузить signal-pojarnoy-trevogi.mp3'));
+        }
+      });
+    };
+
+    if (showErrorOverlay) {
+      console.log('Запускаем errorSound');
+      stopSound();
+      playSound()
+        .then(() => {
+          errorSound.play().catch((e) => {
+            console.error('Ошибка воспроизведения signal-pojarnoy-trevogi.mp3:', e);
+          });
+          timeoutId = setTimeout(stopSound, 3000);
+        })
+        .catch((e) => {
+          console.error('Ошибка загрузки звука:', e);
+        });
+    } else {
+      stopSound();
+    }
+
+    return () => {
+      if (timeoutId) {
+        console.log('Очистка таймера');
+        clearTimeout(timeoutId);
+      }
+      stopSound();
+    };
+  }, [showErrorOverlay]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!key.trim()) {
+      setError('ВВЕДИТЕ КЛЮЧ.');
+      return;
+    }
+    setIsLoading(true);
+    setError('Проверка ключа...');
+    setShowErrorOverlay(true);
+    setTimeout(() => {
+      setShowErrorOverlay(false);
+      setShowHackOverlay(true);
+      setTimeout(() => {
+        setShowHackOverlay(false);
+        setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\nПОДКЛЮЧЕНИЕ К СУЩНОСТИ #7... УСПЕШНО.');
+        setTimeout(() => {
+          setIsLoading(false);
+          onAccessGranted();
+        }, 2000);
+      }, 4000);
+    }, 3000);
+  };
 
   const generateHackCode = () => {
     const snippets = [
@@ -234,55 +146,6 @@ const AccessScreen = ({ onAccessGranted }) => {
     return codes;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!key.trim() || attemptsLeft <= 0) return;
-
-    const userId = getUserId();
-    const isBlocked = await checkUserBlock(userId);
-    if (isBlocked) return;
-
-    setIsLoading(true);
-    setError('Проверка ключа...');
-
-    const correctKey = generateDailyKey();
-    
-    if (key === correctKey) {
-      setShowErrorOverlay(true);
-      if (signalAudio) {
-        signalAudio.currentTime = 0;
-        signalAudio.play();
-      }
-
-      setAttemptsLeft(3);
-      localStorage.removeItem('blockedUntil');
-
-      setTimeout(() => {
-        setShowErrorOverlay(false);
-        if (signalAudio) {
-          signalAudio.pause();
-        }
-        setShowHackOverlay(true);
-        setTimeout(() => {
-          setShowHackOverlay(false);
-          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\n[...]');
-          setTimeout(() => onAccessGranted(), 2000);
-        }, 4000);
-      }, 3000);
-    } else {
-      const newAttempts = attemptsLeft - 1;
-      setAttempts(newAttempts);
-      setAttemptsLeft(newAttempts);
-      
-      if (newAttempts <= 0) {
-        await setUserBlock(userId);
-      } else {
-        setError(`НЕВЕРНЫЙ КЛЮЧ. ОСТАЛОСЬ ПОПЫТОК: ${newAttempts}`);
-      }
-      setIsLoading(false);
-    }
-  };
-
   return (
     <>
       {showErrorOverlay && (
@@ -301,35 +164,26 @@ const AccessScreen = ({ onAccessGranted }) => {
           <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
           <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
-          {attemptsLeft > 0 ? (
-            <form onSubmit={handleSubmit} className="w-full max-w-sm">
-              <div className="flex items-center mb-4">
-                <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
-                <input
-                  type="text"
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
-                  className="flex-1 text-user text-xl p-2 border focus:outline-none"
-                  placeholder="_________"
-                  disabled={isLoading}
-                  style={{ color: '#00ff00', borderColor: '#00ff00' }}
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full text-user text-xl border px-4 py-2"
+          <form onSubmit={handleSubmit} className="w-full max-w-sm">
+            <div className="flex items-center mb-4">
+              <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
+              <input
+                type="text"
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                className="flex-1 text-user text-xl p-2 border focus:outline-none"
+                placeholder="_________"
                 disabled={isLoading}
-                style={{ color: '#00ff00', borderColor: '#00ff00' }}
-              >
-                Подтвердить
-              </button>
-              <p className="text-demon text-xl mt-2">
-                Осталось попыток: {attemptsLeft}
-              </p>
-            </form>
-          ) : (
-            <p className="text-demon text-xl mt-4 blink">ДОСТУП ЗАБЛОКИРОВАН</p>
-          )}
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full text-user text-xl border px-4 py-2"
+              disabled={isLoading}
+            >
+              Подтвердить
+            </button>
+          </form>
           {error && (
             <p className="text-demon text-xl mt-4 blink" style={{ whiteSpace: 'pre-line' }}>
               {error}
@@ -342,303 +196,377 @@ const AccessScreen = ({ onAccessGranted }) => {
 };
 
 const ChatScreen = () => {
-  const { backgroundAudio } = React.useContext(AudioContext);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([
+    { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
+  ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordTime, setRecordTime] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [audioStream, setAudioStream] = useState(null);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
     glitch: false 
   });
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const timerRef = useRef(null);
+  const recognitionRef = useRef(null);
 
-  // Загрузка истории чата при монтировании компонента
+  // Предварительный запрос разрешения микрофона
   useEffect(() => {
-    const fetchChatHistory = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('chat_history')
-          .select('message, sender, created_at')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: true });
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        stream.getTracks().forEach(track => track.stop());
+      })
+      .catch(console.error);
+  }, []);
 
-        if (error) throw error;
+  // Фоновый звук из /public/music/
+  const backgroundSound = new Audio('/music/fon.mp3');
+  backgroundSound.loop = true;
 
-        const formattedMessages = data.map(item => ({
-          sender: item.sender,
-          text: item.message
-        }));
-        setMessages(formattedMessages);
-      } catch (error) {
-        console.error('Ошибка при загрузке истории чата:', error);
-      }
+  // Обработчик взаимодействия для фонового звука
+  const handleInteraction = () => {
+    setHasInteracted(true);
+  };
+
+  useEffect(() => {
+    const events = ['click', 'touchstart', 'keydown'];
+    events.forEach(event => {
+      document.addEventListener(event, handleInteraction, { once: true });
+    });
+
+    const stopSound = () => {
+      console.log('Останавливаем backgroundSound');
+      backgroundSound.pause();
+      backgroundSound.currentTime = 0;
     };
 
-    fetchChatHistory();
-  }, [userId]);
-
-  // Управление аудио
-  useEffect(() => {
-    if (backgroundAudio) {
-      backgroundAudio.volume = 0.3;
-      const playAudio = async () => {
-        try {
-          await backgroundAudio.play();
-          setIsAudioPlaying(true);
-        } catch (error) {
-          console.log("Автопроигрывание предотвращено:", error);
-          setIsAudioPlaying(false);
-        }
-      };
-      playAudio();
-    }
-    return () => {
-      if (backgroundAudio) {
-        backgroundAudio.pause();
-        setIsAudioPlaying(false);
-      }
-    };
-  }, [backgroundAudio]);
-
-  const toggleAudio = async () => {
-    if (backgroundAudio) {
-      try {
-        if (isAudioPlaying) {
-          backgroundAudio.pause();
-          setIsAudioPlaying(false);
+    const playSound = () => {
+      return new Promise((resolve, reject) => {
+        console.log('Проверяем готовность fon.mp3, readyState:', backgroundSound.readyState);
+        if (backgroundSound.readyState >= 2) {
+          resolve();
         } else {
-          await backgroundAudio.play();
-          setIsAudioPlaying(true);
+          backgroundSound.oncanplay = () => {
+            console.log('fon.mp3 готов к воспроизведению');
+            resolve();
+          };
+          backgroundSound.onerror = () => reject(new Error('Не удалось загрузить fon.mp3'));
+          backgroundSound.load();
         }
-      } catch (error) {
-        console.log("Не удалось переключить аудио:", error);
-      }
-    }
-  };
+      });
+    };
 
-  const toggleFullscreen = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
+    const tryPlaySound = () => {
+      console.log('Попытка запустить backgroundSound, hasInteracted:', hasInteracted);
+      playSound()
+        .then(() => {
+          backgroundSound.play()
+            .then(() => console.log('backgroundSound успешно воспроизводится'))
+            .catch((e) => {
+              console.error('Ошибка воспроизведения fon.mp3:', e);
+              if (!hasInteracted) {
+                console.log('Ожидаем взаимодействия пользователя для воспроизведения');
+              }
+            });
+        })
+        .catch((e) => {
+          console.error('Ошибка загрузки fon.mp3:', e);
+        });
+    };
+
+    if (hasInteracted) {
+      tryPlaySound();
     } else {
-      document.documentElement.requestFullscreen().catch(console.error);
+      const interactionHandler = () => {
+        tryPlaySound();
+        events.forEach(event => {
+          document.removeEventListener(event, interactionHandler);
+        });
+      };
+      events.forEach(event => {
+        document.addEventListener(event, interactionHandler, { once: true });
+      });
+    }
+
+    return () => {
+      stopSound();
+      events.forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
+    };
+  }, [hasInteracted]);
+
+  // Очистка audioStream при размонтировании
+  useEffect(() => {
+    return () => {
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+        console.log('Очищен audioStream');
+      }
+    };
+  }, [audioStream]);
+
+  // Форматирование времени (MM:SS)
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
+
+  // Начало записи
+  const startRecording = async () => {
+    if (isDisconnected || isRecording) return;
+
+    try {
+      // Запрашиваем микрофон только один раз
+      if (!audioStream) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setAudioStream(stream);
+      }
+
+      // Используем существующий поток
+      mediaRecorderRef.current = new MediaRecorder(audioStream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        handleAudioSubmit(audioUrl);
+        // Не очищаем stream, чтобы использовать его повторно
+      };
+
+      // Запуск распознавания речи
+      if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+        recognitionRef.current = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognitionRef.current.lang = 'ru-RU';
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.maxAlternatives = 1;
+
+        recognitionRef.current.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          console.log('Распознанный текст:', transcript);
+          recognitionRef.current.transcript = transcript;
+        };
+
+        recognitionRef.current.onerror = (event) => {
+          console.error('Ошибка распознавания речи:', event.error);
+        };
+
+        recognitionRef.current.onend = () => {
+          console.log('Распознавание речи завершено');
+        };
+
+        recognitionRef.current.start();
+        console.log('Начато распознавание речи');
+      } else {
+        console.warn('Web Speech API не поддерживается в этом браузере');
+      }
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      setRecordTime(0);
+
+      timerRef.current = setInterval(() => {
+        setRecordTime(prev => prev + 1);
+      }, 1000);
+
+      console.log('Начата запись аудио');
+    } catch (error) {
+      console.error('Ошибка доступа к микрофону:', error);
+      setIsRecording(false);
+      setMessages([...messages, { sender: 'demon', text: 'Ошибка доступа к микрофону. Проверь настройки.' }]);
     }
   };
 
-  const updateRequestCounter = async () => {
+  // Остановка записи
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(timerRef.current);
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      console.log('Запись остановлена');
+    }
+  };
+
+  // Отправка аудио и обработка демоном
+  const handleAudioSubmit = async (audioUrl) => {
+    if (isDisconnected) return;
+
+    const userMessage = { sender: 'user', audio: audioUrl };
+    setMessages([...messages, userMessage]);
+    setIsTyping(true);
+
+    // Отправка аудио на сервер для транскрибации
+    const audioBlob = await fetch(audioUrl).then(r => r.blob());
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.webm');
+
+    let transcript = '';
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('request_counter')
-        .select('request_count, last_reset_date')
-        .eq('user_id', userId)
-        .eq('last_reset_date', today)
-        .single();
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      transcript = data.text || '';
+    } catch (error) {
+      console.error('Transcription error:', error);
+    }
 
-      if (error && error.code !== 'PGRST116') throw error;
+    // Отправка текста демону
+    try {
+      const response = await sendMessage(transcript || 'Голосовое сообщение');
+      setIsTyping(false);
 
-      if (data) {
-        await supabase
-          .from('request_counter')
-          .update({ request_count: data.request_count + 1 })
-          .eq('user_id', userId)
-          .eq('last_reset_date', today);
+      if (response.isLimitReached) {
+        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+        setIsDisconnected(true);
       } else {
-        await supabase
-          .from('request_counter')
-          .insert({
-            user_id: userId,
-            request_count: 1,
-            last_reset_date: today
-          });
+        const reply = transcript 
+          ? `Я прослушал твое сообщение. Ты сказал: "${transcript}". ${response.reply}`
+          : `Я не понял твоего голоса... ${response.reply}`;
+        setMessages([...messages, userMessage, { sender: 'demon', text: reply }]);
       }
     } catch (error) {
-      console.error('Ошибка при обновлении счётчика запросов:', error);
+      console.error('Ошибка отправки сообщения:', error);
+      setIsTyping(false);
+      setMessages([...messages, userMessage, { sender: 'demon', text: 'Я всё ещё здесь... Попробуй снова.' }]);
     }
   };
 
+  // Отправка текстового сообщения
   const sendMessage = async (message) => {
     try {
-      // Сохраняем сообщение пользователя в chat_history
-      await supabase
-        .from('chat_history')
-        .insert({
-          user_id: userId,
-          message,
-          sender: 'user',
-          created_at: new Date().toISOString()
-        });
-
-      // Обновляем счётчик запросов
-      await updateRequestCounter();
-
-      // Отправляем сообщение на сервер
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, user_id: userId })
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-
-      // Сохраняем ответ демона в chat_history
-      await supabase
-        .from('chat_history')
-        .insert({
-          user_id: userId,
-          message: data.reply,
-          sender: 'demon',
-          created_at: new Date().toISOString()
-        });
-
       return data;
     } catch (error) {
-      console.error('Ошибка при отправке сообщения:', error);
+      console.error('Ошибка API /api/chat:', error);
       return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false, isTimeLimitReached: false };
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleTextSubmit = (e) => {
     e.preventDefault();
     if (!input.trim() || isDisconnected) return;
 
     const userMessage = { sender: 'user', text: input };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages([...messages, userMessage]);
     setInput('');
     setIsTyping(true);
 
-    const response = await sendMessage(input);
-    setIsTyping(false);
-
-    if (response.isLimitReached) {
-      setMessages(prev => [...prev, userMessage, { sender: 'demon', text: response.reply }]);
-      setIsDisconnected(true);
-    } else {
-      setMessages(prev => [...prev, userMessage, { sender: 'demon', text: response.reply }]);
-    }
+    sendMessage(input).then(response => {
+      setIsTyping(false);
+      if (response.isLimitReached) {
+        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+        setIsDisconnected(true);
+      } else {
+        setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      }
+    });
   };
 
   return (
     <div className="flex flex-col h-full p-4 relative chat-fullscreen">
-      <div 
-        id="chat-container" 
-        className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
-      >
+      <div id="chat-container" className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}>
         {messages.map((msg, index) => {
           let text = msg.text;
-          if (effects.glitch) {
+          if (effects.glitch && msg.text) {
             text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
           
-          const messageStyle = {
-            color: msg.sender === 'user' ? '#00ff00' : (effects.blood ? '#ff2222' : '#ff0000'),
-            transform: effects.blood ? 'skew(-2deg)' : 'none'
-          };
-          
           return (
-            <p
-              key={index}
-              className={`text-xl mb-2 ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
-                (effects.blood || effects.glitch) ? 'demon-effect' : ''
-              }`}
-              style={messageStyle}
-            >
-              {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
-            </p>
+            <div key={index} className="mb-2">
+              {msg.audio ? (
+                <div className={`text-xl ${msg.sender === 'user' ? 'text-user' : 'text-demon'}`}>
+                  {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}
+                  <audio src={msg.audio} controls className="inline-block" onEnded={() => URL.revokeObjectURL(msg.audio)} />
+                </div>
+              ) : (
+                <p
+                  className={`text-xl ${msg.sender === 'user' ? 'text-user' : 'text-demon'} ${
+                    (effects.blood || effects.glitch) ? 'demon-effect' : ''
+                  }`}
+                  style={{
+                    transform: effects.blood ? 'skew(-2deg)' : 'none'
+                  }}
+                >
+                  {msg.sender === 'user' ? '>> ' : '[Сущность #7]: '}{text}
+                </p>
+              )}
+            </div>
           );
         })}
         {isTyping && !isDisconnected && (
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-
-      <div className={`chat-bottom-panel ${isDrawerOpen ? 'drawer-open' : ''}`}>
-        <form onSubmit={handleSubmit} className="chat-input-form">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="flex-1 text-xl p-2 border focus:outline-none"
-            placeholder="Введи сообщение..."
-            disabled={isDisconnected}
-            style={{ color: '#00ff00', borderColor: '#00ff00' }}
-          />
-          <button
-            type="submit"
-            className="text-xl border px-4 py-2"
-            disabled={isDisconnected}
-            style={{ color: '#00ff00', borderColor: '#00ff00' }}
+      <form onSubmit={handleTextSubmit} className="chat-input-form flex items-center space-x-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className="flex-1 text-user text-xl p-2 border focus:outline-none"
+          placeholder="Введи сообщение..."
+          disabled={isDisconnected || isRecording}
+        />
+        <button
+          type="submit"
+          className="text-user text-xl border px-4 py-2"
+          disabled={isDisconnected || isRecording}
+        >
+          Отправить
+        </button>
+        <div
+          className={`relative p-1 border ${isRecording ? 'bg-red-600 animate-pulse' : 'text-user'} ${isDisconnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          onMouseDown={startRecording}
+          onMouseUp={stopRecording}
+          onTouchStart={startRecording}
+          onTouchEnd={stopRecording}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            Отправить
-          </button>
-        </form>
-
-        <div className="drawer-container">
-          <div 
-            className="drawer-handle"
-            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            style={{
-              transform: isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-            }}
-          />
-          
-          <div 
-            className="drawer-content"
-            style={{
-              height: isDrawerOpen ? '60px' : '0'
-            }}
-          >
-            <div className="drawer-buttons">
-              <button
-                onClick={toggleAudio}
-                className="control-button"
-                style={{
-                  background: 'none',
-                  border: '1px solid #00ff00',
-                  color: '#00ff00',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <svg viewBox="0 0 24 24">
-                  {isAudioPlaying ? (
-                    <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77zm-4 0l-4 4-4-4-3 3 4 4-4 4 3 3 4-4 4 4 3-3-4-4 4-4-3-3-4 4zM12 7v10l-3.2-3.2-2.8 2.8-2-2 2.8-2.8-2.8-2.8 2-2 2.8 2.8 3.2-3.2z"/>
-                  ) : (
-                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51c.66-1.24 1.03-2.65 1.03-4.15s-.37-2.91-1.03-4.15l-1.51 1.51c.34.82.54 1.7.54 2.64zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-                  )}
-                </svg>
-                Звук
-              </button>
-              
-              <button
-                onClick={toggleFullscreen}
-                className="control-button"
-                style={{
-                  background: 'none',
-                  border: '1px solid #00ff00',
-                  color: '#00ff00',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <svg viewBox="0 0 24 24">
-                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-                </svg>
-                Полный экран
-              </button>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+            />
+          </svg>
+          {isRecording && (
+            <div className="fixed bottom-24 left-0 right-0 text-center text-user text-xs font-mono flex items-center justify-center">
+              <span className="blink mr-1">REC</span>
+              <span>{formatTime(recordTime)}</span>
+              <span className="ml-1 animate-pulse">|█|</span>
             </div>
-          </div>
+          )}
         </div>
-      </div>
+      </form>
     </div>
   );
 };
