@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-const { useState, useEffect } = React;
+import React, { useState, useEffect } from 'react'; // Убедитесь, что React импортируется
+import ReactDOM from 'react-dom';
 
 // Инициализация Supabase клиента
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
