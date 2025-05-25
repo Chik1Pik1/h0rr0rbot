@@ -385,8 +385,8 @@ const ChatScreen = () => {
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
-        method='POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'amethod: 'POST',pplication/json' },
         body: JSON.stringify({ message, user_id: userId })
       });
       const data = await response.json();
