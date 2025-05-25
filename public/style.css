@@ -35,7 +35,7 @@ body::after {
 
 /* Основное окно */
 .crt-window {
-  background: #000 !important;
+  background: #000;
   border: 2px solid #00ff0033;
   position: relative;
   width: 90%;
@@ -80,12 +80,11 @@ body::after {
   overflow: hidden;
   box-sizing: border-box;
   box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.2);
-  display: flex;
-  flex-direction: column;
 }
 
 /* Помехи для окна и чата */
-.crt-window::after, .chat-fullscreen::after {
+.crt-window::after,
+.chat-fullscreen::after {
   content: '';
   position: absolute;
   top: 0;
@@ -98,7 +97,8 @@ body::after {
 }
 
 /* Полноэкранные оверлеи */
-.error-overlay-fullscreen, .hack-overlay-fullscreen {
+.error-overlay-fullscreen,
+.hack-overlay-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
@@ -122,214 +122,7 @@ body::after {
   background: #000;
 }
 
-/* Цвета текста */
-.text-user {
-  color: #00ff00 !important;
-}
-
-.text-demon {
-  color: #ff0000;
-}
-
-/* Стили для форм */
-input, button {
-  font-family: 'Special Elite', monospace;
-  background: #000;
-  border: 2px solid #00ff00;
-  color: #00ff00;
-  padding: 8px;
-  font-size: 1.25rem;
-  box-sizing: border-box;
-  transition: all 0.3s ease;
-}
-
-input::placeholder {
-  color: rgba(0, 255, 0, 0.5);
-}
-
-button:hover:not(:disabled) {
-  background: rgba(0, 255, 0, 0.1);
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Контейнер чата */
-.chat-container {
-  flex: 1;
-  overflow-y: auto;
-  margin-bottom: 10px;
-  padding-right: 10px;
-  scrollbar-width: thin;
-  scrollbar-color: #00ff00 #000000;
-}
-
-/* Стили для скроллбара */
-.chat-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.chat-container::-webkit-scrollbar-track {
-  background: #000000;
-}
-
-.chat-container::-webkit-scrollbar-thumb {
-  background: #00ff00;
-  border-radius: 4px;
-}
-
-/* Нижняя панель с вводом и меню */
-.chat-bottom-panel {
-  position: relative;
-  margin-top: auto;
-  transition: transform 0.3s ease;
-}
-
-/* Форма ввода чата */
-.chat-input-form {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 30px;
-  transition: transform 0.3s ease;
-}
-
-/* Выдвижное меню */
-.drawer-container {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* Ручка выдвижного меню */
-.drawer-handle {
-  width: 40px;
-  height: 4px;
-  background-color: #00ff00;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-  margin-bottom: 8px;
-}
-
-/* Содержимое выдвижного меню */
-.drawer-content {
-  width: 100%;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  background-color: rgba(0, 0, 0, 0.8);
-}
-
-/* Стили для открытого состояния меню */
-.chat-bottom-panel.drawer-open {
-  transform: translateY(-60px);
-}
-
-/* Стили для кнопок в выдвижном меню */
-.drawer-buttons {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  padding: 16px;
-  border-top: 1px solid #00ff0033;
-}
-
-/* Дополнительные эффекты */
-.blink {
-  animation: blink 1s step-end infinite;
-}
-
-.dash-line {
-  letter-spacing: 0.1em;
-}
-
-.demon-effect {
-  animation: 
-    text-glitch 0.8s steps(2) infinite,
-    blood-drip 1.2s ease-in-out;
-}
-
-/* Анимации */
-@keyframes blink {
-  50% { opacity: 0; }
-}
-
-@keyframes scanline {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(100vh); }
-}
-
-@keyframes flicker {
-  0% { opacity: 1; }
-  50% { opacity: 0.98; }
-  100% { opacity: 1; }
-}
-
-@keyframes error-blink {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
-  100% { opacity: 1; }
-}
-
-@keyframes crt-static {
-  0% { background-position: 0 0; }
-  100% { background-position: 100px 100px; }
-}
-
-@keyframes text-glitch {
-  0% { clip-path: inset(10% 0 90% 0); }
-  25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
-  50% { clip-path:evidence inset(5% 0 80% 0); }
-  75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
-}
-
-@keyframes blood-drip {
-  0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
-  50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
-  100% { transform: translateY(0); }
-}
-
-/* Адаптивность для мобильных устройств */
-@media (max-width: 600px) {
-  .crt-window {
-    width: 95%;
-    min-height: 50vh;
-    margin: 10px auto;
-  }
-
-  .chat-fullscreen {
-    padding: 10px;
-  }
-
-  input, button {
-    font-size: 1rem;
-    padding: 6px;
-  }
-
-  .chat-container {
-    max-height: 75vh;
-  }
-
-  h1, p, input, button {
-    font-size: 1rem !important;
-  }
-
-  .error-overlay-fullscreen {
-    font-size: 1.5rem;
-  }
-
-  .hack-code {
-    font-size: 0.8rem;
-  }
-}
-
-/* Анимация матричного кода */
+/* Эффект цифрового дождя */
 .matrix-rain {
   position: absolute;
   top: 0;
@@ -344,13 +137,46 @@ button:disabled {
   animation: matrix-rain 10s linear infinite;
 }
 
+/* Анимация кода с glitch-эффектом */
 .hack-code {
   position: absolute;
   white-space: nowrap;
-  color: #00ff00;
-  text-shadow: 0 0 5px #00ff00;
   animation: hack-scroll linear infinite;
-  font-family: monospace;
+}
+
+.hack-code::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==') repeat;
+  opacity: 0.2;
+  animation: glitch 0.5s infinite;
+}
+
+/* Анимации */
+@keyframes dissolve {
+  0% { opacity: 1; filter: blur(0px); }
+  100% { opacity: 0; filter: blur(20px); }
+}
+
+@keyframes blood-drip {
+  0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
+  50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes text-glitch {
+  0% { clip-path: inset(10% 0 90% 0); }
+  25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
+  50% { clip-path: inset(5% 0 80% 0); }
+  75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
+}
+
+.demon-effect {
+  animation: text-glitch 0.8s steps(2) infinite, blood-drip 1.2s ease-in-out;
 }
 
 @keyframes hack-scroll {
@@ -358,36 +184,224 @@ button:disabled {
   100% { transform: translateY(-100%); }
 }
 
+@keyframes glitch {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-5px, 5px); }
+  40% { transform: translate(5px, -5px); }
+  60% { transform: translate(-5px, -5px); }
+  80% { transform: translate(5px, 5px); }
+}
+
+@keyframes scanline {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 1000px; }
+}
+
+@keyframes flicker {
+  0% { opacity: 1; }
+  50% { opacity: 0.98; }
+  100% { opacity: 1; }
+}
+
+@keyframes error-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
 @keyframes matrix-rain {
-  0% { transform: translateY(-100vh); }
-  100% { transform: translateY(100vh); }
+  0% { transform: translateY(100vh); }
+  100% { transform: translateY(-100vh); }
 }
 
-/* Стили для кнопок управления и SVG-иконок */
-.control-button {
-  transition: all 0.3s ease;
-  background: rgba(0, 0, 0, 0.3) !important;
+@keyframes crt-static {
+  0% { background-position: 0 0; }
+  100% { background-position: 100px 100px; }
 }
 
-.control-button:hover {
-  background: rgba(0, 255, 0, 0.1) !important;
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+/* Элементы интерфейса */
+.text-user {
+  color: #00FF00;
 }
 
-.control-button svg {
+.text-demon {
+  color: #FF0000;
+}
+
+.blink {
+  animation: blink 0.5s step-end infinite;
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+input,
+button {
+  font-family: 'Special Elite', monospace;
+  background: #000;
+  border: 2px solid #00FF00;
+  color: #00FF00;
+  padding: 8px;
+  font-size: 1.25rem;
+  box-sizing: border-box;
+}
+
+button {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chat-container {
+  font-family: 'Courier New', monospace;
+  max-height: 70vh;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  padding-right: 10px;
+  flex-grow: 1;
+}
+
+.chat-input-form {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background: #000;
+  gap: 8px;
+}
+
+.chat-input-form button {
+  flex-shrink: 0;
+}
+
+.chat-input-form > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #00FF00;
+}
+
+.chat-input-form .absolute {
+  white-space: nowrap;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+}
+
+/* Стили для SVG-иконок */
+.mic-button svg,
+.stop-button svg {
   width: 24px;
   height: 24px;
-  fill: #00ff00;
-  transition: all 0.3s ease;
+  fill: #00FF00;
+  filter: drop-shadow(0 0 2px #00FF00);
+  animation: flicker 0.1s infinite;
 }
 
-.control-button:hover svg {
-  filter: drop-shadow(0 0 3px #00ff00);
+.stop-button svg {
+  animation: record-blink 0.5s infinite;
 }
 
+@keyframes record-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+.dash-line {
+  letter-spacing: 0.1em;
+}
+
+/* Стили для аудиоплеера */
+.audio-message {
+  position: relative;
+  padding: 8px;
+  border: 1px solid #00ff0055;
+  margin: 10px 0;
+}
+
+.audio-message audio {
+  width: 100%;
+  filter: drop-shadow(0 0 2px #00ff00);
+}
+
+.audio-message::after {
+  content: '≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡';
+  position: absolute;
+  bottom: -15px;
+  left: 0;
+  color: #00ff0033;
+  font-size: 0.8em;
+  letter-spacing: 2px;
+}
+
+/* Адаптивность для мобильных */
 @media (max-width: 600px) {
-  .control-button svg {
+  .crt-window {
+    width: 95%;
+    min-height: 50vh;
+    margin: 10px auto;
+  }
+
+  .chat-fullscreen {
+    padding: 10px;
+  }
+
+  input,
+  button {
+    font-size: 1rem;
+    padding: 6px;
+  }
+
+  .chat-container {
+    max-height: 75vh;
+  }
+
+  h1,
+  p,
+  input,
+  button {
+    font-size: 1rem;
+  }
+
+  .error-overlay-fullscreen {
+    font-size: 1.5rem;
+  }
+
+  .mic-button svg,
+  .stop-button svg {
     width: 20px;
     height: 20px;
+  }
+
+  .audio-message audio {
+    width: 150px;
+  }
+
+  .chat-input-form {
+    gap: 4px;
+  }
+
+  .chat-input-form > div {
+    width: 24px;
+    height: 24px;
+  }
+
+  .chat-input-form .absolute {
+    font-size: 0.65rem;
+    top: -6rem;
   }
 }
