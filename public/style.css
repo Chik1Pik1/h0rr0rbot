@@ -11,7 +11,7 @@ body {
   touch-action: manipulation;
 }
 
-/* Фоновые помехи (из нового запроса) */
+/* Фоновые помехи */
 body::after {
   content: '';
   position: fixed;
@@ -33,7 +33,7 @@ body::after {
   align-items: center;
 }
 
-/* Основное окно (из нового запроса) */
+/* Основное окно */
 .crt-window {
   background: #000 !important;
   border: 2px solid #00ff0033;
@@ -47,10 +47,10 @@ body::after {
   justify-content: center;
   align-items: center;
   margin: 20px auto;
-  z-index: 1001; /* Сохранено для совместимости */
+  z-index: 1001;
 }
 
-/* ЭЛТ-помехи (из нового запроса) */
+/* ЭЛТ-помехи */
 .crt-window::before {
   content: '';
   position: absolute;
@@ -80,6 +80,8 @@ body::after {
   overflow: hidden;
   box-sizing: border-box;
   box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.2);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Помехи для окна и чата */
@@ -120,84 +122,147 @@ body::after {
   background: #000;
 }
 
-/* Эффект цифрового дождя */
-.matrix-rain {
+/* Цвета текста */
+.text-user {
+  color: #00ff00 !important;
+}
+
+.text-demon {
+  color: #ff0000;
+}
+
+/* Стили для форм */
+input, button {
+  font-family: 'Special Elite', monospace;
+  background: #000;
+  border: 2px solid #00ff00;
+  color: #00ff00;
+  padding: 8px;
+  font-size: 1.25rem;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+input::placeholder {
+  color: rgba(0, 255, 0, 0.5);
+}
+
+button:hover:not(:disabled) {
+  background: rgba(0, 255, 0, 0.1);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Контейнер чата */
+.chat-container {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  padding-right: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #00ff00 #000000;
+}
+
+/* Стили для скроллбара */
+.chat-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+  background: #00ff00;
+  border-radius: 4px;
+}
+
+/* Нижняя панель с вводом и меню */
+.chat-bottom-panel {
+  position: relative;
+  margin-top: auto;
+  transition: transform 0.3s ease;
+}
+
+/* Форма ввода чата */
+.chat-input-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 30px;
+  transition: transform 0.3s ease;
+}
+
+/* Выдвижное меню */
+.drawer-container {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 255, 0, 0.2) 0%,
-    rgba(0, 255, 0, 0.05) 100%
-  );
-  animation: matrix-rain 10s linear infinite;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-/* Анимация исчезновения */
-@keyframes dissolve {
-  0% { opacity: 1; filter: blur(0px); }
-  100% { opacity: 0; filter: blur(20px); }
+/* Ручка выдвижного меню */
+.drawer-handle {
+  width: 40px;
+  height: 4px;
+  background-color: #00ff00;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  margin-bottom: 8px;
 }
 
-/* Анимация кода с glitch-эффектом */
-.hack-code {
-  position: absolute;
-  white-space: nowrap;
-  animation: hack-scroll linear infinite;
+/* Содержимое выдвижного меню */
+.drawer-content {
+  width: 100%;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
-.hack-code::before {
-  content: '';
-  position: absolute;
-  top: -10%;
-  left: -10%;
-  width: 120%;
-  height: 120%;
-  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8TAwMDEwAAAVQABrD9V7QAAAABJRU5ErkJggg==') repeat;
-  opacity: 0.2;
-  animation: glitch 0.5s infinite;
+/* Стили для открытого состояния меню */
+.chat-bottom-panel.drawer-open {
+  transform: translateY(-60px);
 }
 
-/* Кровавое стекание (из нового запроса) */
-@keyframes blood-drip {
-  0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
-  50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
-  100% { transform: translateY(0); }
+/* Стили для кнопок в выдвижном меню */
+.drawer-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  padding: 16px;
+  border-top: 1px solid #00ff0033;
 }
 
-/* Текстовые глитчи (из нового запроса) */
-@keyframes text-glitch {
-  0% { clip-path: inset(10% 0 90% 0); }
-  25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
-  50% { clip-path: inset(5% 0 80% 0); }
-  75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
+/* Дополнительные эффекты */
+.blink {
+  animation: blink 1s step-end infinite;
 }
 
-/* Эффект демона (из нового запроса) */
+.dash-line {
+  letter-spacing: 0.1em;
+}
+
 .demon-effect {
   animation: 
     text-glitch 0.8s steps(2) infinite,
     blood-drip 1.2s ease-in-out;
 }
 
-@keyframes hack-scroll {
-  0% { transform: translateY(100%); }
-  100% { transform: translateY(-100%); }
-}
-
-@keyframes glitch {
-  0%, 100% { transform: translate(0, 0); }
-  20% { transform: translate(-5px, 5px); }
-  40% { transform: translate(5px, -5px); }
-  60% { transform: translate(-5px, -5px); }
-  80% { transform: translate(5px, 5px); }
+/* Анимации */
+@keyframes blink {
+  50% { opacity: 0; }
 }
 
 @keyframes scanline {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 1000px; }
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100vh); }
 }
 
 @keyframes flicker {
@@ -212,74 +277,25 @@ body::after {
   100% { opacity: 1; }
 }
 
-@keyframes matrix-rain {
-  0% { transform: translateY(100vh); }
-  100% { transform: translateY(-100vh); }
-}
-
-/* Фоновые помехи (из нового запроса) */
 @keyframes crt-static {
   0% { background-position: 0 0; }
   100% { background-position: 100px 100px; }
 }
 
-.text-user {
-  color: #00FF00;
+@keyframes text-glitch {
+  0% { clip-path: inset(10% 0 90% 0); }
+  25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
+  50% { clip-path:evidence inset(5% 0 80% 0); }
+  75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
 }
 
-.text-demon {
-  color: #FF0000;
+@keyframes blood-drip {
+  0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
+  50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
+  100% { transform: translateY(0); }
 }
 
-.blink {
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  50% { opacity: 0; }
-}
-
-input, button {
-  font-family: 'Special Elite', monospace;
-  background: #000;
-  border: 2px solid #00FF00;
-  color: #00FF00;
-  padding: 8px;
-  font-size: 1.25rem;
-  box-sizing: border-box;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.chat-container {
-  max-height: 70vh;
-  overflow-y: auto;
-  margin-bottom: 10px;
-  padding-right: 10px;
-  flex-grow: 1;
-}
-
-.chat-input-form {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 10px;
-  background: #000;
-}
-
-.dash-line {
-  letter-spacing: 0.1em;
-}
-
-/* Адаптивность для мобильных */
+/* Адаптивность для мобильных устройств */
 @media (max-width: 600px) {
   .crt-window {
     width: 95%;
@@ -301,10 +317,77 @@ button:disabled {
   }
 
   h1, p, input, button {
-    font-size: 1rem;
+    font-size: 1rem !important;
   }
 
   .error-overlay-fullscreen {
     font-size: 1.5rem;
+  }
+
+  .hack-code {
+    font-size: 0.8rem;
+  }
+}
+
+/* Анимация матричного кода */
+.matrix-rain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 255, 0, 0.2) 0%,
+    rgba(0, 255, 0, 0.05) 100%
+  );
+  animation: matrix-rain 10s linear infinite;
+}
+
+.hack-code {
+  position: absolute;
+  white-space: nowrap;
+  color: #00ff00;
+  text-shadow: 0 0 5px #00ff00;
+  animation: hack-scroll linear infinite;
+  font-family: monospace;
+}
+
+@keyframes hack-scroll {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(-100%); }
+}
+
+@keyframes matrix-rain {
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Стили для кнопок управления и SVG-иконок */
+.control-button {
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.control-button:hover {
+  background: rgba(0, 255, 0, 0.1) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+}
+
+.control-button svg {
+  width: 24px;
+  height: 24px;
+  fill: #00ff00;
+  transition: all 0.3s ease;
+}
+
+.control-button:hover svg {
+  filter: drop-shadow(0 0 3px #00ff00);
+}
+
+@media (max-width: 600px) {
+  .control-button svg {
+    width: 20px;
+    height: 20px;
   }
 }
