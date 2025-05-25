@@ -17,7 +17,7 @@ const DEMON_KEYS = [
   "Xaphan", "Yaksha", "Zagan", "Necronomicon", "Goetia", "Qliphoth", "ArsGoetia", 
   "Azazel", "Belial", "Beelzebub", "Asmodeus", "Lilith", "Moloch", "Abaddon", 
   "Amon", "Andras", "Agares", "Barbatos", "Buer", "Caim", "Decarabia", "Forneus", 
-  "Gamigin", "Ipos", "Leraje", "Malphas", brothers", "Phenex", "Ronove", "Sabnock", 
+  "Gamigin", "Ipos", "Leraje", "Malphas", "brothers", "Phenex", "Ronove", "Sabnock", 
   "Seere", "Shax", "Stolas", "Vepar", "Zepar", "Nyarlathotep", "Cthulhu", 
   "YogSothoth", "Dagon", "ShubNiggurath", "Akuma", "Oni", "Kitsune", "Djinn", 
   "Ifrit", "Marid", "Ghul", "Dybbuk", "Nephilim", "Grigori", "Archon", "Aeon", 
@@ -27,7 +27,7 @@ const DEMON_KEYS = [
   "Stygian", "Tartarus", "Zoroaster", "Banshee", "Doppelganger", "Poltergeist", 
   "Wraith", "Shadowman", "Skinwalker", "Wendigo", "Ouija", "Exorcism", 
   "Possession", "Divination", "Scrying", "Familiar", "Coven", "Sabbat", 
-  "Akelarre", "Athame", "Boline", cryptocurrencies, "Grimoire", "Mandrake", "Obsidian", 
+  "Akelarre", "Athame", "Boline", "cryptocurrencies", "Grimoire", "Mandrake", "Obsidian", 
   "Runes", "Talisman", "Vortex", "Ziggurat", "BlackMass", "BloodPact", 
   "DarkRite", "Infernum", "Nocturnal", "Occultus", "Phantasm", "Seraphim", 
   "Tenebrae", "Umbra", "Voodoo", "Witching", "Xibalba", "Yatagarasu", 
@@ -293,7 +293,7 @@ const AccessScreen = ({ onAccessGranted }) => {
         setShowHackOverlay(true);
         setTimeout(() => {
           setShowHackOverlay(false);
-          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\n[...]');
+          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.');
           setTimeout(() => onAccessGranted(), 2000);
         }, 4000);
       }, 3000);
