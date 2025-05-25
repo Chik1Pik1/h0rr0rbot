@@ -11,7 +11,7 @@ body {
   touch-action: manipulation;
 }
 
-/* Фоновые помехи */
+/* Фоновые помехи (из нового запроса) */
 body::after {
   content: '';
   position: fixed;
@@ -33,9 +33,9 @@ body::after {
   align-items: center;
 }
 
-/* Основное окно */
+/* Основное окно (из нового запроса) */
 .crt-window {
-  background: #000;
+  background: #000 !important;
   border: 2px solid #00ff0033;
   position: relative;
   width: 90%;
@@ -47,10 +47,10 @@ body::after {
   justify-content: center;
   align-items: center;
   margin: 20px auto;
-  z-index: 1001;
+  z-index: 1001; /* Сохранено для совместимости */
 }
 
-/* ЭЛТ-помехи */
+/* ЭЛТ-помехи (из нового запроса) */
 .crt-window::before {
   content: '';
   position: absolute;
@@ -83,8 +83,7 @@ body::after {
 }
 
 /* Помехи для окна и чата */
-.crt-window::after,
-.chat-fullscreen::after {
+.crt-window::after, .chat-fullscreen::after {
   content: '';
   position: absolute;
   top: 0;
@@ -97,8 +96,7 @@ body::after {
 }
 
 /* Полноэкранные оверлеи */
-.error-overlay-fullscreen,
-.hack-overlay-fullscreen {
+.error-overlay-fullscreen, .hack-overlay-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
@@ -137,6 +135,12 @@ body::after {
   animation: matrix-rain 10s linear infinite;
 }
 
+/* Анимация исчезновения */
+@keyframes dissolve {
+  0% { opacity: 1; filter: blur(0px); }
+  100% { opacity: 0; filter: blur(20px); }
+}
+
 /* Анимация кода с glitch-эффектом */
 .hack-code {
   position: absolute;
@@ -156,18 +160,14 @@ body::after {
   animation: glitch 0.5s infinite;
 }
 
-/* Анимации */
-@keyframes dissolve {
-  0% { opacity: 1; filter: blur(0px); }
-  100% { opacity: 0; filter: blur(20px); }
-}
-
+/* Кровавое стекание (из нового запроса) */
 @keyframes blood-drip {
   0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
   50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
   100% { transform: translateY(0); }
 }
 
+/* Текстовые глитчи (из нового запроса) */
 @keyframes text-glitch {
   0% { clip-path: inset(10% 0 90% 0); }
   25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
@@ -175,8 +175,11 @@ body::after {
   75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
 }
 
+/* Эффект демона (из нового запроса) */
 .demon-effect {
-  animation: text-glitch 0.8s steps(2) infinite, blood-drip 1.2s ease-in-out;
+  animation: 
+    text-glitch 0.8s steps(2) infinite,
+    blood-drip 1.2s ease-in-out;
 }
 
 @keyframes hack-scroll {
@@ -214,12 +217,12 @@ body::after {
   100% { transform: translateY(-100vh); }
 }
 
+/* Фоновые помехи (из нового запроса) */
 @keyframes crt-static {
   0% { background-position: 0 0; }
   100% { background-position: 100px 100px; }
 }
 
-/* Элементы интерфейса */
 .text-user {
   color: #00FF00;
 }
@@ -229,17 +232,14 @@ body::after {
 }
 
 .blink {
-  animation: blink 0.5s step-end infinite;
+  animation: blink 1s step-end infinite;
 }
 
 @keyframes blink {
-  0% { opacity: 1; }
   50% { opacity: 0; }
-  100% { opacity: 1; }
 }
 
-input,
-button {
+input, button {
   font-family: 'Special Elite', monospace;
   background: #000;
   border: 2px solid #00FF00;
@@ -251,9 +251,6 @@ button {
 
 button {
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 button:disabled {
@@ -262,7 +259,6 @@ button:disabled {
 }
 
 .chat-container {
-  font-family: 'Courier New', monospace;
   max-height: 70vh;
   overflow-y: auto;
   margin-bottom: 10px;
@@ -271,81 +267,16 @@ button:disabled {
 }
 
 .chat-input-form {
-  display: flex;
-  align-items: center;
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   padding: 10px;
   background: #000;
-  gap: 8px;
-}
-
-.chat-input-form button {
-  flex-shrink: 0;
-}
-
-.chat-input-form > div {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 2px solid #00FF00;
-}
-
-.chat-input-form .absolute {
-  white-space: nowrap;
-  font-family: 'Courier New', monospace;
-  font-size: 0.75rem;
-}
-
-/* Стили для SVG-иконок */
-.mic-button svg,
-.stop-button svg {
-  width: 24px;
-  height: 24px;
-  fill: #00FF00;
-  filter: drop-shadow(0 0 2px #00FF00);
-  animation: flicker 0.1s infinite;
-}
-
-.stop-button svg {
-  animation: record-blink 0.5s infinite;
-}
-
-@keyframes record-blink {
-  0% { opacity: 1; }
-  50% { opacity: 0.3; }
-  100% { opacity: 1; }
 }
 
 .dash-line {
   letter-spacing: 0.1em;
-}
-
-/* Стили для аудиоплеера */
-.audio-message {
-  position: relative;
-  padding: 8px;
-  border: 1px solid #00ff0055;
-  margin: 10px 0;
-}
-
-.audio-message audio {
-  width: 100%;
-  filter: drop-shadow(0 0 2px #00ff00);
-}
-
-.audio-message::after {
-  content: '≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡';
-  position: absolute;
-  bottom: -15px;
-  left: 0;
-  color: #00ff0033;
-  font-size: 0.8em;
-  letter-spacing: 2px;
 }
 
 /* Адаптивность для мобильных */
@@ -360,8 +291,7 @@ button:disabled {
     padding: 10px;
   }
 
-  input,
-  button {
+  input, button {
     font-size: 1rem;
     padding: 6px;
   }
@@ -370,38 +300,11 @@ button:disabled {
     max-height: 75vh;
   }
 
-  h1,
-  p,
-  input,
-  button {
+  h1, p, input, button {
     font-size: 1rem;
   }
 
   .error-overlay-fullscreen {
     font-size: 1.5rem;
-  }
-
-  .mic-button svg,
-  .stop-button svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .audio-message audio {
-    width: 150px;
-  }
-
-  .chat-input-form {
-    gap: 4px;
-  }
-
-  .chat-input-form > div {
-    width: 24px;
-    height: 24px;
-  }
-
-  .chat-input-form .absolute {
-    font-size: 0.65rem;
-    top: -6rem;
   }
 }
