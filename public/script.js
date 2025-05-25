@@ -1,4 +1,8 @@
 const { useState, useEffect } = React;
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL, // Для Vite
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 // Audio context для управления звуком
 const AudioContext = React.createContext(null);
