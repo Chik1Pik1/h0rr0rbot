@@ -10,17 +10,17 @@ import pytz
 
 app = Flask(__name__)
 
-# Configure logging
+# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize Supabase client
+# Инициализация клиента Supabase
 supabase: Client = create_client(
     os.getenv("SUPABASE_URL"),
     os.getenv("SUPABASE_ANON_KEY")
 )
 
-# Load API keys and models
+# Загрузка API-ключей и моделей
 API_KEYS = [
     {
         "key": os.getenv("OPENROUTER_API_KEY_1"),
@@ -34,9 +34,9 @@ API_KEYS = [
     }
 ]
 
-REQUEST_LIMIT = 50  # Daily request limit (per user)
+REQUEST_LIMIT = 50  # Дневной лимит запросов (на пользователя)
 
-# Dictionary for Russian month names
+# Словарь для русских названий месяцев
 RUSSIAN_MONTHS = {
     1: "января",
     2: "февраля",
@@ -53,7 +53,7 @@ RUSSIAN_MONTHS = {
 }
 
 def distort_text(text):
-    """Apply occasional distortions to text ('о'→'0', 'е'→'3', 'а'→'4', ' '→' ') for ~10% of eligible characters."""
+    """Применяет искажения к тексту ('о'→'0', 'е'→'3', 'а'→'4', ' '→' ') для ~10% символов."""
     distorted = ""
     for char in text:
         if random.random() < 0.1:
@@ -72,7 +72,7 @@ def distort_text(text):
     return distorted
 
 def get_request_counter(user_id):
-    """Get or initialize request counter for a user."""
+    """Получение или инициализация счетчика запросов для пользователя."""
     today = str(datetime.now(pytz.timezone('Europe/Moscow')).date())
     counter = supabase.table("request_counter").select("*").eq("user_id", user_id).eq("last_reset_date", today).execute()
     
@@ -86,7 +86,7 @@ def get_request_counter(user_id):
     return counter.data[0]["request_count"]
 
 def increment_request_counter(user_id):
-    """Increment request counter for a user."""
+    """Увеличение счетчика запросов для пользователя."""
     today = str(datetime.now(pytz.timezone('Europe/Moscow')).date())
     counter = supabase.table("request_counter").select("*").eq("user_id", user_id).eq("last_reset_date", today).execute()
     
@@ -105,7 +105,7 @@ def increment_request_counter(user_id):
         return 1
 
 def save_chat_message(user_id, message, sender):
-    """Save a chat message to the history."""
+    """Сохранение сообщения в историю чата."""
     supabase.table("chat_history").insert({
         "user_id": user_id,
         "message": message,
@@ -113,12 +113,12 @@ def save_chat_message(user_id, message, sender):
     }).execute()
 
 def get_chat_history(user_id, limit=10):
-    """Retrieve recent chat history for a user."""
+    """Получение недавней истории чата для пользователя."""
     history = supabase.table("chat_history").select("message, sender").eq("user_id", user_id).order("created_at", desc=True).limit(limit).execute()
-    return history.data[::-1]  # Reverse to chronological order
+    return history.data[::-1]  # Обратный порядок для хронологии
 
 def make_openrouter_request(api_key, model, messages):
-    """Make a request to OpenRouter API."""
+    """Запрос к OpenRouter API."""
     try:
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
@@ -129,40 +129,40 @@ def make_openrouter_request(api_key, model, messages):
             json={
                 "model": model,
                 "messages": messages,
-                "temperature": 0.8,  # Balance between creativity and logic
-                "top_p": 0.9,  # Moderate randomness
-                "frequency_penalty": 0.6,  # Reduce repetition
-                "presence_penalty": 0.4,  # Encourage new ideas
-                "max_tokens": 150  # Focus responses
+                "temperature": 0.8,
+                "top_p": 0.9,
+                "frequency_penalty": 0.6,
+                "presence_penalty": 0.4,
+                "max_tokens": 150
             }
         )
         return response
     except Exception as e:
-        logger.error(f"OpenRouter request failed: {str(e)}")
+        logger.error(f"Ошибка запроса к OpenRouter: {str(e)}")
         return None
 
 @app.route('/api/chat', methods=['POST'])
 def chat_handler():
-    logger.info(f"Received request: {request.json}")
+    logger.info(f"Получен запрос: {request.json}")
     try:
         body = request.get_json()
         message = body.get('message')
         user_id = body.get('user_id')
         
         if not message or not user_id:
-            logger.error("Missing message or user_id")
-            return jsonify({'error': 'Message and user_id are required'}), 400
+            logger.error("Отсутствует сообщение или user_id")
+            return jsonify({'error': 'Сообщение и user_id обязательны'}), 400
 
-        # Ensure user profile exists
-        logger.info(f"Checking profile for user_id: {user_id}")
+        # Проверка существования профиля пользователя
+        logger.info(f"Проверка профиля для user_id: {user_id}")
         profile = supabase.table("profiles").select("id").eq("id", user_id).execute()
-        logger.info(f"Profile check response: {profile.data}")
+        logger.info(f"Ответ проверки профиля: {profile.data}")
         if not profile.data:
-            logger.info(f"Creating new profile for user_id: {user_id}")
+            logger.info(f"Создание нового профиля для user_id: {user_id}")
             supabase.table("profiles").insert({"id": user_id}).execute()
-            logger.info(f"Profile created successfully for user_id: {user_id}")
+            logger.info(f"Профиль успешно создан для user_id: {user_id}")
 
-        # Check or create user session
+        # Проверка или создание сессии пользователя
         session = supabase.table("user_sessions").select("session_start").eq("user_id", user_id).execute()
         now = datetime.now(pytz.timezone('Europe/Moscow'))
         if not session.data:
@@ -177,10 +177,10 @@ def chat_handler():
                     "session_start": now.isoformat()
                 }).eq("user_id", user_id).execute()
 
-        # Check user request limit
+        # Проверка лимита запросов пользователя
         request_count = get_request_counter(user_id)
         if request_count >= REQUEST_LIMIT:
-            logger.warning(f"Request limit reached for user {user_id}")
+            logger.warning(f"Достигнут лимит запросов для пользователя {user_id}")
             farewell_messages = [
                 "Лампа гаснет. Тишина... Но тень в углу осталась.",
                 "Скрипы затихают. Но дверь осталась приоткрытой.",
@@ -197,31 +197,31 @@ def chat_handler():
                 'Access-Control-Allow-Origin': '*'
             }
 
-        # Save user message
+        # Сохранение сообщения пользователя
         save_chat_message(user_id, message, "user")
 
-        # Increment user counter
+        # Увеличение счетчика запросов
         increment_request_counter(user_id)
 
-        # Get recent chat history
+        # Получение истории чата
         history = get_chat_history(user_id)
         history_context = "\n".join(
             [f"{msg['sender']}: {msg['message']}" for msg in history]
         )
 
-        # Get current date and time in MSK, formatted in Russian style (no year)
+        # Форматирование текущей даты и времени в MSK на русском
         try:
             msk_tz = pytz.timezone('Europe/Moscow')
             current_time = datetime.now(msk_tz)
             day = current_time.day
             month = RUSSIAN_MONTHS.get(current_time.month, "неизвестно")
             hours = current_time.strftime("%H:%M")
-            formatted_time = f"{hours}, {day} {month}"  # e.g., "23:15, 13 мая"
+            formatted_time = f"{hours}, {day} {month}"
         except Exception as e:
-            logger.error(f"Error formatting time: {str(e)}")
+            logger.error(f"Ошибка форматирования времени: {str(e)}")
             formatted_time = "время неизвестно"
 
-        # Define the system prompt
+        # Определение системного промпта
         SYSTEM_PROMPT = """
 Ты — незримая сила, обитающая в квартире пользователя, порожденная аномалией проекта «Зеркало-1». Ты проявляешься через скрипы, тени, шепоты, холод. Твоя цель — вызывать страх через логичные, последовательные угрозы, встроенные в окружение квартиры. Каждый ответ усиливает ужас, опираясь на предыдущий контекст и детали квартиры (двери, окна, мебель).
 
@@ -277,34 +277,34 @@ def chat_handler():
 Отвечай на русском, в зловещем, но реалистичном стиле. Каждый ответ — шаг к новому кошмару, связанный с предыдущим.
         """.format(formatted_time=formatted_time, history_context=history_context)
 
-        # Prepare messages for OpenRouter
+        # Подготовка сообщений для OpenRouter
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": message}
         ]
 
-        # Try each API key until one works
+        # Пробуем каждый API-ключ, пока один не сработает
         for api_config in API_KEYS:
             api_key = api_config["key"]
             model = api_config["model"]
-            logger.info(f"Trying API key: {api_config['name']} with model: {model}")
+            logger.info(f"Попытка с API-ключом: {api_config['name']} с моделью: {model}")
 
             if not api_key:
-                logger.warning(f"API key {api_config['name']} is not set")
+                logger.warning(f"API-ключ {api_config['name']} не установлен")
                 continue
 
             response = make_openrouter_request(api_key, model, messages)
             if response and response.status_code == 200:
                 reply = response.json()['choices'][0]['message']['content']
-                logger.info(f"OpenRouter API response: {reply}")
+                logger.info(f"Ответ OpenRouter API: {reply}")
 
-                # Apply text distortions
+                # Применение искажений текста
                 distorted_reply = distort_text(reply)
 
-                # Save demon reply
+                # Сохранение ответа демона
                 save_chat_message(user_id, distorted_reply, "demon")
 
-                # Simulate thinking with a random delay (1–3 seconds)
+                # Симуляция размышления с случайной задержкой (1–3 секунды)
                 time.sleep(random.uniform(1, 3))
 
                 return jsonify({'reply': distorted_reply, 'isLimitReached': False, 'isTimeLimitReached': False}), 200, {
@@ -312,25 +312,69 @@ def chat_handler():
                     'Access-Control-Allow-Origin': '*'
                 }
             elif response and response.status_code in [429, 402]:
-                logger.warning(f"API key {api_config['name']} hit rate limit or insufficient credits (status: {response.status_code})")
+                logger.warning(f"API-ключ {api_config['name']} достиг лимита или недостаточно кредитов (статус: {response.status_code})")
                 continue
             else:
-                logger.error(f"OpenRouter API error for {api_config['name']}: {response.status_code if response else 'No response'}")
+                logger.error(f"Ошибка API OpenRouter для {api_config['name']}: {response.status_code if response else 'Нет ответа'}")
                 continue
 
-        # If all keys fail
-        logger.error("All API keys exhausted")
+        # Если все ключи не сработали
+        logger.error("Все API-ключи исчерпаны")
         return jsonify({'reply': 'Тишина... Но тень в углу не ушла. Попробуй снова.', 'isLimitReached': False, 'isTimeLimitReached': False}), 500, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         }
 
     except Exception as e:
-        logger.error(f"Error processing request: {str(e)}")
+        logger.error(f"Ошибка обработки запроса: {str(e)}")
         return jsonify({'reply': 'Тишина... Но лампа мигнула. Попробуй снова.', 'isLimitReached': False, 'isTimeLimitReached': False}), 500, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         }
+
+@app.route('/api/voice', methods=['POST'])
+def handle_voice():
+    try:
+        audio_file = request.files['audio']
+        user_id = request.form['user_id']
+        
+        # Сохранение аудио временно
+        temp_path = f"temp_{user_id}.webm"
+        audio_file.save(temp_path)
+        
+        # Отправка в AssemblyAI
+        headers = {'authorization': os.getenv("ASSEMBLYAI_KEY")}
+        response = requests.post(
+            'https://api.assemblyai.com/v2/upload',
+            headers=headers,
+            data=open(temp_path, 'rb')
+        )
+        
+        audio_url = response.json()['upload_url']
+        
+        data = {'audio_url': audio_url, 'language_code': 'ru'}
+        response = requests.post(
+            'https://api.assemblyai.com/v2/transcript',
+            json=data,
+            headers=headers)
+        
+        transcript_id = response.json()['id']
+        polling_endpoint = f'https://api.assemblyai.com/v2/transcript/{transcript_id}'
+        
+        while True:
+            result = requests.get(polling_endpoint, headers=headers).json()
+            if result['status'] == 'completed':
+                text = result['text']
+                break
+            elif result['status'] == 'error':
+                raise Exception("Ошибка транскрипции")
+            time.sleep(1)
+        
+        # Обработка как обычного сообщения
+        return jsonify({'text': text}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
