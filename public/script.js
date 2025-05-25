@@ -135,19 +135,56 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showHackOverlay, setShowHackOverlay] = useState(false);
   const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
 
-  useEffect(() => {
-    const blockedUntil = getBlockedUntil();
-    if (blockedUntil) {
-      const blockDate = new Date(blockedUntil);
-      if (blockDate > new Date()) {
-        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockDate)}`);
-        setAttempts(0);
-      } else {
-        localStorage.removeItem('blockedUntil');
-        setAttemptsLeft(3);
-        setAttempts(3);
+  const checkUserBlock = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('access_blocks')
+        .select('blocked_until')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const blockDate = new Date(data.blocked_until);
+        if (blockDate > new Date()) {
+          setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockDate)}`);
+          setAttempts(0);
+          return true;
+        }
       }
+      return false;
+    } catch (error) {
+      console.error('Error checking user block:', error);
+      return false;
     }
+  };
+
+  const setUserBlock = async (userId) => {
+    const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    try {
+      const { error } = await supabase
+        .from('access_blocks')
+        .insert({
+          user_id: userId,
+          blocked_until: blockUntil.toISOString()
+        });
+
+      if (error) throw error;
+
+      setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockUntil)}`);
+      setAttempts(0);
+    } catch (error) {
+      console.error('Error setting user block:', error);
+      setError('СИСТЕМНАЯ ОШИБКА: ПОПРОБУЙТЕ ПОЗЖЕ');
+    }
+  };
+
+  useEffect(() => {
+    const userId = getUserId();
+    checkUserBlock(userId);
   }, []);
 
   const generateHackCode = () => {
@@ -187,9 +224,13 @@ const AccessScreen = ({ onAccessGranted }) => {
     return codes;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!key.trim() || attemptsLeft <= 0) return;
+
+    const userId = getUserId();
+    const isBlocked = await checkUserBlock(userId);
+    if (isBlocked) return;
 
     setIsLoading(true);
     setError('Проверка ключа...');
@@ -224,10 +265,7 @@ const AccessScreen = ({ onAccessGranted }) => {
       setAttemptsLeft(newAttempts);
       
       if (newAttempts <= 0) {
-        const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        setBlockedUntil(blockUntil.toISOString());
-        const formattedDate = formatDateTime(blockUntil);
-        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formattedDate}`);
+        await setUserBlock(userId);
       } else {
         setError(`НЕВЕРНЫЙ КЛЮЧ. ОСТАЛОСЬ ПОПЫТОК: ${newAttempts}`);
       }
