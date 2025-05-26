@@ -454,3 +454,39 @@ button:disabled {
   50% { filter: blur(1px) contrast(90%); }
   100% { filter: blur(0.5px) contrast(110%); }
 }
+
+/* Стили для таймера */
+.blood-timer {
+  font-family: 'Special Elite', monospace;
+  font-size: 3rem;
+  color: #ff0000;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.5),
+               0 0 20px rgba(255, 0, 0, 0.3),
+               0 0 30px rgba(255, 0, 0, 0.2);
+  position: relative;
+  padding: 20px;
+  border: 2px solid #ff000055;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.blood-drip {
+  position: absolute;
+  width: 3px;
+  height: 20px;
+  background: #ff0000;
+  animation: drip 2s linear infinite;
+  opacity: 0.7;
+}
+
+@keyframes drip {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+.blocked-timer {
+  color: #ff5555;
+  font-size: 1.2rem;
+  margin-top: 20px;
+  text-align: center;
+}
