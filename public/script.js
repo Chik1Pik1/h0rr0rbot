@@ -1,6 +1,6 @@
 const { useState, useEffect } = React;
 
-// Audio context для управления звуком
+// Контекст для управления звуком
 const AudioContext = React.createContext(null);
 
 // Список всех возможных ключей
@@ -29,42 +29,47 @@ const DEMON_KEYS = [
   "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
 ];
 
+// Провайдер аудио с добавлением звука часов
 const AudioProvider = ({ children }) => {
   const [signalAudio, setSignalAudio] = useState(null);
   const [backgroundAudio, setBackgroundAudio] = useState(null);
+  const [clockAudio, setClockAudio] = useState(null);
 
   useEffect(() => {
     const signal = new Audio('/music/signal.mp3');
     const background = new Audio('/music/fon.mp3');
+    const clock = new Audio('/music/clock.mp3');
     background.loop = true;
-    
+    clock.loop = true;
+    clock.volume = 1.0;
+
     setSignalAudio(signal);
     setBackgroundAudio(background);
+    setClockAudio(clock);
 
     return () => {
       signal.pause();
       background.pause();
+      clock.pause();
     };
   }, []);
 
   return (
-    <AudioContext.Provider value={{ signalAudio, backgroundAudio }}>
+    <AudioContext.Provider value={{ signalAudio, backgroundAudio, clockAudio }}>
       {children}
     </AudioContext.Provider>
   );
 };
 
+// Генерация ежедневного ключа
 const generateDailyKey = () => {
-  // Получаем текущую дату
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth() + 1; // getMonth() возвращает 0-11
+  const month = now.getMonth() + 1;
   const day = now.getDate();
   
-  // Создаем детерминированный seed на основе даты
   const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
   
-  // Возвращаем ключ из массива по индексу
   return DEMON_KEYS[seed];
 };
 
@@ -97,7 +102,7 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
-// Generate or retrieve UUID for user
+// Генерация или получение UUID пользователя
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -110,66 +115,7 @@ const getUserId = () => {
   return userId;
 };
 
-// Новый компонент таймера
-const CountdownTimer = ({ targetTime, onComplete }) => {
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-
-  function calculateTimeLeft() {
-    const now = new Date();
-    let target;
-    
-    if (typeof targetTime === 'number') {
-      target = new Date(now);
-      target.setHours(targetTime, 0, 0, 0);
-      if (now > target) {
-        target.setDate(target.getDate() + 1);
-      }
-    } else {
-      target = new Date(targetTime);
-    }
-    
-    const difference = target - now;
-    return {
-      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((difference / (1000 * 60)) % 60),
-      seconds: Math.floor((difference / 1000) % 60)
-    };
-  }
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const newTime = calculateTimeLeft();
-      setTimeLeft(newTime);
-      
-      if (newTime.hours + newTime.minutes + newTime.seconds === 0) {
-        onComplete();
-        clearInterval(timer);
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // Создаем случайные капли крови
-  const drips = Array.from({ length: 20 }).map((_, i) => (
-    <div 
-      key={i}
-      className="blood-drip"
-      style={{
-        left: `${Math.random() * 100}%`,
-        animationDelay: `${Math.random() * 2}s`
-      }}
-    />
-  ));
-
-  return (
-    <div className="blood-timer">
-      {drips}
-      {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
-    </div>
-  );
-};
-
+// Главный компонент приложения
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
@@ -186,17 +132,17 @@ const App = () => {
   );
 };
 
+// Экран доступа
 const AccessScreen = ({ onAccessGranted }) => {
-  const { signalAudio } = React.useContext(AudioContext);
+  const { signalAudio, clockAudio } = React.useContext(AudioContext);
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
   const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
-  const [isMidnight, setIsMidnight] = useState(false);
-  const [blockedUntil, setBlockedUntilState] = useState(getBlockedUntil());
 
+  // Проверка блокировки пользователя
   const checkUserBlock = async (userId) => {
     try {
       const { data, error } = await supabase
@@ -224,6 +170,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
   };
 
+  // Установка блокировки пользователя
   const setUserBlock = async (userId) => {
     const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
     try {
@@ -238,36 +185,31 @@ const AccessScreen = ({ onAccessGranted }) => {
 
       setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockUntil)}`);
       setAttempts(0);
-      setBlockedUntilState(blockUntil.toISOString());
-      setAttemptsLeft(0);
     } catch (error) {
       console.error('Error setting user block:', error);
       setError('СИСТЕМНАЯ ОШИБКА: ПОПРОБУЙТЕ ПОЗЖЕ');
     }
   };
 
+  // Запуск звука часов при блокировке
   useEffect(() => {
-    const userId = getUserId();
-    checkUserBlock(userId);
-  }, []);
+    const checkAndPlayClock = async () => {
+      const userId = getUserId();
+      const isBlocked = await checkUserBlock(userId);
 
-  useEffect(() => {
-    const checkMidnight = () => {
-      const now = new Date();
-      setIsMidnight(now.getHours() === 0 && now.getMinutes() === 0);
+      if (isBlocked && clockAudio) {
+        try {
+          await clockAudio.play();
+        } catch (err) {
+          console.log('Clock audio autoplay blocked', err);
+        }
+      }
     };
-    checkMidnight();
-    const interval = setInterval(checkMidnight, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setBlockedUntilState(getBlockedUntil());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+    checkAndPlayClock();
+  }, [clockAudio]);
 
+  // Генерация кода для эффекта взлома
   const generateHackCode = () => {
     const snippets = [
       'INITIALIZE BACKDOOR: 0xDEADBEEF',
@@ -305,6 +247,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     return codes;
   };
 
+  // Обработчик отправки ключа
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!key.trim() || attemptsLeft <= 0) return;
@@ -319,6 +262,10 @@ const AccessScreen = ({ onAccessGranted }) => {
     const correctKey = generateDailyKey();
     
     if (key === correctKey) {
+      if (clockAudio) {
+        clockAudio.pause();
+        clockAudio.currentTime = 0;
+      }
       setShowErrorOverlay(true);
       if (signalAudio) {
         signalAudio.currentTime = 0;
@@ -327,7 +274,6 @@ const AccessScreen = ({ onAccessGranted }) => {
 
       setAttemptsLeft(3);
       localStorage.removeItem('blockedUntil');
-      setBlockedUntilState(null);
 
       setTimeout(() => {
         setShowErrorOverlay(false);
@@ -348,6 +294,13 @@ const AccessScreen = ({ onAccessGranted }) => {
       
       if (newAttempts <= 0) {
         await setUserBlock(userId);
+        if (clockAudio) {
+          try {
+            await clockAudio.play();
+          } catch (err) {
+            console.log('Clock audio play failed', err);
+          }
+        }
       } else {
         setError(`НЕВЕРНЫЙ КЛЮЧ. ОСТАЛОСЬ ПОПЫТОК: ${newAttempts}`);
       }
@@ -355,43 +308,11 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
   };
 
-  const renderTimers = () => {
-    if (!isMidnight) {
-      return (
-        <div className="text-center">
-          <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ В:</p>
-          <CountdownTimer 
-            targetTime={24} 
-            onComplete={() => setIsMidnight(true)}
-          />
-        </div>
-      );
-    }
-
-    if (blockedUntil) {
-      const blockedDate = new Date(blockedUntil);
-      return (
-        <div className="blocked-timer blink">
-          <p>ДОСТУП ВОССТАНОВИТСЯ ЧЕРЕЗ:</p>
-          <CountdownTimer 
-            targetTime={blockedDate}
-            onComplete={() => {
-              localStorage.removeItem('blockedUntil');
-              setAttempts(3);
-              setBlockedUntilState(null);
-            }}
-          />
-        </div>
-      );
-    }
-
-    return null;
-  };
-
   return (
     <>
       {showErrorOverlay && (
         <div className="error-overlay-fullscreen">
+          <div className="clock-tick-effect" />
           ВНИМАНИЕ! ОШИБКА!
         </div>
       )}
@@ -401,15 +322,15 @@ const AccessScreen = ({ onAccessGranted }) => {
           {generateHackCode()}
         </div>
       )}
+      {attemptsLeft <= 0 && (
+        <div className="clock-tick-effect" />
+      )}
       <div className="crt-window">
         <div className="flex flex-col items-center justify-center h-full text-center">
           <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
           <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
-          
-          {renderTimers()}
-
-          {!blockedUntil && isMidnight && attemptsLeft > 0 && (
+          {attemptsLeft > 0 ? (
             <form onSubmit={handleSubmit} className="w-full max-w-sm">
               <div className="flex items-center mb-4">
                 <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
@@ -435,14 +356,13 @@ const AccessScreen = ({ onAccessGranted }) => {
                 Осталось попыток: {attemptsLeft}
               </p>
             </form>
+          ) : (
+            <p className="text-demon text-xl mt-4 blink">ДОСТУП ЗАБЛОКИРОВАН</p>
           )}
           {error && (
             <p className="text-demon text-xl mt-4 blink" style={{ whiteSpace: 'pre-line' }}>
               {error}
             </p>
-          )}
-          {attemptsLeft <= 0 && !blockedUntil && (
-            <p className="text-demon text-xl mt-4 blink">ДОСТУП ЗАБЛОКИРОВАН</p>
           )}
         </div>
       </div>
@@ -450,10 +370,11 @@ const AccessScreen = ({ onAccessGranted }) => {
   );
 };
 
+// Экран чата
 const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
-    { sender: 'demon', text: 'Теперь я знаю кто ты! Я вижу тебя... через твою камеру).' }
+    { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -474,7 +395,7 @@ const ChatScreen = () => {
     const timer = setTimeout(() => {
       setMessages(prev => [...prev, { 
         sender: 'demon', 
-        text: 'Тишина... Ты испугался? Чего затих вдруг?' 
+        text: 'Тишина... Но твоя лампа мигнула. Это не случайность. Она считает.' 
       }]);
       triggerGlobalEffects();
     }, 10000);
@@ -508,6 +429,7 @@ const ChatScreen = () => {
     };
   }, []);
 
+  // Управление фоновым звуком
   useEffect(() => {
     if (backgroundAudio) {
       backgroundAudio.volume = 0.3;
@@ -530,6 +452,7 @@ const ChatScreen = () => {
     };
   }, [backgroundAudio]);
 
+  // Переключение звука
   const toggleAudio = async () => {
     if (backgroundAudio) {
       try {
@@ -546,6 +469,7 @@ const ChatScreen = () => {
     }
   };
 
+  // Переключение полноэкранного режима
   const toggleFullscreen = () => {
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.expand();
@@ -558,6 +482,7 @@ const ChatScreen = () => {
     }
   };
 
+  // Отправка сообщения
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
@@ -572,6 +497,7 @@ const ChatScreen = () => {
     }
   };
 
+  // Обработчик отправки сообщения
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isDisconnected) return;
@@ -594,7 +520,7 @@ const ChatScreen = () => {
 
   return (
     <div className={`flex flex-col h-full p-4 relative chat-fullscreen ${globalEffects ? 'global-noise' : ''}`}>
-      {/* Чат контейнер */}
+      {/* Контейнер чата */}
       <div 
         id="chat-container" 
         className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
@@ -636,7 +562,7 @@ const ChatScreen = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="flex-1 text-xl p-2 border focus:outline-none"
-            placeholder="Напиши мне..."
+            placeholder="Введи сообщение..."
             disabled={isDisconnected}
             style={{ color: '#00ff00', borderColor: '#00ff00' }}
           />
@@ -728,4 +654,5 @@ const ChatScreen = () => {
   );
 };
 
+// Рендеринг приложения
 ReactDOM.render(<App />, document.getElementById('root'));
