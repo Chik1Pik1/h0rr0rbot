@@ -1,4 +1,3 @@
-/* script (35).js */
 const { useState, useEffect } = React;
 
 // Audio context для управления звуком
@@ -33,43 +32,43 @@ const DEMON_KEYS = [
 const AudioProvider = ({ children }) => {
   const [signalAudio, setSignalAudio] = useState(null);
   const [backgroundAudio, setBackgroundAudio] = useState(null);
-  const [clockAudio, setClockAudio] = useState(null);
 
   useEffect(() => {
     const signal = new Audio('/music/signal.mp3');
     const background = new Audio('/music/fon.mp3');
-    const clock = new Audio('/music/clock.mp3');
     background.loop = true;
-    clock.loop = true;
-    clock.volume = 1.0;
     
     setSignalAudio(signal);
     setBackgroundAudio(background);
-    setClockAudio(clock);
 
     return () => {
       signal.pause();
       background.pause();
-      clock.pause();
     };
   }, []);
 
   return (
-    <AudioContext.Provider value={{ signalAudio, backgroundAudio, clockAudio }}>
+    <AudioContext.Provider value={{ signalAudio, backgroundAudio }}>
       {children}
     </AudioContext.Provider>
   );
 };
 
 const generateDailyKey = () => {
+  // Получаем текущую дату
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const month = now.getMonth() + 1; // getMonth() возвращает 0-11
   const day = now.getDate();
+  
+  // Создаем детерминированный seed на основе даты
   const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
+  
+  // Возвращаем ключ из массива по индексу
   return DEMON_KEYS[seed];
 };
 
+// Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -86,6 +85,7 @@ const setBlockedUntil = (date) => {
   localStorage.setItem('blockedUntil', date);
 };
 
+// Форматирование даты и времени
 const formatDateTime = (date) => {
   return date.toLocaleString('ru-RU', {
     year: 'numeric',
@@ -97,6 +97,7 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
+// Generate or retrieve UUID for user
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -126,7 +127,7 @@ const App = () => {
 };
 
 const AccessScreen = ({ onAccessGranted }) => {
-  const { signalAudio, clockAudio } = React.useContext(AudioContext);
+  const { signalAudio } = React.useContext(AudioContext);
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -183,18 +184,8 @@ const AccessScreen = ({ onAccessGranted }) => {
 
   useEffect(() => {
     const userId = getUserId();
-    const checkAndPlayClock = async () => {
-      const isBlocked = await checkUserBlock(userId);
-      if (isBlocked && clockAudio) {
-        try {
-          await clockAudio.play();
-        } catch (err) {
-          console.log('Clock audio autoplay blocked', err);
-        }
-      }
-    };
-    checkAndPlayClock();
-  }, [clockAudio]);
+    checkUserBlock(userId);
+  }, []);
 
   const generateHackCode = () => {
     const snippets = [
@@ -252,10 +243,6 @@ const AccessScreen = ({ onAccessGranted }) => {
         signalAudio.currentTime = 0;
         signalAudio.play();
       }
-      if (clockAudio) {
-        clockAudio.pause();
-        clockAudio.currentTime = 0;
-      }
 
       setAttemptsLeft(3);
       localStorage.removeItem('blockedUntil');
@@ -279,13 +266,6 @@ const AccessScreen = ({ onAccessGranted }) => {
       
       if (newAttempts <= 0) {
         await setUserBlock(userId);
-        if (clockAudio) {
-          try {
-            await clockAudio.play();
-          } catch (err) {
-            console.log('Clock audio play failed', err);
-          }
-        }
       } else {
         setError(`НЕВЕРНЫЙ КЛЮЧ. ОСТАЛОСЬ ПОПЫТОК: ${newAttempts}`);
       }
@@ -297,7 +277,6 @@ const AccessScreen = ({ onAccessGranted }) => {
     <>
       {showErrorOverlay && (
         <div className="error-overlay-fullscreen">
-          <div className="clock-tick-effect" />
           ВНИМАНИЕ! ОШИБКА!
         </div>
       )}
@@ -306,9 +285,6 @@ const AccessScreen = ({ onAccessGranted }) => {
           <div className="matrix-rain" />
           {generateHackCode()}
         </div>
-      )}
-      {attemptsLeft <= 0 && (
-        <div className="clock-tick-effect" />
       )}
       <div className="crt-window">
         <div className="flex flex-col items-center justify-center h-full text-center">
@@ -373,6 +349,7 @@ const ChatScreen = () => {
     glitch: false 
   });
 
+  // Таймер страха
   const startFearTimer = () => {
     resetFearTimer();
     const timer = setTimeout(() => {
@@ -394,6 +371,7 @@ const ChatScreen = () => {
     setTimeout(() => setGlobalEffects(false), 3000);
   };
 
+  // Обработчики активности
   useEffect(() => {
     const handleActivity = () => {
       resetFearTimer();
@@ -497,6 +475,7 @@ const ChatScreen = () => {
 
   return (
     <div className={`flex flex-col h-full p-4 relative chat-fullscreen ${globalEffects ? 'global-noise' : ''}`}>
+      {/* Чат контейнер */}
       <div 
         id="chat-container" 
         className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
@@ -528,7 +507,10 @@ const ChatScreen = () => {
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
+
+      {/* Нижняя панель с вводом и меню */}
       <div className={`chat-bottom-panel ${isDrawerOpen ? 'drawer-open' : ''}`}>
+        {/* Форма ввода */}
         <form onSubmit={handleSubmit} className="chat-input-form">
           <input
             type="text"
@@ -548,6 +530,8 @@ const ChatScreen = () => {
             Отправить
           </button>
         </form>
+
+        {/* Выдвижное меню */}
         <div className="drawer-container">
           <div 
             className="drawer-handle"
@@ -556,6 +540,7 @@ const ChatScreen = () => {
               transform: isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
             }}
           />
+          
           <div 
             className="drawer-content"
             style={{
@@ -587,6 +572,7 @@ const ChatScreen = () => {
                 </svg>
                 Звук
               </button>
+              
               <button
                 onClick={toggleFullscreen}
                 className="control-button"
@@ -611,6 +597,8 @@ const ChatScreen = () => {
           </div>
         </div>
       </div>
+
+      {/* Эффекты для всего экрана */}
       {globalEffects && (
         <div className="global-distortion-overlay">
           <div className="noise-texture"/>
