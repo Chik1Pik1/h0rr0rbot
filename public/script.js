@@ -1,6 +1,7 @@
+/* script (35).js */
 const { useState, useEffect } = React;
 
-// Контекст для управления звуком
+// Audio context для управления звуком
 const AudioContext = React.createContext(null);
 
 // Список всех возможных ключей
@@ -29,7 +30,6 @@ const DEMON_KEYS = [
   "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
 ];
 
-// Провайдер аудио с добавлением звука часов
 const AudioProvider = ({ children }) => {
   const [signalAudio, setSignalAudio] = useState(null);
   const [backgroundAudio, setBackgroundAudio] = useState(null);
@@ -42,7 +42,7 @@ const AudioProvider = ({ children }) => {
     background.loop = true;
     clock.loop = true;
     clock.volume = 1.0;
-
+    
     setSignalAudio(signal);
     setBackgroundAudio(background);
     setClockAudio(clock);
@@ -61,19 +61,15 @@ const AudioProvider = ({ children }) => {
   );
 };
 
-// Генерация ежедневного ключа
 const generateDailyKey = () => {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
   const day = now.getDate();
-  
   const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
-  
   return DEMON_KEYS[seed];
 };
 
-// Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -90,7 +86,6 @@ const setBlockedUntil = (date) => {
   localStorage.setItem('blockedUntil', date);
 };
 
-// Форматирование даты и времени
 const formatDateTime = (date) => {
   return date.toLocaleString('ru-RU', {
     year: 'numeric',
@@ -102,7 +97,6 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
-// Генерация или получение UUID пользователя
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -115,7 +109,6 @@ const getUserId = () => {
   return userId;
 };
 
-// Главный компонент приложения
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
@@ -132,7 +125,6 @@ const App = () => {
   );
 };
 
-// Экран доступа
 const AccessScreen = ({ onAccessGranted }) => {
   const { signalAudio, clockAudio } = React.useContext(AudioContext);
   const [key, setKey] = useState('');
@@ -142,7 +134,6 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showHackOverlay, setShowHackOverlay] = useState(false);
   const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
 
-  // Проверка блокировки пользователя
   const checkUserBlock = async (userId) => {
     try {
       const { data, error } = await supabase
@@ -170,7 +161,6 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
   };
 
-  // Установка блокировки пользователя
   const setUserBlock = async (userId) => {
     const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
     try {
@@ -191,12 +181,10 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
   };
 
-  // Запуск звука часов при блокировке
   useEffect(() => {
+    const userId = getUserId();
     const checkAndPlayClock = async () => {
-      const userId = getUserId();
       const isBlocked = await checkUserBlock(userId);
-
       if (isBlocked && clockAudio) {
         try {
           await clockAudio.play();
@@ -205,11 +193,9 @@ const AccessScreen = ({ onAccessGranted }) => {
         }
       }
     };
-
     checkAndPlayClock();
   }, [clockAudio]);
 
-  // Генерация кода для эффекта взлома
   const generateHackCode = () => {
     const snippets = [
       'INITIALIZE BACKDOOR: 0xDEADBEEF',
@@ -247,7 +233,6 @@ const AccessScreen = ({ onAccessGranted }) => {
     return codes;
   };
 
-  // Обработчик отправки ключа
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!key.trim() || attemptsLeft <= 0) return;
@@ -262,14 +247,14 @@ const AccessScreen = ({ onAccessGranted }) => {
     const correctKey = generateDailyKey();
     
     if (key === correctKey) {
-      if (clockAudio) {
-        clockAudio.pause();
-        clockAudio.currentTime = 0;
-      }
       setShowErrorOverlay(true);
       if (signalAudio) {
         signalAudio.currentTime = 0;
         signalAudio.play();
+      }
+      if (clockAudio) {
+        clockAudio.pause();
+        clockAudio.currentTime = 0;
       }
 
       setAttemptsLeft(3);
@@ -370,7 +355,6 @@ const AccessScreen = ({ onAccessGranted }) => {
   );
 };
 
-// Экран чата
 const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
@@ -389,7 +373,6 @@ const ChatScreen = () => {
     glitch: false 
   });
 
-  // Таймер страха
   const startFearTimer = () => {
     resetFearTimer();
     const timer = setTimeout(() => {
@@ -411,7 +394,6 @@ const ChatScreen = () => {
     setTimeout(() => setGlobalEffects(false), 3000);
   };
 
-  // Обработчики активности
   useEffect(() => {
     const handleActivity = () => {
       resetFearTimer();
@@ -429,7 +411,6 @@ const ChatScreen = () => {
     };
   }, []);
 
-  // Управление фоновым звуком
   useEffect(() => {
     if (backgroundAudio) {
       backgroundAudio.volume = 0.3;
@@ -452,7 +433,6 @@ const ChatScreen = () => {
     };
   }, [backgroundAudio]);
 
-  // Переключение звука
   const toggleAudio = async () => {
     if (backgroundAudio) {
       try {
@@ -469,7 +449,6 @@ const ChatScreen = () => {
     }
   };
 
-  // Переключение полноэкранного режима
   const toggleFullscreen = () => {
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.expand();
@@ -482,7 +461,6 @@ const ChatScreen = () => {
     }
   };
 
-  // Отправка сообщения
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
@@ -497,7 +475,6 @@ const ChatScreen = () => {
     }
   };
 
-  // Обработчик отправки сообщения
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isDisconnected) return;
@@ -520,7 +497,6 @@ const ChatScreen = () => {
 
   return (
     <div className={`flex flex-col h-full p-4 relative chat-fullscreen ${globalEffects ? 'global-noise' : ''}`}>
-      {/* Контейнер чата */}
       <div 
         id="chat-container" 
         className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
@@ -552,10 +528,7 @@ const ChatScreen = () => {
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
       </div>
-
-      {/* Нижняя панель с вводом и меню */}
       <div className={`chat-bottom-panel ${isDrawerOpen ? 'drawer-open' : ''}`}>
-        {/* Форма ввода */}
         <form onSubmit={handleSubmit} className="chat-input-form">
           <input
             type="text"
@@ -575,8 +548,6 @@ const ChatScreen = () => {
             Отправить
           </button>
         </form>
-
-        {/* Выдвижное меню */}
         <div className="drawer-container">
           <div 
             className="drawer-handle"
@@ -585,7 +556,6 @@ const ChatScreen = () => {
               transform: isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
             }}
           />
-          
           <div 
             className="drawer-content"
             style={{
@@ -617,7 +587,6 @@ const ChatScreen = () => {
                 </svg>
                 Звук
               </button>
-              
               <button
                 onClick={toggleFullscreen}
                 className="control-button"
@@ -642,8 +611,6 @@ const ChatScreen = () => {
           </div>
         </div>
       </div>
-
-      {/* Эффекты для всего экрана */}
       {globalEffects && (
         <div className="global-distortion-overlay">
           <div className="noise-texture"/>
@@ -654,5 +621,4 @@ const ChatScreen = () => {
   );
 };
 
-// Рендеринг приложения
 ReactDOM.render(<App />, document.getElementById('root'));
