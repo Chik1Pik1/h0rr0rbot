@@ -109,14 +109,19 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
 
   function calculateTimeLeft() {
     const now = new Date();
-    let target = targetTime instanceof Date ? targetTime : new Date(targetTime);
-    const difference = target - now;
-
-    if (difference <= 0) {
-      onComplete();
-      return { hours: 0, minutes: 0, seconds: 0 };
+    let target;
+    
+    if (typeof targetTime === 'number') {
+      target = new Date(now);
+      target.setHours(targetTime, 0, 0, 0);
+      if (now > target) {
+        target.setDate(target.getDate() + 1);
+      }
+    } else {
+      target = new Date(targetTime);
     }
-
+    
+    const difference = target - now;
     return {
       hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
       minutes: Math.floor((difference / (1000 * 60)) % 60),
@@ -136,7 +141,7 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [targetTime]);
+  }, []);
 
   const drips = Array.from({ length: 20 }).map((_, i) => (
     <div 
@@ -233,38 +238,16 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
   };
 
-  const checkAccessTime = () => {
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    
-    const currentTimeInMinutes = hours * 60 + minutes;
-    
-    return currentTimeInMinutes >= 0 && currentTimeInMinutes < 60;
-  };
-
-  const calculateNextAccessTime = () => {
-    const now = new Date();
-    const nextAccess = new Date(now);
-    
-    nextAccess.setDate(now.getHours() >= 1 ? now.getDate() + 1 : now.getDate());
-    nextAccess.setHours(0, 0, 0, 0);
-    
-    return nextAccess;
-  };
-
   useEffect(() => {
     const userId = getUserId();
     checkUserBlock(userId);
 
-    const isAccessTime = checkAccessTime();
-    setIsMidnight(isAccessTime);
-
-    const interval = setInterval(() => {
-      const newIsAccessTime = checkAccessTime();
-      setIsMidnight(newIsAccessTime);
-    }, 1000);
-
+    const checkMidnight = () => {
+      const now = new Date();
+      setIsMidnight(now.getHours() === 0); // Проверяем только час
+    };
+    checkMidnight();
+    const interval = setInterval(checkMidnight, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -363,7 +346,9 @@ const AccessScreen = ({ onAccessGranted }) => {
   };
 
   const renderTimers = () => {
-    const isAccessTime = checkAccessTime();
+    const now = new Date();
+    const currentHour = now.getHours();
+    const isAccessTime = currentHour === 0;
 
     if (blockedUntil) {
       const blockedDate = new Date(blockedUntil);
@@ -387,7 +372,7 @@ const AccessScreen = ({ onAccessGranted }) => {
         <div className="text-center">
           <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ В:</p>
           <CountdownTimer 
-            targetTime={calculateNextAccessTime()}
+            targetTime={24} 
             onComplete={() => setIsMidnight(true)}
           />
         </div>
@@ -418,7 +403,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           
           {renderTimers()}
 
-          {!blockedUntil && checkAccessTime() && attemptsLeft > 0 && (
+          {!blockedUntil && (new Date().getHours() === 0) && attemptsLeft > 0 && (
             <form onSubmit={handleSubmit} className="w-full max-w-sm">
               <div className="flex items-center mb-4">
                 <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
