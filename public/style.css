@@ -1,4 +1,3 @@
-/* style (17).css */
 body {
   background: #000;
   font-family: 'Special Elite', monospace;
@@ -60,7 +59,29 @@ body::after {
   width: 100%;
   height: 100%;
   background: repeating-linear-gradient(
-richting: column;
+    0deg,
+    rgba(0, 255, 0, 0.05) 0px,
+    rgba(0, 255, 0, 0.05) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  animation: scanline 6s linear infinite;
+  pointer-events: none;
+}
+
+/* Полноэкранный чат */
+.chat-fullscreen {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: #000;
+  padding: 20px;
+  animation: flicker 0.1s infinite;
+  overflow: hidden;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.2);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Помехи для окна и чата */
@@ -234,25 +255,6 @@ button:disabled {
     blood-drip 1.2s ease-in-out;
 }
 
-/* Анимация тиканья часов */
-@keyframes clock-tick {
-  0% { opacity: 0.3; }
-  50% { opacity: 0.8; }
-  100% { opacity: 0.3; }
-}
-
-.clock-tick-effect {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: radial-gradient(circle, transparent 60%, rgba(0, 255, 0, 0.05) 100%);
-  animation: clock-tick 1s infinite;
-  pointer-events: none;
-  z-index: 9998;
-}
-
 /* Анимации */
 @keyframes blink {
   50% { opacity: 0; }
@@ -393,7 +395,11 @@ button:disabled {
 /* Глобальные эффекты */
 .global-noise {
   position: fixed;
-  top:  Variable not found: top  Variable not found: left  Variable not found: width  Variable not found: height  Variable not found: overflow
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .global-distortion-overlay {
