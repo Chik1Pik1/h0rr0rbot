@@ -109,23 +109,14 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
 
   function calculateTimeLeft() {
     const now = new Date();
-    let target;
-    
-    if (typeof targetTime === 'number') {
-      target = new Date(now);
-      target.setHours(targetTime, 0, 0, 0);
-      if (now > target) {
-        if (!localStorage.getItem('countdown_completed')) {
-          target.setDate(target.getDate() + 1);
-        } else {
-          return { hours: 0, minutes: 0, seconds: 0 };
-        }
-      }
-    } else {
-      target = new Date(targetTime);
-    }
-    
+    let target = targetTime instanceof Date ? targetTime : new Date(targetTime);
     const difference = target - now;
+
+    if (difference <= 0) {
+      onComplete();
+      return { hours: 0, minutes: 0, seconds: 0 };
+    }
+
     return {
       hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
       minutes: Math.floor((difference / (1000 * 60)) % 60),
@@ -139,14 +130,13 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
       setTimeLeft(newTime);
       
       if (newTime.hours + newTime.minutes + newTime.seconds === 0) {
-        localStorage.setItem('countdown_completed', 'true');
         onComplete();
         clearInterval(timer);
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [targetTime]);
 
   const drips = Array.from({ length: 20 }).map((_, i) => (
     <div 
@@ -243,18 +233,38 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
   };
 
+  const checkAccessTime = () => {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    
+    const currentTimeInMinutes = hours * 60 + minutes;
+    
+    return currentTimeInMinutes >= 0 && currentTimeInMinutes < 60;
+  };
+
+  const calculateNextAccessTime = () => {
+    const now = new Date();
+    const nextAccess = new Date(now);
+    
+    nextAccess.setDate(now.getHours() >= 1 ? now.getDate() + 1 : now.getDate());
+    nextAccess.setHours(0, 0, 0, 0);
+    
+    return nextAccess;
+  };
+
   useEffect(() => {
     const userId = getUserId();
     checkUserBlock(userId);
-  }, []);
 
-  useEffect(() => {
-    const checkMidnight = () => {
-      const now = new Date();
-      setIsMidnight(now.getHours() === 0 && now.getMinutes() === 0);
-    };
-    checkMidnight();
-    const interval = setInterval(checkMidnight, 1000);
+    const isAccessTime = checkAccessTime();
+    setIsMidnight(isAccessTime);
+
+    const interval = setInterval(() => {
+      const newIsAccessTime = checkAccessTime();
+      setIsMidnight(newIsAccessTime);
+    }, 1000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -353,20 +363,7 @@ const AccessScreen = ({ onAccessGranted }) => {
   };
 
   const renderTimers = () => {
-    if (!isMidnight && !localStorage.getItem('countdown_completed')) {
-      return (
-        <div className="text-center">
-          <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ В:</p>
-          <CountdownTimer 
-            targetTime={24} 
-            onComplete={() => {
-              setIsMidnight(true);
-              localStorage.setItem('countdown_completed', 'true');
-            }}
-          />
-        </div>
-      );
-    }
+    const isAccessTime = checkAccessTime();
 
     if (blockedUntil) {
       const blockedDate = new Date(blockedUntil);
@@ -380,6 +377,18 @@ const AccessScreen = ({ onAccessGranted }) => {
               setAttempts(3);
               setBlockedUntilState(null);
             }}
+          />
+        </div>
+      );
+    }
+
+    if (!isAccessTime) {
+      return (
+        <div className="text-center">
+          <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ В:</p>
+          <CountdownTimer 
+            targetTime={calculateNextAccessTime()}
+            onComplete={() => setIsMidnight(true)}
           />
         </div>
       );
@@ -409,7 +418,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           
           {renderTimers()}
 
-          {!blockedUntil && (isMidnight || localStorage.getItem('countdown_completed')) && attemptsLeft > 0 && (
+          {!blockedUntil && checkAccessTime() && attemptsLeft > 0 && (
             <form onSubmit={handleSubmit} className="w-full max-w-sm">
               <div className="flex items-center mb-4">
                 <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
