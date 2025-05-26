@@ -55,20 +55,16 @@ const AudioProvider = ({ children }) => {
 };
 
 const generateDailyKey = () => {
-  // Получаем текущую дату
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth() + 1; // getMonth() возвращает 0-11
+  const month = now.getMonth() + 1;
   const day = now.getDate();
   
-  // Создаем детерминированный seed на основе даты
   const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
   
-  // Возвращаем ключ из массива по индексу
   return DEMON_KEYS[seed];
 };
 
-// Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -85,7 +81,6 @@ const setBlockedUntil = (date) => {
   localStorage.setItem('blockedUntil', date);
 };
 
-// Форматирование даты и времени
 const formatDateTime = (date) => {
   return date.toLocaleString('ru-RU', {
     year: 'numeric',
@@ -97,7 +92,6 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
-// Generate or retrieve UUID for user
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -110,7 +104,6 @@ const getUserId = () => {
   return userId;
 };
 
-// Новый компонент таймера
 const CountdownTimer = ({ targetTime, onComplete }) => {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
@@ -122,7 +115,11 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
       target = new Date(now);
       target.setHours(targetTime, 0, 0, 0);
       if (now > target) {
-        target.setDate(target.getDate() + 1);
+        if (!localStorage.getItem('countdown_completed')) {
+          target.setDate(target.getDate() + 1);
+        } else {
+          return { hours: 0, minutes: 0, seconds: 0 };
+        }
       }
     } else {
       target = new Date(targetTime);
@@ -142,6 +139,7 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
       setTimeLeft(newTime);
       
       if (newTime.hours + newTime.minutes + newTime.seconds === 0) {
+        localStorage.setItem('countdown_completed', 'true');
         onComplete();
         clearInterval(timer);
       }
@@ -150,7 +148,6 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Создаем случайные капли крови
   const drips = Array.from({ length: 20 }).map((_, i) => (
     <div 
       key={i}
@@ -356,13 +353,16 @@ const AccessScreen = ({ onAccessGranted }) => {
   };
 
   const renderTimers = () => {
-    if (!isMidnight) {
+    if (!isMidnight && !localStorage.getItem('countdown_completed')) {
       return (
         <div className="text-center">
           <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ В:</p>
           <CountdownTimer 
             targetTime={24} 
-            onComplete={() => setIsMidnight(true)}
+            onComplete={() => {
+              setIsMidnight(true);
+              localStorage.setItem('countdown_completed', 'true');
+            }}
           />
         </div>
       );
@@ -409,7 +409,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           
           {renderTimers()}
 
-          {!blockedUntil && isMidnight && attemptsLeft > 0 && (
+          {!blockedUntil && (isMidnight || localStorage.getItem('countdown_completed')) && attemptsLeft > 0 && (
             <form onSubmit={handleSubmit} className="w-full max-w-sm">
               <div className="flex items-center mb-4">
                 <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
@@ -468,7 +468,6 @@ const ChatScreen = () => {
     glitch: false 
   });
 
-  // Таймер страха
   const startFearTimer = () => {
     resetFearTimer();
     const timer = setTimeout(() => {
@@ -490,7 +489,6 @@ const ChatScreen = () => {
     setTimeout(() => setGlobalEffects(false), 3000);
   };
 
-  // Обработчики активности
   useEffect(() => {
     const handleActivity = () => {
       resetFearTimer();
@@ -594,7 +592,6 @@ const ChatScreen = () => {
 
   return (
     <div className={`flex flex-col h-full p-4 relative chat-fullscreen ${globalEffects ? 'global-noise' : ''}`}>
-      {/* Чат контейнер */}
       <div 
         id="chat-container" 
         className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
@@ -627,9 +624,7 @@ const ChatScreen = () => {
         )}
       </div>
 
-      {/* Нижняя панель с вводом и меню */}
       <div className={`chat-bottom-panel ${isDrawerOpen ? 'drawer-open' : ''}`}>
-        {/* Форма ввода */}
         <form onSubmit={handleSubmit} className="chat-input-form">
           <input
             type="text"
@@ -650,7 +645,6 @@ const ChatScreen = () => {
           </button>
         </form>
 
-        {/* Выдвижное меню */}
         <div className="drawer-container">
           <div 
             className="drawer-handle"
@@ -717,7 +711,6 @@ const ChatScreen = () => {
         </div>
       </div>
 
-      {/* Эффекты для всего экрана */}
       {globalEffects && (
         <div className="global-distortion-overlay">
           <div className="noise-texture"/>
