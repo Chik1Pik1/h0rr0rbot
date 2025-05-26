@@ -110,6 +110,66 @@ const getUserId = () => {
   return userId;
 };
 
+// Новый компонент таймера
+const CountdownTimer = ({ targetTime, onComplete }) => {
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+  function calculateTimeLeft() {
+    const now = new Date();
+    let target;
+    
+    if (typeof targetTime === 'number') {
+      target = new Date(now);
+      target.setHours(targetTime, 0, 0, 0);
+      if (now > target) {
+        target.setDate(target.getDate() + 1);
+      }
+    } else {
+      target = new Date(targetTime);
+    }
+    
+    const difference = target - now;
+    return {
+      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((difference / (1000 * 60)) % 60),
+      seconds: Math.floor((difference / 1000) % 60)
+    };
+  }
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const newTime = calculateTimeLeft();
+      setTimeLeft(newTime);
+      
+      if (newTime.hours + newTime.minutes + newTime.seconds === 0) {
+        onComplete();
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Создаем случайные капли крови
+  const drips = Array.from({ length: 20 }).map((_, i) => (
+    <div 
+      key={i}
+      className="blood-drip"
+      style={{
+        left: `${Math.random() * 100}%`,
+        animationDelay: `${Math.random() * 2}s`
+      }}
+    />
+  ));
+
+  return (
+    <div className="blood-timer">
+      {drips}
+      {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+    </div>
+  );
+};
+
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
 
@@ -134,6 +194,8 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
   const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
+  const [isMidnight, setIsMidnight] = useState(false);
+  const [blockedUntil, setBlockedUntilState] = useState(getBlockedUntil());
 
   const checkUserBlock = async (userId) => {
     try {
@@ -176,6 +238,8 @@ const AccessScreen = ({ onAccessGranted }) => {
 
       setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockUntil)}`);
       setAttempts(0);
+      setBlockedUntilState(blockUntil.toISOString());
+      setAttemptsLeft(0);
     } catch (error) {
       console.error('Error setting user block:', error);
       setError('СИСТЕМНАЯ ОШИБКА: ПОПРОБУЙТЕ ПОЗЖЕ');
@@ -185,6 +249,23 @@ const AccessScreen = ({ onAccessGranted }) => {
   useEffect(() => {
     const userId = getUserId();
     checkUserBlock(userId);
+  }, []);
+
+  useEffect(() => {
+    const checkMidnight = () => {
+      const now = new Date();
+      setIsMidnight(now.getHours() === 0 && now.getMinutes() === 0);
+    };
+    checkMidnight();
+    const interval = setInterval(checkMidnight, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setBlockedUntilState(getBlockedUntil());
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const generateHackCode = () => {
@@ -246,6 +327,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 
       setAttemptsLeft(3);
       localStorage.removeItem('blockedUntil');
+      setBlockedUntilState(null);
 
       setTimeout(() => {
         setShowErrorOverlay(false);
@@ -273,6 +355,39 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
   };
 
+  const renderTimers = () => {
+    if (!isMidnight) {
+      return (
+        <div className="text-center">
+          <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ В:</p>
+          <CountdownTimer 
+            targetTime={24} 
+            onComplete={() => setIsMidnight(true)}
+          />
+        </div>
+      );
+    }
+
+    if (blockedUntil) {
+      const blockedDate = new Date(blockedUntil);
+      return (
+        <div className="blocked-timer blink">
+          <p>ДОСТУП ВОССТАНОВИТСЯ ЧЕРЕЗ:</p>
+          <CountdownTimer 
+            targetTime={blockedDate}
+            onComplete={() => {
+              localStorage.removeItem('blockedUntil');
+              setAttempts(3);
+              setBlockedUntilState(null);
+            }}
+          />
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <>
       {showErrorOverlay && (
@@ -291,7 +406,10 @@ const AccessScreen = ({ onAccessGranted }) => {
           <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
           <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
-          {attemptsLeft > 0 ? (
+          
+          {renderTimers()}
+
+          {!blockedUntil && isMidnight && attemptsLeft > 0 && (
             <form onSubmit={handleSubmit} className="w-full max-w-sm">
               <div className="flex items-center mb-4">
                 <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
@@ -317,13 +435,14 @@ const AccessScreen = ({ onAccessGranted }) => {
                 Осталось попыток: {attemptsLeft}
               </p>
             </form>
-          ) : (
-            <p className="text-demon text-xl mt-4 blink">ДОСТУП ЗАБЛОКИРОВАН</p>
           )}
           {error && (
             <p className="text-demon text-xl mt-4 blink" style={{ whiteSpace: 'pre-line' }}>
               {error}
             </p>
+          )}
+          {attemptsLeft <= 0 && !blockedUntil && (
+            <p className="text-demon text-xl mt-4 blink">ДОСТУП ЗАБЛОКИРОВАН</p>
           )}
         </div>
       </div>
