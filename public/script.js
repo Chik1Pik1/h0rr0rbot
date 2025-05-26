@@ -59,9 +59,7 @@ const generateDailyKey = () => {
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
   const day = now.getDate();
-  
   const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
-  
   return DEMON_KEYS[seed];
 };
 
@@ -109,19 +107,14 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
 
   function calculateTimeLeft() {
     const now = new Date();
-    let target;
-    
-    if (typeof targetTime === 'number') {
-      target = new Date(now);
-      target.setHours(targetTime, 0, 0, 0);
-      if (now > target) {
-        target.setDate(target.getDate() + 1);
-      }
-    } else {
-      target = new Date(targetTime);
-    }
-    
+    const target = targetTime instanceof Date ? targetTime : new Date(targetTime);
     const difference = target - now;
+
+    if (difference <= 0) {
+      onComplete();
+      return { hours: 0, minutes: 0, seconds: 0 };
+    }
+
     return {
       hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
       minutes: Math.floor((difference / (1000 * 60)) % 60),
@@ -133,7 +126,7 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
     const timer = setInterval(() => {
       const newTime = calculateTimeLeft();
       setTimeLeft(newTime);
-      
+
       if (newTime.hours + newTime.minutes + newTime.seconds === 0) {
         onComplete();
         clearInterval(timer);
@@ -141,7 +134,7 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [targetTime]);
 
   const drips = Array.from({ length: 20 }).map((_, i) => (
     <div 
@@ -186,8 +179,21 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
   const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
-  const [isMidnight, setIsMidnight] = useState(false);
+  const [isAccessTime, setIsAccessTime] = useState(false);
   const [blockedUntil, setBlockedUntilState] = useState(getBlockedUntil());
+
+  const checkAccessTime = () => {
+    const now = new Date();
+    return now.getHours() === 0; // Доступ разрешен с 00:00 до 01:00
+  };
+
+  const calculateNextAccessTime = () => {
+    const now = new Date();
+    const nextAccess = new Date(now);
+    nextAccess.setDate(now.getHours() >= 1 ? now.getDate() + 1 : now.getDate());
+    nextAccess.setHours(0, 0, 0, 0);
+    return nextAccess;
+  };
 
   const checkUserBlock = async (userId) => {
     try {
@@ -241,21 +247,14 @@ const AccessScreen = ({ onAccessGranted }) => {
   useEffect(() => {
     const userId = getUserId();
     checkUserBlock(userId);
+    setIsAccessTime(checkAccessTime());
 
-    const checkMidnight = () => {
-      const now = new Date();
-      setIsMidnight(now.getHours() === 0); // Проверяем только час
-    };
-    checkMidnight();
-    const interval = setInterval(checkMidnight, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
+    const interval = setInterval(() => {
+      setIsAccessTime(checkAccessTime());
       setBlockedUntilState(getBlockedUntil());
     }, 1000);
-    return () => clearInterval(timer);
+
+    return () => clearInterval(interval);
   }, []);
 
   const generateHackCode = () => {
@@ -346,10 +345,6 @@ const AccessScreen = ({ onAccessGranted }) => {
   };
 
   const renderTimers = () => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const isAccessTime = currentHour === 0;
-
     if (blockedUntil) {
       const blockedDate = new Date(blockedUntil);
       return (
@@ -367,13 +362,13 @@ const AccessScreen = ({ onAccessGranted }) => {
       );
     }
 
-    if (!isAccessTime) {
+    if (!checkAccessTime()) {
       return (
         <div className="text-center">
           <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ В:</p>
           <CountdownTimer 
-            targetTime={24} 
-            onComplete={() => setIsMidnight(true)}
+            targetTime={calculateNextAccessTime()}
+            onComplete={() => setIsAccessTime(true)}
           />
         </div>
       );
@@ -403,7 +398,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           
           {renderTimers()}
 
-          {!blockedUntil && (new Date().getHours() === 0) && attemptsLeft > 0 && (
+          {!blockedUntil && checkAccessTime() && attemptsLeft > 0 && (
             <form onSubmit={handleSubmit} className="w-full max-w-sm">
               <div className="flex items-center mb-4">
                 <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
