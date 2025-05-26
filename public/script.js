@@ -453,7 +453,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
-    { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
+    { sender: 'demon', text: 'Теперь я знаю кто ты! Я вижу тебя... через твою камеру).' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -474,7 +474,7 @@ const ChatScreen = () => {
     const timer = setTimeout(() => {
       setMessages(prev => [...prev, { 
         sender: 'demon', 
-        text: 'Тишина... Но твоя лампа мигнула. Это не случайность. Она считает.' 
+        text: 'Тишина... Ты испугался? Чего затих вдруг?' 
       }]);
       triggerGlobalEffects();
     }, 10000);
@@ -636,7 +636,7 @@ const ChatScreen = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="flex-1 text-xl p-2 border focus:outline-none"
-            placeholder="Введи сообщение..."
+            placeholder="Напиши мне..."
             disabled={isDisconnected}
             style={{ color: '#00ff00', borderColor: '#00ff00' }}
           />
