@@ -184,14 +184,18 @@ const AccessScreen = ({ onAccessGranted }) => {
 
   const checkAccessTime = () => {
     const now = new Date();
-    return now.getHours() === 0; // Доступ разрешен с 00:00 до 01:00
+    return now.getHours() === 0; // 00:00 - 01:00
   };
 
   const calculateNextAccessTime = () => {
     const now = new Date();
     const nextAccess = new Date(now);
-    nextAccess.setDate(now.getHours() >= 1 ? now.getDate() + 1 : now.getDate());
+    
+    if (now.getHours() >= 1) {
+      nextAccess.setDate(now.getDate() + 1);
+    }
     nextAccess.setHours(0, 0, 0, 0);
+    
     return nextAccess;
   };
 
@@ -252,6 +256,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     const interval = setInterval(() => {
       setIsAccessTime(checkAccessTime());
       setBlockedUntilState(getBlockedUntil());
+      setAttempts(getAttemptsLeft()); // Принудительное обновление attemptsLeft
     }, 1000);
 
     return () => clearInterval(interval);
@@ -398,7 +403,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           
           {renderTimers()}
 
-          {!blockedUntil && checkAccessTime() && attemptsLeft > 0 && (
+          {!blockedUntil && isAccessTime && attemptsLeft > 0 && (
             <form onSubmit={handleSubmit} className="w-full max-w-sm">
               <div className="flex items-center mb-4">
                 <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
@@ -430,8 +435,8 @@ const AccessScreen = ({ onAccessGranted }) => {
               {error}
             </p>
           )}
-          {attemptsLeft <= 0 && !blockedUntil && (
-            <p className="text-demon text-xl mt-4 blink">ДОСТУП ЗАБЛОКИРОВАН</p>
+          {attemptsLeft <= 0 && !blockedUntil && !isAccessTime && (
+            <p className="text-demon text-xl blink">ДОСТУП ЗАБЛОКИРОВАН</p>
           )}
         </div>
       </div>
