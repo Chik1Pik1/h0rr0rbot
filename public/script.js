@@ -1,6 +1,6 @@
 const { useState, useEffect } = React;
 
-// Контекст для управления звуком
+// Audio context для управления звуком
 const AudioContext = React.createContext(null);
 
 // Список всех возможных ключей
@@ -55,14 +55,20 @@ const AudioProvider = ({ children }) => {
 };
 
 const generateDailyKey = () => {
+  // Получаем текущую дату
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const month = now.getMonth() + 1; // getMonth() возвращает 0-11
   const day = now.getDate();
+  
+  // Создаем детерминированный seed на основе даты
   const seed = (year * 10000 + month * 100 + day) % DEMON_KEYS.length;
+  
+  // Возвращаем ключ из массива по индексу
   return DEMON_KEYS[seed];
 };
 
+// Функции для работы с попытками и блокировкой
 const getAttemptsLeft = () => {
   return parseInt(localStorage.getItem('attemptsLeft') || '3');
 };
@@ -79,6 +85,7 @@ const setBlockedUntil = (date) => {
   localStorage.setItem('blockedUntil', date);
 };
 
+// Форматирование даты и времени
 const formatDateTime = (date) => {
   return date.toLocaleString('ru-RU', {
     year: 'numeric',
@@ -90,6 +97,7 @@ const formatDateTime = (date) => {
   }).replace(',', '');
 };
 
+// Generate or retrieve UUID for user
 const getUserId = () => {
   let userId = localStorage.getItem('user_id');
   if (!userId) {
@@ -100,59 +108,6 @@ const getUserId = () => {
     localStorage.setItem('user_id', userId);
   }
   return userId;
-};
-
-const CountdownTimer = ({ targetTime, onComplete }) => {
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-
-  function calculateTimeLeft() {
-    const now = new Date();
-    const target = targetTime instanceof Date ? targetTime : new Date(targetTime);
-    const difference = target - now;
-
-    if (difference <= 0) {
-      onComplete();
-      return { hours: 0, minutes: 0, seconds: 0 };
-    }
-
-    return {
-      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((difference / (1000 * 60)) % 60),
-      seconds: Math.floor((difference / 1000) % 60)
-    };
-  }
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const newTime = calculateTimeLeft();
-      setTimeLeft(newTime);
-
-      if (newTime.hours + newTime.minutes + newTime.seconds === 0) {
-        onComplete();
-        clearInterval(timer);
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [targetTime]);
-
-  const drips = Array.from({ length: 20 }).map((_, i) => (
-    <div 
-      key={i}
-      className="blood-drip"
-      style={{
-        left: `${Math.random() * 100}%`,
-        animationDelay: `${Math.random() * 2}s`
-      }}
-    />
-  ));
-
-  return (
-    <div className="blood-timer">
-      {drips}
-      {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
-    </div>
-  );
 };
 
 const App = () => {
@@ -179,27 +134,6 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [showErrorOverlay, setShowErrorOverlay] = useState(false);
   const [showHackOverlay, setShowHackOverlay] = useState(false);
   const [attemptsLeft, setAttempts] = useState(getAttemptsLeft());
-  const [isAccessTime, setIsAccessTime] = useState(false);
-  const [blockedUntil, setBlockedUntilState] = useState(getBlockedUntil());
-
-  const checkAccessTime = () => {
-    const now = new Date();
-    const hour = now.getHours();
-    const minutes = now.getMinutes();
-    return hour === 0 || (hour === 1 && minutes === 0);
-  };
-
-  const calculateNextAccessTime = () => {
-    const now = new Date();
-    const nextAccess = new Date(now);
-    
-    if (now.getHours() >= 1) {
-      nextAccess.setDate(now.getDate() + 1);
-    }
-    nextAccess.setHours(0, 0, 0, 0);
-    
-    return nextAccess;
-  };
 
   const checkUserBlock = async (userId) => {
     try {
@@ -223,7 +157,7 @@ const AccessScreen = ({ onAccessGranted }) => {
       }
       return false;
     } catch (error) {
-      console.error('Ошибка проверки блокировки пользователя:', error);
+      console.error('Error checking user block:', error);
       return false;
     }
   };
@@ -242,10 +176,8 @@ const AccessScreen = ({ onAccessGranted }) => {
 
       setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockUntil)}`);
       setAttempts(0);
-      setBlockedUntilState(blockUntil.toISOString());
-      setAttemptsLeft(0);
     } catch (error) {
-      console.error('Ошибка установки блокировки пользователя:', error);
+      console.error('Error setting user block:', error);
       setError('СИСТЕМНАЯ ОШИБКА: ПОПРОБУЙТЕ ПОЗЖЕ');
     }
   };
@@ -253,29 +185,20 @@ const AccessScreen = ({ onAccessGranted }) => {
   useEffect(() => {
     const userId = getUserId();
     checkUserBlock(userId);
-    setIsAccessTime(checkAccessTime());
-
-    const interval = setInterval(() => {
-      setIsAccessTime(checkAccessTime());
-      setBlockedUntilState(getBlockedUntil());
-      setAttempts(getAttemptsLeft());
-    }, 1000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const generateHackCode = () => {
     const snippets = [
-      'ИНИЦИАЛИЗАЦИЯ БЭКДОРА: 0xDEADBEEF',
-      'ОБХОД ФАЙРВОЛЛА: EXEC 0xFF',
-      'ВСТАВКА ПЕЙЛОАДА: SYS_CALL 0x80',
-      'ПЕРЕЗАПИСЬ: 10101010 11110000',
-      'РУТКИТ ЗАПУЩЕН: ptr=0xCAFEBABE',
-      'КРИПТО-ВЗЛОМ: AES-256 CRACK',
-      'ТЕНИВЫЙ ПРОТОКОЛ: jmp 0xFF34',
-      'ПРИЗРАЧНЫЙ ПОТОК: fork() EXPLOIT',
-      'УТЕЧКА ПАМЯТИ: 0x7F3A 48B2 MOV AX',
-      'НЕЙРОННЫЙ ВЗЛОМ: 0xFF34 INIT'
+      'INITIALIZE BACKDOOR: 0xDEADBEEF',
+      'BYPASS FIREWALL: EXEC 0xFF',
+      'INJECT PAYLOAD: SYS_CALL 0x80',
+      'OVERRIDE: 10101010 11110000',
+      'ROOTKIT DEPLOY: ptr=0xCAFEBABE',
+      'CRYPTO BREACH: AES-256 CRACK',
+      'SHADOW PROTOCOL: jmp 0xFF34',
+      'GHOST THREAD: fork() EXPLOIT',
+      'MEM LEAK: 0x7F3A 48B2 MOV AX',
+      'NEURAL HACK: 0xFF34 INIT'
     ];
     const codes = [];
     for (let i = 0; i < 30; i++) {
@@ -323,7 +246,6 @@ const AccessScreen = ({ onAccessGranted }) => {
 
       setAttemptsLeft(3);
       localStorage.removeItem('blockedUntil');
-      setBlockedUntilState(null);
 
       setTimeout(() => {
         setShowErrorOverlay(false);
@@ -351,39 +273,6 @@ const AccessScreen = ({ onAccessGranted }) => {
     }
   };
 
-  const renderTimers = () => {
-    if (blockedUntil) {
-      const blockedDate = new Date(blockedUntil);
-      return (
-        <div className="blocked-timer blink">
-          <p>ДОСТУП ВОССТАНОВИТСЯ ЧЕРЕЗ:</p>
-          <CountdownTimer 
-            targetTime={blockedDate}
-            onComplete={() => {
-              localStorage.removeItem('blockedUntil');
-              setAttempts(3);
-              setBlockedUntilState(null);
-            }}
-          />
-        </div>
-      );
-    }
-
-    if (!checkAccessTime()) {
-      return (
-        <div className="text-center">
-          <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ В:</p>
-          <CountdownTimer 
-            targetTime={calculateNextAccessTime()}
-            onComplete={() => setIsAccessTime(true)}
-          />
-        </div>
-      );
-    }
-
-    return null;
-  };
-
   return (
     <>
       {showErrorOverlay && (
@@ -402,10 +291,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
           <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
-          
-          {renderTimers()}
-
-          {!blockedUntil && isAccessTime && attemptsLeft > 0 && (
+          {attemptsLeft > 0 ? (
             <form onSubmit={handleSubmit} className="w-full max-w-sm">
               <div className="flex items-center mb-4">
                 <label className="text-xl text-demon mr-2">ВВЕДИТЕ КЛЮЧ ДОСТУПА:</label>
@@ -431,14 +317,13 @@ const AccessScreen = ({ onAccessGranted }) => {
                 Осталось попыток: {attemptsLeft}
               </p>
             </form>
+          ) : (
+            <p className="text-demon text-xl mt-4 blink">ДОСТУП ЗАБЛОКИРОВАН</p>
           )}
           {error && (
             <p className="text-demon text-xl mt-4 blink" style={{ whiteSpace: 'pre-line' }}>
               {error}
             </p>
-          )}
-          {attemptsLeft <= 0 && !blockedUntil && !isAccessTime && (
-            <p className="text-demon text-xl blink">ДОСТУП ЗАБЛОКИРОВАН</p>
           )}
         </div>
       </div>
@@ -449,58 +334,18 @@ const AccessScreen = ({ onAccessGranted }) => {
 const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
-    { sender: 'demon', text: 'Теперь я знаю кто ты! Я вижу тебя... через твою камеру).' }
+    { sender: 'demon', text: 'Ты кто? Я вижу тебя... через твое устройство.' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [inactivityTimer, setInactivityTimer] = useState(null);
-  const [globalEffects, setGlobalEffects] = useState(false);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
     blood: false, 
     glitch: false 
   });
-
-  const startFearTimer = () => {
-    resetFearTimer();
-    const timer = setTimeout(() => {
-      setMessages(prev => [...prev, { 
-        sender: 'demon', 
-        text: 'Тишина... Ты испугался? Чего затих вдруг?' 
-      }]);
-      triggerGlobalEffects();
-    }, 10000);
-    setInactivityTimer(timer);
-  };
-
-  const resetFearTimer = () => {
-    if (inactivityTimer) clearTimeout(inactivityTimer);
-  };
-
-  const triggerGlobalEffects = () => {
-    setGlobalEffects(true);
-    setTimeout(() => setGlobalEffects(false), 3000);
-  };
-
-  useEffect(() => {
-    const handleActivity = () => {
-      resetFearTimer();
-      startFearTimer();
-    };
-
-    window.addEventListener('mousemove', handleActivity);
-    window.addEventListener('keypress', handleActivity);
-    startFearTimer();
-
-    return () => {
-      window.removeEventListener('mousemove', handleActivity);
-      window.removeEventListener('keypress', handleActivity);
-      resetFearTimer();
-    };
-  }, []);
 
   useEffect(() => {
     if (backgroundAudio) {
@@ -510,7 +355,7 @@ const ChatScreen = () => {
           await backgroundAudio.play();
           setIsAudioPlaying(true);
         } catch (error) {
-          console.log("Автопроигрывание заблокировано:", error);
+          console.log("Autoplay prevented:", error);
           setIsAudioPlaying(false);
         }
       };
@@ -535,20 +380,16 @@ const ChatScreen = () => {
           setIsAudioPlaying(true);
         }
       } catch (error) {
-        console.log("Не удалось переключить звук:", error);
+        console.log("Audio toggle failed:", error);
       }
     }
   };
 
   const toggleFullscreen = () => {
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.expand();
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
     } else {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        document.documentElement.requestFullscreen().catch(console.error);
-      }
+      document.documentElement.requestFullscreen().catch(console.error);
     }
   };
 
@@ -587,7 +428,8 @@ const ChatScreen = () => {
   };
 
   return (
-    <div className={`flex flex-col h-full p-4 relative chat-fullscreen ${globalEffects ? 'global-noise' : ''}`}>
+    <div className="flex flex-col h-full p-4 relative chat-fullscreen">
+      {/* Чат контейнер */}
       <div 
         id="chat-container" 
         className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
@@ -620,14 +462,16 @@ const ChatScreen = () => {
         )}
       </div>
 
+      {/* Нижняя панель с вводом и меню */}
       <div className={`chat-bottom-panel ${isDrawerOpen ? 'drawer-open' : ''}`}>
+        {/* Форма ввода */}
         <form onSubmit={handleSubmit} className="chat-input-form">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="flex-1 text-xl p-2 border focus:outline-none"
-            placeholder="Напиши мне..."
+            placeholder="Введи сообщение..."
             disabled={isDisconnected}
             style={{ color: '#00ff00', borderColor: '#00ff00' }}
           />
@@ -641,6 +485,7 @@ const ChatScreen = () => {
           </button>
         </form>
 
+        {/* Выдвижное меню */}
         <div className="drawer-container">
           <div 
             className="drawer-handle"
@@ -706,13 +551,6 @@ const ChatScreen = () => {
           </div>
         </div>
       </div>
-
-      {globalEffects && (
-        <div className="global-distortion-overlay">
-          <div className="noise-texture"/>
-          <div className="scanlines"/>
-        </div>
-      )}
     </div>
   );
 };
