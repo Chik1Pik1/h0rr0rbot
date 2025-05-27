@@ -262,7 +262,6 @@ const AccessScreen = ({ onAccessGranted }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Добавляем useEffect для сброса attemptsLeft
   useEffect(() => {
     if (!blockedUntil && isAccessTime && attemptsLeft <= 0) {
       setAttempts(3);
@@ -339,7 +338,7 @@ const AccessScreen = ({ onAccessGranted }) => {
         setShowHackOverlay(true);
         setTimeout(() => {
           setShowHackOverlay(false);
-          setError('ОШИБКА: КЛЮЧ НЕВЕРЕН.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nWARNING: СИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.\n[...]');
+          setError('КЛЮЧ ПРИНЯТ.\nАКТИВИРОВАН ПРОТОКОЛ «ГОРДЕЕВ»...\n\nСИСТЕМА ЗАГРУЖАЕТ РЕЗЕРВНЫЙ КАНАЛ.');
           setTimeout(() => onAccessGranted(), 2000);
         }, 4000);
       }, 3000);
