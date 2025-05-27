@@ -1,4 +1,4 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 // Audio context для управления звуком
 const AudioContext = React.createContext(null);
@@ -256,11 +256,19 @@ const AccessScreen = ({ onAccessGranted }) => {
     const interval = setInterval(() => {
       setIsAccessTime(checkAccessTime());
       setBlockedUntilState(getBlockedUntil());
-      setAttempts(getAttemptsLeft()); // Принудительное обновление attemptsLeft
+      setAttempts(getAttemptsLeft());
     }, 1000);
 
     return () => clearInterval(interval);
   }, []);
+
+  // Добавляем useEffect для сброса attemptsLeft
+  useEffect(() => {
+    if (!blockedUntil && isAccessTime && attemptsLeft <= 0) {
+      setAttempts(3);
+      setAttemptsLeft(3);
+    }
+  }, [blockedUntil, isAccessTime, attemptsLeft]);
 
   const generateHackCode = () => {
     const snippets = [
@@ -360,6 +368,7 @@ const AccessScreen = ({ onAccessGranted }) => {
             onComplete={() => {
               localStorage.removeItem('blockedUntil');
               setAttempts(3);
+              setAttemptsLeft(3);
               setBlockedUntilState(null);
             }}
           />
@@ -454,7 +463,7 @@ const ChatScreen = () => {
   const [isDisconnected, setIsDisconnected] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [inactivityTimer, setInactivityTimer] = useState(null);
+  const inactivityTimer = useRef(null);
   const [globalEffects, setGlobalEffects] = useState(false);
   const userId = getUserId();
   const [effects, setEffects] = useState({ 
@@ -464,18 +473,17 @@ const ChatScreen = () => {
 
   const startFearTimer = () => {
     resetFearTimer();
-    const timer = setTimeout(() => {
+    inactivityTimer.current = setTimeout(() => {
       setMessages(prev => [...prev, { 
         sender: 'demon', 
         text: 'Тишина... Ты испугался? Чего затих вдруг?' 
       }]);
       triggerGlobalEffects();
-    }, 10000);
-    setInactivityTimer(timer);
+    }, 300000); // 5 минут
   };
 
   const resetFearTimer = () => {
-    if (inactivityTimer) clearTimeout(inactivityTimer);
+    if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
   };
 
   const triggerGlobalEffects = () => {
@@ -658,16 +666,18 @@ const ChatScreen = () => {
               <button
                 onClick={toggleAudio}
                 className="control-button"
+                disabled={!backgroundAudio}
                 style={{
                   background: 'none',
                   border: '1px solid #00ff00',
                   color: '#00ff00',
                   padding: '8px 16px',
                   borderRadius: '4px',
-                  cursor: 'pointer',
+                  cursor: backgroundAudio ? 'pointer' : 'not-allowed',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '8px',
+                  opacity: backgroundAudio ? 1 : 0.5
                 }}
               >
                 <svg viewBox="0 0 24 24">
