@@ -11,7 +11,7 @@ body {
   touch-action: manipulation;
 }
 
-/* Background noise */
+/* Фоновые помехи */
 body::after {
   content: '';
   position: fixed;
@@ -33,7 +33,7 @@ body::after {
   align-items: center;
 }
 
-/* Main CRT window */
+/* Основное окно */
 .crt-window {
   background: #000 !important;
   border: 2px solid #00ff0033;
@@ -50,13 +50,7 @@ body::after {
   z-index: 1001;
 }
 
-/* Ensure form visibility */
-.crt-window form {
-  opacity: 1 !important;
-  display: block !important;
-}
-
-/* CRT scanline effect */
+/* ЭЛТ-помехи */
 .crt-window::before {
   content: '';
   position: absolute;
@@ -75,7 +69,7 @@ body::after {
   pointer-events: none;
 }
 
-/* Fullscreen chat */
+/* Полноэкранный чат */
 .chat-fullscreen {
   position: relative;
   width: 100%;
@@ -90,9 +84,8 @@ body::after {
   flex-direction: column;
 }
 
-/* Noise for window and chat */
-.crt-window::after,
-.chat-fullscreen::after {
+/* Помехи для окна и чата */
+.crt-window::after, .chat-fullscreen::after {
   content: '';
   position: absolute;
   top: 0;
@@ -104,9 +97,8 @@ body::after {
   pointer-events: none;
 }
 
-/* Fullscreen overlays */
-.error-overlay-fullscreen,
-.hack-overlay-fullscreen {
+/* Полноэкранные оверлеи */
+.error-overlay-fullscreen, .hack-overlay-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
@@ -130,7 +122,7 @@ body::after {
   background: #000;
 }
 
-/* Text colors */
+/* Цвета текста */
 .text-user {
   color: #00ff00 !important;
 }
@@ -139,9 +131,8 @@ body::after {
   color: #ff0000;
 }
 
-/* Form styles */
-input,
-button {
+/* Стили для форм */
+input, button {
   font-family: 'Special Elite', monospace;
   background: #000;
   border: 2px solid #00ff00;
@@ -166,7 +157,7 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* Chat container */
+/* Контейнер чата */
 .chat-container {
   flex: 1;
   overflow-y: auto;
@@ -176,7 +167,7 @@ button:disabled {
   scrollbar-color: #00ff00 #000000;
 }
 
-/* Scrollbar styles */
+/* Стили для скроллбара */
 .chat-container::-webkit-scrollbar {
   width: 8px;
 }
@@ -190,14 +181,14 @@ button:disabled {
   border-radius: 4px;
 }
 
-/* Bottom panel with input and menu */
+/* Нижняя панель с вводом и меню */
 .chat-bottom-panel {
   position: relative;
   margin-top: auto;
   transition: transform 0.3s ease;
 }
 
-/* Chat input form */
+/* Форма ввода чата */
 .chat-input-form {
   display: flex;
   gap: 8px;
@@ -205,7 +196,7 @@ button:disabled {
   transition: transform 0.3s ease;
 }
 
-/* Drawer menu */
+/* Выдвижное меню */
 .drawer-container {
   position: absolute;
   bottom: 0;
@@ -216,7 +207,7 @@ button:disabled {
   align-items: center;
 }
 
-/* Drawer handle */
+/* Ручка выдвижного меню */
 .drawer-handle {
   width: 40px;
   height: 4px;
@@ -227,7 +218,7 @@ button:disabled {
   margin-bottom: 8px;
 }
 
-/* Drawer content */
+/* Содержимое выдвижного меню */
 .drawer-content {
   width: 100%;
   overflow: hidden;
@@ -235,12 +226,12 @@ button:disabled {
   background-color: rgba(0, 0, 0, 0.8);
 }
 
-/* Styles for open drawer */
+/* Стили для открытого состояния меню */
 .chat-bottom-panel.drawer-open {
   transform: translateY(-60px);
 }
 
-/* Drawer buttons */
+/* Стили для кнопок в выдвижном меню */
 .drawer-buttons {
   display: flex;
   gap: 16px;
@@ -249,7 +240,7 @@ button:disabled {
   border-top: 1px solid #00ff0033;
 }
 
-/* Additional effects */
+/* Дополнительные эффекты */
 .blink {
   animation: blink 1s step-end infinite;
 }
@@ -259,89 +250,52 @@ button:disabled {
 }
 
 .demon-effect {
-  animation: text-glitch 0.8s steps(2) infinite, blood-drip 1.2s ease-in-out;
+  animation: 
+    text-glitch 0.8s steps(2) infinite,
+    blood-drip 1.2s ease-in-out;
 }
 
-/* Animations */
+/* Анимации */
 @keyframes blink {
-  50% {
-    opacity: 0;
-  }
+  50% { opacity: 0; }
 }
 
 @keyframes scanline {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(100vh);
-  }
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100vh); }
 }
 
 @keyframes flicker {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.98;
-  }
-  100% {
-    opacity: 1;
-  }
+  0% { opacity: 1; }
+  50% { opacity: 0.98; }
+  100% { opacity: 1; }
 }
 
 @keyframes error-blink {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-  100% {
-    opacity: 1;
-  }
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 }
 
 @keyframes crt-static {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 100px 100px;
-  }
+  0% { background-position: 0 0; }
+  100% { background-position: 100px 100px; }
 }
 
 @keyframes text-glitch {
-  0% {
-    clip-path: inset(10% 0 90% 0);
-  }
-  25% {
-    clip-path: inset(30% 0 15% 0);
-    opacity: 0.8;
-  }
-  50% {
-    clip-path: inset(5% 0 80% 0);
-  }
-  75% {
-    clip-path: inset(60% 0 5% 0);
-    opacity: 0.5;
-  }
+  0% { clip-path: inset(10% 0 90% 0); }
+  25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
+  50% { clip-path:evidence inset(5% 0 80% 0); }
+  75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
 }
 
 @keyframes blood-drip {
-  0% {
-    text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-  }
-  50% {
-    transform: translateY(8px);
-    text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7);
-  }
-  100% {
-    transform: translateY(0);
-  }
+  0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
+  50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
+  100% { transform: translateY(0); }
 }
 
-/* Responsive design for mobile devices */
+/* Адаптивность для мобильных устройств */
 @media (max-width: 600px) {
   .crt-window {
     width: 95%;
@@ -353,8 +307,7 @@ button:disabled {
     padding: 10px;
   }
 
-  input,
-  button {
+  input, button {
     font-size: 1rem;
     padding: 6px;
   }
@@ -363,10 +316,7 @@ button:disabled {
     max-height: 75vh;
   }
 
-  h1,
-  p,
-  input,
-  button {
+  h1, p, input, button {
     font-size: 1rem !important;
   }
 
@@ -379,7 +329,7 @@ button:disabled {
   }
 }
 
-/* Matrix rain animation */
+/* Анимация матричного кода */
 .matrix-rain {
   position: absolute;
   top: 0;
@@ -404,24 +354,16 @@ button:disabled {
 }
 
 @keyframes hack-scroll {
-  0% {
-    transform: translateY(100%);
-  }
-  100% {
-    transform: translateY(-100%);
-  }
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(-100%); }
 }
 
 @keyframes matrix-rain {
-  0% {
-    transform: translateY(-100vh);
-  }
-  100% {
-    transform: translateY(100vh);
-  }
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
 }
 
-/* Control buttons and SVG icons */
+/* Стили для кнопок управления и SVG-иконок */
 .control-button {
   transition: all 0.3s ease;
   background: rgba(0, 0, 0, 0.3) !important;
@@ -448,139 +390,4 @@ button:disabled {
     width: 20px;
     height: 20px;
   }
-}
-
-/* Global effects */
-.global-noise {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.global-distortion-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 9999;
-  animation: distortion 2s infinite;
-}
-
-.noise-texture {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: url('data:image/png;base64,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');
-  opacity: 0.15;
-  animation: noise 0.4s infinite;
-}
-
-.scanlines {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.8) 0px,
-    rgba(0, 0, 0, 0.8) 2px,
-    transparent 2px,
-    transparent 4px
-  );
-}
-
-@keyframes noise {
-  0% {
-    transform: translate(0, 0);
-  }
-  10% {
-    transform: translate(-5%, -5%);
-  }
-  20% {
-    transform: translate(-10%, 5%);
-  }
-  30% {
-    transform: translate(5%, -10%);
-  }
-  40% {
-    transform: translate(-5%, 15%);
-  }
-  50% {
-    transform: translate(-10%, 5%);
-  }
-  60% {
-    transform: translate(15%, 0);
-  }
-  70% {
-    transform: translate(0, 10%);
-  }
-  80% {
-    transform: translate(-15%, 0);
-  }
-  90% {
-    transform: translate(10%, 5%);
-  }
-  100% {
-    transform: translate(5%, 0);
-  }
-}
-
-@keyframes distortion {
-  0% {
-    filter: blur(0.5px) contrast(110%);
-  }
-  50% {
-    filter: blur(1px) contrast(90%);
-  }
-  100% {
-    filter: blur(0.5px) contrast(110%);
-  }
-}
-
-/* Timer styles */
-.blood-timer {
-  font-family: 'Special Elite', monospace;
-  font-size: 3rem;
-  color: #ff0000;
-  text-shadow: 0 0 10px rgba(255, 0, 0, 0.5), 0 0 20px rgba(255, 0, 0, 0.3),
-    0 0 30px rgba(255, 0, 0, 0.2);
-  position: relative;
-  padding: 20px;
-  border: 2px solid #ff000055;
-  background: rgba(0, 0, 0, 0.8);
-}
-
-.blood-drip {
-  position: absolute;
-  width: 3px;
-  height: 20px;
-  background: #ff0000;
-  animation: drip 2s linear infinite;
-  opacity: 0.7;
-}
-
-@keyframes drip {
-  0% {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  50% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-}
-
-.blocked-timer {
-  color: #ff5555;
-  font-size: 1.2rem;
-  margin-top: 20px;
-  text-align: center;
 }
