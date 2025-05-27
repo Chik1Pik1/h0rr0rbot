@@ -184,7 +184,7 @@ const AccessScreen = ({ onAccessGranted }) => {
 
   const checkAccessTime = () => {
     const now = new Date();
-    return now.getHours() === 0; // 00:00 - 01:00
+    return now.getHours() === 0; // Доступ с 00:00 до 01:00
   };
 
   const calculateNextAccessTime = () => {
@@ -251,13 +251,15 @@ const AccessScreen = ({ onAccessGranted }) => {
   useEffect(() => {
     const userId = getUserId();
     checkUserBlock(userId);
-    setIsAccessTime(checkAccessTime());
-
-    const interval = setInterval(() => {
+    
+    const updateAccessState = () => {
       setIsAccessTime(checkAccessTime());
       setBlockedUntilState(getBlockedUntil());
-      setAttempts(getAttemptsLeft()); // Принудительное обновление attemptsLeft
-    }, 1000);
+      setAttempts(getAttemptsLeft());
+    };
+
+    updateAccessState();
+    const interval = setInterval(updateAccessState, 1000);
 
     return () => clearInterval(interval);
   }, []);
@@ -436,7 +438,7 @@ const AccessScreen = ({ onAccessGranted }) => {
             </p>
           )}
           {attemptsLeft <= 0 && !blockedUntil && !isAccessTime && (
-            <p className="text-demon text-xl blink">ДОСТУП ЗАБЛОКИРОВАН</p>
+            <p className="text-demon text-xl mt-4 blink">ДОСТУП ЗАБЛОКИРОВАН</p>
           )}
         </div>
       </div>
