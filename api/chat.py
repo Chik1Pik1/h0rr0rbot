@@ -7,8 +7,11 @@ import random
 from supabase import create_client, Client
 from datetime import datetime
 import pytz
+from api.reddit_story import reddit_story  # Import the reddit_story blueprint
 
 app = Flask(__name__)
+
+app.register_blueprint(reddit_story)  # Register the reddit_story blueprint
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
