@@ -371,6 +371,7 @@ const AccessScreen = ({ onAccessGranted }) => {
               setBlockedUntilState(null);
             }}
           />
+          <div className="access-status">СТАТУС ДОСТУПА: ЗАКРЫТ</div>
         </div>
       );
     }
@@ -383,6 +384,7 @@ const AccessScreen = ({ onAccessGranted }) => {
             targetTime={calculateNextAccessTime()}
             onComplete={() => setIsAccessTime(true)}
           />
+          <div className="access-status">СТАТУС ДОСТУПА: ЗАКРЫТ</div>
         </div>
       );
     }
