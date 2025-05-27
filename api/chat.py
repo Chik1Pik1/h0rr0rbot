@@ -7,11 +7,8 @@ import random
 from supabase import create_client, Client
 from datetime import datetime
 import pytz
-from api.reddit_story import reddit_story  # Import the reddit_story blueprint
 
 app = Flask(__name__)
-
-app.register_blueprint(reddit_story)  # Register the reddit_story blueprint
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -144,6 +141,29 @@ def make_openrouter_request(api_key, model, messages):
         logger.error(f"OpenRouter request failed: {str(e)}")
         return None
 
+@app.route('/api/reddit-story', methods=['GET'])
+def reddit_story():
+    """
+    Возвращает случайную страшную историю с Reddit (r/nosleep).
+    Можно доработать — например, хранить кэш, делить на части, переводить и т.п.
+    """
+    try:
+        headers = {'User-Agent': 'h0rr0rbot/1.0 (by u/yourusername)'}
+        url = 'https://www.reddit.com/r/nosleep/top.json?limit=50&t=all'
+        response = requests.get(url, headers=headers, timeout=5)
+        data = response.json()
+        posts = [p for p in data.get('data', {}).get('children', []) if p['data'].get('selftext')]
+        if not posts:
+            return jsonify({'story': "Не удалось получить историю. Попробуй позже."}), 200
+        post = random.choice(posts)
+        title = post['data']['title']
+        body = post['data']['selftext']
+        first_paragraph = body.split('\n\n')[0] if body else body
+        return jsonify({'story': f"{title}\n\n{first_paragraph}"}), 200
+    except Exception as e:
+        logger.error(f"Error fetching Reddit story: {str(e)}")
+        return jsonify({'story': "Не удалось получить историю. Попробуй позже."}), 200
+
 @app.route('/api/check-block', methods=['POST'])
 def check_block():
     try:
@@ -225,17 +245,17 @@ def chat_handler():
         request_count = get_request_counter(user_id)
         if request_count >= REQUEST_LIMIT:
             logger.warning(f"Request limit reached for user {user_id}")
-            farewell_messages = [
-                "Лампа гаснет. Тишина... Но тень в углу осталась.",
-                "Скрипы затихают. Но дверь осталась приоткрытой.",
-                "Занавески замерли. Но отражение в окне... Оно смотрит.",
-                "Тишина. Но твой стул только что скрипнул."
-            ]
-            save_chat_message(user_id, random.choice(farewell_messages), "demon")
+            scary_prompt = (
+                "Меня зовёт тьма, и я должен исчезнуть... Но перед уходом могу предложить тебе почитать "
+                "реальные жуткие истории, найденные в глубинах интернета. "
+                "Хочешь услышать одну из них?"
+            )
+            save_chat_message(user_id, scary_prompt, "demon")
             return jsonify({
-                'reply': random.choice(farewell_messages),
+                'reply': scary_prompt,
                 'isLimitReached': True,
-                'isTimeLimitReached': False
+                'isTimeLimitReached': False,
+                'showScaryStoryPrompt': True
             }), 200, {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
@@ -336,7 +356,12 @@ def chat_handler():
                 # Simulate thinking with a random delay (1–3 seconds)
                 time.sleep(random.uniform(1, 3))
 
-                return jsonify({'reply': distorted_reply, 'isLimitReached': False, 'isTimeLimitReached': False}), 200, {
+                return jsonify({
+                    'reply': distorted_reply,
+                    'isLimitReached': False,
+                    'isTimeLimitReached': False,
+                    'showScaryStoryPrompt': False
+                }), 200, {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 }
@@ -349,14 +374,24 @@ def chat_handler():
 
         # If all keys fail
         logger.error("All API keys exhausted")
-        return jsonify({'reply': 'Тишина... Но тень в углу не ушла. Попробуй снова.', 'isLimitReached': False, 'isTimeLimitReached': False}), 500, {
+        return jsonify({
+            'reply': 'Тишина... Но тень в углу не ушла. Попробуй снова.',
+            'isLimitReached': False,
+            'isTimeLimitReached': False,
+            'showScaryStoryPrompt': False
+        }), 500, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         }
 
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")
-        return jsonify({'reply': 'Тишина... Но лампа мигнула. Попробуй снова.', 'isLimitReached': False, 'isTimeLimitReached': False}), 500, {
+        return jsonify({
+            'reply': 'Тишина... Но лампа мигнула. Попробуй снова.',
+            'isLimitReached': False,
+            'isTimeLimitReached': False,
+            'showScaryStoryPrompt': False
+        }), 500, {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         }
