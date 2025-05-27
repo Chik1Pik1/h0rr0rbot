@@ -85,8 +85,7 @@ body::after {
 }
 
 /* Помехи для окна и чата */
-.crt-window::after,
-.chat-fullscreen::after {
+.crt-window::after, .chat-fullscreen::after {
   content: '';
   position: absolute;
   top: 0;
@@ -99,8 +98,7 @@ body::after {
 }
 
 /* Полноэкранные оверлеи */
-.error-overlay-fullscreen,
-.hack-overlay-fullscreen {
+.error-overlay-fullscreen, .hack-overlay-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
@@ -134,8 +132,7 @@ body::after {
 }
 
 /* Стили для форм */
-input,
-button {
+input, button {
   font-family: 'Special Elite', monospace;
   background: #000;
   border: 2px solid #00ff00;
@@ -215,7 +212,7 @@ button:disabled {
   width: 40px;
   height: 4px;
   background-color: #00ff00;
-  border-radius: 2px;
+  border romant-radius: 2px;
   cursor: pointer;
   transition: transform 0.3s ease;
   margin-bottom: 8px;
@@ -239,25 +236,8 @@ button:disabled {
   display: flex;
   gap: 16px;
   justify-content: center;
-  padding: 16px;
+  padding16px;
   border-top: 1px solid #00ff0033;
-}
-
-/* Стили для страшных историй */
-.scary-story-prompt button,
-.scary-story-continue button {
-  font-size: 1.2rem;
-  padding: 10px 24px;
-  margin: 0 8px;
-}
-
-.scary-story-box {
-  background: rgba(30, 0, 0, 0.7);
-  border: 1px solid #ff0000;
-  border-radius: 6px;
-  padding: 18px;
-  margin: 20px 0;
-  box-shadow: 0 0 16px #80000070;
 }
 
 /* Дополнительные эффекты */
@@ -327,8 +307,7 @@ button:disabled {
     padding: 10px;
   }
 
-  input,
-  button {
+  input, button {
     font-size: 1rem;
     padding: 6px;
   }
@@ -337,10 +316,7 @@ button:disabled {
     max-height: 75vh;
   }
 
-  h1,
-  p,
-  input,
-  button {
+  h1, p, input, button {
     font-size: 1rem !important;
   }
 
