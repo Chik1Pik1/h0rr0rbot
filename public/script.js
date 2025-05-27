@@ -256,7 +256,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     const interval = setInterval(() => {
       setIsAccessTime(checkAccessTime());
       setBlockedUntilState(getBlockedUntil());
-      setAttempts(getAttemptsLeft());
+      setAttempts(getAttemptsLeft()); // Принудительное обновление attemptsLeft
     }, 1000);
 
     return () => clearInterval(interval);
@@ -402,8 +402,6 @@ const AccessScreen = ({ onAccessGranted }) => {
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
           
           {renderTimers()}
-          
-          <p style={{color:'#0ff'}}>DEBUG: now={new Date().toString()} blockedUntil={String(blockedUntil)} isAccessTime={String(isAccessTime)} attemptsLeft={String(attemptsLeft)}</p>
 
           {!blockedUntil && isAccessTime && attemptsLeft > 0 && (
             <form onSubmit={handleSubmit} className="w-full max-w-sm">
@@ -698,7 +696,6 @@ const ChatScreen = () => {
                 }}
               >
                 <svg viewBox="0 0 24 24">
-                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM do not use <form> onSubmit. form's frame is sandboxed and the 'allow-forms' permission is not set.
                   <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
                 </svg>
                 Полный экран
