@@ -35,6 +35,7 @@ API_KEYS = [
 ]
 
 REQUEST_LIMIT = 50  # Daily request limit (per user)
+FAREWELL_MESSAGE = "Мой голос стихает, как эхо в коридоре. Тьма ждёт. Прощай… пока двери не заскрипят вновь."
 
 # Dictionary for Russian month names
 RUSSIAN_MONTHS = {
@@ -75,7 +76,7 @@ def get_request_counter(user_id):
     """Get or initialize request counter for a user."""
     today = str(datetime.now(pytz.timezone('Europe/Moscow')).date())
     counter = supabase.table("request_counter").select("*").eq("user_id", user_id).eq("last_reset_date", today).execute()
-    
+
     if not counter.data:
         supabase.table("request_counter").insert({
             "user_id": user_id,
@@ -89,7 +90,7 @@ def increment_request_counter(user_id):
     """Increment request counter for a user."""
     today = str(datetime.now(pytz.timezone('Europe/Moscow')).date())
     counter = supabase.table("request_counter").select("*").eq("user_id", user_id).eq("last_reset_date", today).execute()
-    
+
     if counter.data:
         new_count = counter.data[0]["request_count"] + 1
         supabase.table("request_counter").update({
@@ -146,7 +147,7 @@ def check_block():
     try:
         body = request.get_json()
         user_id = body.get('user_id')
-        
+
         if not user_id:
             return jsonify({'error': 'User ID is required'}), 400, {
                 'Content-Type': 'application/json',
@@ -154,7 +155,7 @@ def check_block():
             }
 
         result = supabase.table("access_blocks").select("blocked_until").eq("user_id", user_id).order('created_at', desc=True).limit(1).execute()
-        
+
         if result.data:
             blocked_until = result.data[0]["blocked_until"]
             now = datetime.now(pytz.timezone('Europe/Moscow'))
@@ -186,7 +187,7 @@ def chat_handler():
         body = request.get_json()
         message = body.get('message')
         user_id = body.get('user_id')
-        
+
         if not message or not user_id:
             logger.error("Missing message or user_id")
             return jsonify({'error': 'Message and user_id are required'}), 400, {
@@ -222,15 +223,9 @@ def chat_handler():
         request_count = get_request_counter(user_id)
         if request_count >= REQUEST_LIMIT:
             logger.warning(f"Request limit reached for user {user_id}")
-            farewell_messages = [
-                "Лампа гаснет. Тишина... Но тень в углу осталась.",
-                "Скрипы затихают. Но дверь осталась приоткрытой.",
-                "Занавески замерли. Но отражение в окне... Оно смотрит.",
-                "Тишина. Но твой стул только что скрипнул."
-            ]
-            save_chat_message(user_id, random.choice(farewell_messages), "demon")
+            save_chat_message(user_id, FAREWELL_MESSAGE, "demon")
             return jsonify({
-                'reply': random.choice(farewell_messages),
+                'reply': FAREWELL_MESSAGE,
                 'isLimitReached': True,
                 'isTimeLimitReached': False
             }), 200, {
