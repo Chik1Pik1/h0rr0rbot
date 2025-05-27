@@ -201,23 +201,17 @@ const AccessScreen = ({ onAccessGranted }) => {
 
   const checkUserBlock = async (userId) => {
     try {
-      const { data, error } = await supabase
-        .from('access_blocks')
-        .select('blocked_until')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        const blockDate = new Date(data.blocked_until);
-        if (blockDate > new Date()) {
-          setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(blockDate)}`);
-          setAttempts(0);
-          return true;
-        }
+      const response = await fetch('/api/check-block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+      });
+      const data = await response.json();
+      if (data.isBlocked) {
+        setError(`ДОСТУП ЗАБЛОКИРОВАН.\nПОВТОРИТЕ ПОПЫТКУ ПОСЛЕ: ${formatDateTime(new Date(data.blockedUntil))}`);
+        setAttempts(0);
+        setBlockedUntilState(data.blockedUntil);
+        return true;
       }
       return false;
     } catch (error) {
@@ -462,9 +456,10 @@ const ChatScreen = () => {
   const [isDisconnected, setIsDisconnected] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [storyMode, setStoryMode] = useState(false);
-  const [currentStory, setCurrentStory] = useState(null);
-  const [isStoryLoading, setIsStoryLoading] = useState(false);
+  const [isScaryPrompt, setIsScaryPrompt] = useState(false);
+  const [isScaryStoryMode, setIsScaryStoryMode] = useState(false);
+  const [scaryStory, setScaryStory] = useState('');
+  const [showScaryContinue, setShowScaryContinue] = useState(false);
   const inactivityTimer = useRef(null);
   const [globalEffects, setGlobalEffects] = useState(false);
   const userId = getUserId();
@@ -490,7 +485,11 @@ const ChatScreen = () => {
 
   const triggerGlobalEffects = () => {
     setGlobalEffects(true);
-    setTimeout(() => setGlobalEffects(false), 3000);
+    setEffects({ blood: true, glitch: true });
+    setTimeout(() => {
+      setGlobalEffects(false);
+      setEffects({ blood: false, glitch: false });
+    }, 3000);
   };
 
   useEffect(() => {
@@ -560,39 +559,6 @@ const ChatScreen = () => {
     }
   };
 
-  const fetchStory = async () => {
-    setIsStoryLoading(true);
-    try {
-      const response = await fetch('/api/reddit-story', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId })
-      });
-      const data = await response.json();
-      if (data.story) {
-        setCurrentStory(data.story);
-        setStoryMode(true);
-        setMessages(prev => [...prev, { sender: 'demon', text: data.story }]);
-      } else {
-        setMessages(prev => [...prev, { sender: 'demon', text: 'Тень не нашла историй... Попробуй ещё раз.' }]);
-      }
-    } catch (error) {
-      console.error('Error fetching story:', error);
-      setMessages(prev => [...prev, { sender: 'demon', text: 'Тишина... Истории скрылись во мраке. Попробуй снова.' }]);
-    }
-    setIsStoryLoading(false);
-  };
-
-  const handleStoryRequest = () => {
-    fetchStory();
-  };
-
-  const handleExitStoryMode = () => {
-    setStoryMode(false);
-    setCurrentStory(null);
-    setMessages(prev => [...prev, { sender: 'demon', text: 'Ты вернулся в тень. Что дальше?' }]);
-  };
-
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
@@ -603,13 +569,57 @@ const ChatScreen = () => {
       const data = await response.json();
       return data;
     } catch (error) {
-      return { reply: 'Я всё ещё здесь... Попробуй снова.', isLimitReached: false, isTimeLimitReached: false };
+      return { 
+        reply: 'Я всё ещё здесь... Попробуй снова.', 
+        isLimitReached: false, 
+        isTimeLimitReached: false, 
+        showScaryStoryPrompt: false 
+      };
     }
+  };
+
+  const handleGetScaryStory = async () => {
+    setIsScaryPrompt(false);
+    setIsScaryStoryMode(true);
+    setShowScaryContinue(false);
+    setScaryStory('Загружаю реальную страшную историю...');
+    const resp = await fetch('/api/reddit-story');
+    const data = await resp.json();
+    setScaryStory(data.story || "Не удалось получить историю.");
+    setShowScaryContinue(true);
+  };
+
+  const handleScaryStoryDecline = () => {
+    setIsScaryPrompt(false);
+    setMessages(prev => [
+      ...prev, 
+      { sender: 'demon', text: 'Ладно... Тьма зовёт меня, и я исчезаю. Возвращайся завтра.' }
+    ]);
+    setIsDisconnected(true);
+  };
+
+  const handleScaryStoryContinue = async () => {
+    setShowScaryContinue(false);
+    setScaryStory('Загружаю следующую историю...');
+    const resp = await fetch('/api/reddit-story');
+    const data = await resp.json();
+    setScaryStory(data.story || "Не удалось получить историю.");
+    setShowScaryContinue(true);
+  };
+
+  const handleScaryStoryEnough = () => {
+    setIsScaryStoryMode(false);
+    setScaryStory('');
+    setMessages(prev => [
+      ...prev,
+      { sender: 'demon', text: 'Достаточно... Тьма окутывает меня. Возвращайся завтра, если осмелишься.' }
+    ]);
+    setIsDisconnected(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isDisconnected || storyMode) return;
+    if (!input.trim() || isDisconnected) return;
 
     const userMessage = { sender: 'user', text: input };
     setMessages([...messages, userMessage]);
@@ -618,6 +628,13 @@ const ChatScreen = () => {
 
     const response = await sendMessage(input);
     setIsTyping(false);
+
+    if (response.isLimitReached && response.showScaryStoryPrompt) {
+      setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
+      setIsDisconnected(true);
+      setIsScaryPrompt(true);
+      return;
+    }
 
     if (response.isLimitReached) {
       setMessages([...messages, userMessage, { sender: 'demon', text: response.reply }]);
@@ -629,6 +646,11 @@ const ChatScreen = () => {
 
   return (
     <div className={`flex flex-col h-full p-4 relative chat-fullscreen ${globalEffects ? 'global-noise' : ''}`}>
+      <div className="global-distortion-overlay">
+        <div className="scanlines" />
+        <div className="noise-texture" />
+      </div>
+      
       <div 
         id="chat-container" 
         className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
@@ -656,55 +678,33 @@ const ChatScreen = () => {
             </p>
           );
         })}
-        {isTyping && !isDisconnected && !storyMode && (
+
+        {isScaryStoryMode && scaryStory && (
+          <div className="scary-story-box">
+            <p className="text-demon text-xl" style={{ whiteSpace: 'pre-line' }}>
+              {scaryStory}
+            </p>
+          </div>
+        )}
+
+        {isTyping && !isDisconnected && (
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
         )}
-        {isStoryLoading && (
-          <p className="text-demon text-xl blink">[Сущность #7]: Ищу тени в историях...</p>
-        )}
-        {isDisconnected && !storyMode && (
-          <div className="text-center">
-            <p className="text-demon text-xl mb-4 blink">
-              Связь оборвана... Но тени знают истории. Хочешь послушать?
-            </p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={handleStoryRequest}
-                className="text-xl border px-4 py-2"
-                style={{ color: '#00ff00', borderColor: '#00ff00' }}
-              >
-                Да, расскажи!
-              </button>
-              <button
-                onClick={() => setMessages(prev => [...prev, { sender: 'demon', text: 'Ты отвергаешь тени... Но они всё равно здесь.' }])}
-                className="text-xl border px-4 py-2"
-                style={{ color: '#00ff00', borderColor: '#00ff00' }}
-              >
-                Нет, я пас
-              </button>
-            </div>
-          </div>
-        )}
-        {storyMode && currentStory && (
-          <div className="text-center">
-            <button
-              onClick={fetchStory}
-              className="text-xl border px-4 py-2 mb-4"
-              style={{ color: '#00ff00', borderColor: '#00ff00' }}
-              disabled={isStoryLoading}
-            >
-              Хочу ещё!
-            </button>
-            <button
-              onClick={handleExitStoryMode}
-              className="text-xl border px-4 py-2"
-              style={{ color: '#00ff00', borderColor: '#00ff00' }}
-            >
-              Выйти из режима историй
-            </button>
-          </div>
-        )}
       </div>
+
+      {isScaryPrompt && (
+        <div className="scary-story-prompt" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+          <button className="control-button" onClick={handleGetScaryStory}>Да, расскажи</button>
+          <button className="control-button" onClick={handleScaryStoryDecline}>Нет, не надо</button>
+        </div>
+      )}
+
+      {isScaryStoryMode && showScaryContinue && (
+        <div className="scary-story-continue" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+          <button className="control-button" onClick={handleScaryStoryContinue}>Ещё одну</button>
+          <button className="control-button" onClick={handleScaryStoryEnough}>Хватит</button>
+        </div>
+      )}
 
       <div className={`chat-bottom-panel ${isDrawerOpen ? 'drawer-open' : ''}`}>
         <form onSubmit={handleSubmit} className="chat-input-form">
@@ -714,13 +714,13 @@ const ChatScreen = () => {
             onChange={(e) => setInput(e.target.value)}
             className="flex-1 text-xl p-2 border focus:outline-none"
             placeholder="Напиши мне..."
-            disabled={isDisconnected || storyMode}
+            disabled={isDisconnected || isScaryPrompt || isScaryStoryMode}
             style={{ color: '#00ff00', borderColor: '#00ff00' }}
           />
           <button
             type="submit"
             className="text-xl border px-4 py-2"
-            disabled={isDisconnected || storyMode}
+            disabled={isDisconnected || isScaryPrompt || isScaryStoryMode}
             style={{ color: '#00ff00', borderColor: '#00ff00' }}
           >
             Отправить
@@ -794,15 +794,6 @@ const ChatScreen = () => {
           </div>
         </div>
       </div>
-
-      {globalEffects && (
-        <div className="global-distortion-overlay">
-          <div className="noise-texture"/>
-          <div className="scanlines"/>
-        </div>
-      )}
     </div>
   );
 };
-
-ReactDOM.render(<App />, document.getElementById('root'));
