@@ -371,7 +371,6 @@ const AccessScreen = ({ onAccessGranted }) => {
               setBlockedUntilState(null);
             }}
           />
-          <div className="access-status">СТАТУС ДОСТУПА: ЗАКРЫТ</div>
         </div>
       );
     }
@@ -384,7 +383,6 @@ const AccessScreen = ({ onAccessGranted }) => {
             targetTime={calculateNextAccessTime()}
             onComplete={() => setIsAccessTime(true)}
           />
-          <div className="access-status">СТАТУС ДОСТУПА: ЗАКРЫТ</div>
         </div>
       );
     }
@@ -464,6 +462,9 @@ const ChatScreen = () => {
   const [isDisconnected, setIsDisconnected] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [storyMode, setStoryMode] = useState(false);
+  const [currentStory, setCurrentStory] = useState(null);
+  const [isStoryLoading, setIsStoryLoading] = useState(false);
   const inactivityTimer = useRef(null);
   const [globalEffects, setGlobalEffects] = useState(false);
   const userId = getUserId();
@@ -559,6 +560,39 @@ const ChatScreen = () => {
     }
   };
 
+  const fetchStory = async () => {
+    setIsStoryLoading(true);
+    try {
+      const response = await fetch('/api/reddit-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+      });
+      const data = await response.json();
+      if (data.story) {
+        setCurrentStory(data.story);
+        setStoryMode(true);
+        setMessages(prev => [...prev, { sender: 'demon', text: data.story }]);
+      } else {
+        setMessages(prev => [...prev, { sender: 'demon', text: 'Тень не нашла историй... Попробуй ещё раз.' }]);
+      }
+    } catch (error) {
+      console.error('Error fetching story:', error);
+      setMessages(prev => [...prev, { sender: 'demon', text: 'Тишина... Истории скрылись во мраке. Попробуй снова.' }]);
+    }
+    setIsStoryLoading(false);
+  };
+
+  const handleStoryRequest = () => {
+    fetchStory();
+  };
+
+  const handleExitStoryMode = () => {
+    setStoryMode(false);
+    setCurrentStory(null);
+    setMessages(prev => [...prev, { sender: 'demon', text: 'Ты вернулся в тень. Что дальше?' }]);
+  };
+
   const sendMessage = async (message) => {
     try {
       const response = await fetch('/api/chat', {
@@ -575,7 +609,7 @@ const ChatScreen = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isDisconnected) return;
+    if (!input.trim() || isDisconnected || storyMode) return;
 
     const userMessage = { sender: 'user', text: input };
     setMessages([...messages, userMessage]);
@@ -622,8 +656,53 @@ const ChatScreen = () => {
             </p>
           );
         })}
-        {isTyping && !isDisconnected && (
+        {isTyping && !isDisconnected && !storyMode && (
           <p className="text-demon text-xl blink">[Сущность #7]: ...печатает...</p>
+        )}
+        {isStoryLoading && (
+          <p className="text-demon text-xl blink">[Сущность #7]: Ищу тени в историях...</p>
+        )}
+        {isDisconnected && !storyMode && (
+          <div className="text-center">
+            <p className="text-demon text-xl mb-4 blink">
+              Связь оборвана... Но тени знают истории. Хочешь послушать?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleStoryRequest}
+                className="text-xl border px-4 py-2"
+                style={{ color: '#00ff00', borderColor: '#00ff00' }}
+              >
+                Да, расскажи!
+              </button>
+              <button
+                onClick={() => setMessages(prev => [...prev, { sender: 'demon', text: 'Ты отвергаешь тени... Но они всё равно здесь.' }])}
+                className="text-xl border px-4 py-2"
+                style={{ color: '#00ff00', borderColor: '#00ff00' }}
+              >
+                Нет, я пас
+              </button>
+            </div>
+          </div>
+        )}
+        {storyMode && currentStory && (
+          <div className="text-center">
+            <button
+              onClick={fetchStory}
+              className="text-xl border px-4 py-2 mb-4"
+              style={{ color: '#00ff00', borderColor: '#00ff00' }}
+              disabled={isStoryLoading}
+            >
+              Хочу ещё!
+            </button>
+            <button
+              onClick={handleExitStoryMode}
+              className="text-xl border px-4 py-2"
+              style={{ color: '#00ff00', borderColor: '#00ff00' }}
+            >
+              Выйти из режима историй
+            </button>
+          </div>
         )}
       </div>
 
@@ -635,13 +714,13 @@ const ChatScreen = () => {
             onChange={(e) => setInput(e.target.value)}
             className="flex-1 text-xl p-2 border focus:outline-none"
             placeholder="Напиши мне..."
-            disabled={isDisconnected}
+            disabled={isDisconnected || storyMode}
             style={{ color: '#00ff00', borderColor: '#00ff00' }}
           />
           <button
             type="submit"
             className="text-xl border px-4 py-2"
-            disabled={isDisconnected}
+            disabled={isDisconnected || storyMode}
             style={{ color: '#00ff00', borderColor: '#00ff00' }}
           >
             Отправить
