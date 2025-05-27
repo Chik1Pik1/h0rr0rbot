@@ -85,7 +85,8 @@ body::after {
 }
 
 /* Помехи для окна и чата */
-.crt-window::after, .chat-fullscreen::after {
+.crt-window::after,
+.chat-fullscreen::after {
   content: '';
   position: absolute;
   top: 0;
@@ -98,7 +99,8 @@ body::after {
 }
 
 /* Полноэкранные оверлеи */
-.error-overlay-fullscreen, .hack-overlay-fullscreen {
+.error-overlay-fullscreen,
+.hack-overlay-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
@@ -132,7 +134,8 @@ body::after {
 }
 
 /* Стили для форм */
-input, button {
+input,
+button {
   font-family: 'Special Elite', monospace;
   background: #000;
   border: 2px solid #00ff00;
@@ -240,6 +243,23 @@ button:disabled {
   border-top: 1px solid #00ff0033;
 }
 
+/* Стили для страшных историй */
+.scary-story-prompt button,
+.scary-story-continue button {
+  font-size: 1.2rem;
+  padding: 10px 24px;
+  margin: 0 8px;
+}
+
+.scary-story-box {
+  background: rgba(30, 0, 0, 0.7);
+  border: 1px solid #ff0000;
+  border-radius: 6px;
+  padding: 18px;
+  margin: 20px 0;
+  box-shadow: 0 0 16px #80000070;
+}
+
 /* Дополнительные эффекты */
 .blink {
   animation: blink 1s step-end infinite;
@@ -307,7 +327,8 @@ button:disabled {
     padding: 10px;
   }
 
-  input, button {
+  input,
+  button {
     font-size: 1rem;
     padding: 6px;
   }
@@ -316,7 +337,10 @@ button:disabled {
     max-height: 75vh;
   }
 
-  h1, p, input, button {
+  h1,
+  p,
+  input,
+  button {
     font-size: 1rem !important;
   }
 
@@ -489,13 +513,4 @@ button:disabled {
   font-size: 1.2rem;
   margin-top: 20px;
   text-align: center;
-  margin-bottom: 10px;
-}
-
-.access-status {
-  color: #FF0000;
-  font-size: 1.5rem;
-  margin-top: 10px;
-  text-align: center;
-  animation: blink 1s step-end infinite;
 }
