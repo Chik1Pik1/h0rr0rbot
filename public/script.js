@@ -378,7 +378,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     if (!checkAccessTime()) {
       return (
         <div className="text-center">
-          <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ В:</p>
+          <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ ЧЕРЕЗ:</p>
           <CountdownTimer 
             targetTime={calculateNextAccessTime()}
             onComplete={() => setIsAccessTime(true)}
