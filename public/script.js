@@ -403,6 +403,8 @@ const AccessScreen = ({ onAccessGranted }) => {
           
           {renderTimers()}
 
+          <p style={{color:'#0ff'}}>DEBUG: now={new Date().toString()} blockedUntil={String(blockedUntil)} isAccessTime={String(isAccessTime)} attemptsLeft={String(attemptsLeft)}</p>
+
           {!blockedUntil && isAccessTime && attemptsLeft > 0 && (
             <form onSubmit={handleSubmit} className="w-full max-w-sm">
               <div className="flex items-center mb-4">
