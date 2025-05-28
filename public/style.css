@@ -212,7 +212,7 @@ button:disabled {
   width: 40px;
   height: 4px;
   background-color: #00ff00;
-  border romant-radius: 2px;
+  border-radius: 2px;
   cursor: pointer;
   transition: transform 0.3s ease;
   margin-bottom: 8px;
@@ -236,7 +236,7 @@ button:disabled {
   display: flex;
   gap: 16px;
   justify-content: center;
-  padding16px;
+  padding: 16px;
   border-top: 1px solid #00ff0033;
 }
 
@@ -489,4 +489,15 @@ button:disabled {
   font-size: 1.2rem;
   margin-top: 20px;
   text-align: center;
+}
+
+.access-status {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  font-size: 1.1rem;
+  color: #ff5555;
+  pointer-events: none;
+  text-align: left;
+  text-shadow: 0 0 6px #000, 0 0 2px #ff0000;
 }
