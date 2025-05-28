@@ -256,33 +256,6 @@ button:disabled {
   animation: text-glitch 0.8s steps(2) infinite, blood-drip 1.2s ease-in-out;
 }
 
-/* Контейнер для таймера и статуса */
-.timer-container {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Контейнер для статуса доступа */
-.access-status-container {
-  position: relative;
-  width: 100%;
-  display: flex;
-  justify-content: flex-start;
-  padding-left: 20px;
-}
-
-/* Стиль для текста статуса */
-.access-status {
-  color: #ff0000;
-  font-size: 1.2rem;
-  text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 /* Анимации */
 @keyframes blink {
   50% {
@@ -398,10 +371,6 @@ button:disabled {
   .hack-code {
     font-size: 0.8rem;
   }
-
-  .access-status {
-    font-size: 1rem;
-  }
 }
 
 /* Анимация матричного кода */
@@ -515,51 +484,23 @@ button:disabled {
 }
 
 @keyframes noise {
-  0% {
-    transform: translate(0, 0);
-  }
-  10% {
-    transform: translate(-5%, -5%);
-  }
-  20% {
-    transform: translate(-10%, 5%);
-  }
-  30% {
-    transform: translate(5%, -10%);
-  }
-  40% {
-    transform: translate(-5%, 15%);
-  }
-  50% {
-    transform: translate(-10%, 5%);
-  }
-  60% {
-    transform: translate(15%, 0);
-  }
-  70% {
-    transform: translate(0, 10%);
-  }
-  80% {
-    transform: translate(-15%, 0);
-  }
-  90% {
-    transform: translate(10%, 5%);
-  }
-  100% {
-    transform: translate(5%, 0);
-  }
+  0% { transform: translate(0, 0); }
+  10% { transform: translate(-5%, -5%); }
+  20% { transform: translate(-10%, 5%); }
+  30% { transform: translate(5%, -10%); }
+  40% { transform: translate(-5%, 15%); }
+  50% { transform: translate(-10%, 5%); }
+  60% { transform: translate(15%, 0); }
+  70% { transform: translate(0, 10%); }
+  80% { transform: translate(-15%, 0); }
+  90% { transform: translate(10%, 5%); }
+  100% { transform: translate(5%, 0); }
 }
 
 @keyframes distortion {
-  0% {
-    filter: blur(0.3px) contrast(105%);
-  }
-  50% {
-    filter: blur(0.6px) contrast(95%);
-  }
-  100% {
-    filter: blur(0.3px) contrast(105%);
-  }
+  0% { filter: blur(0.3px) contrast(105%); }
+  50% { filter: blur(0.6px) contrast(95%); }
+  100% { filter: blur(0.3px) contrast(105%); }
 }
 
 /* Стили для таймера */
@@ -585,18 +526,9 @@ button:disabled {
 }
 
 @keyframes drip {
-  0% {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  50% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100%);
-    opacity: 0;
-  }
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
 }
 
 .blocked-timer {
