@@ -1,9 +1,9 @@
 const { useState, useEffect, useRef } = React;
 
-// Audio context for managing sound
+// Audio context для управления звуком
 const AudioContext = React.createContext(null);
 
-// List of all possible keys
+// Список всех возможных ключей
 const DEMON_KEYS = [
   "Astaroth", "Baphomet", "Choronzon", "Dantalion", "Eligos", "Furfur", "Gremory",
   "Haagenti", "Incubus", "Jinn", "Kobold", "Leviathan", "Mammon", "Naberius",
@@ -153,10 +153,14 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
   ));
 
   return (
-    <div className="blood-timer">
-      {drips}
-      {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
-      <div className="access-status blink">Статус доступа: закрыто</div>
+    <div className="timer-container">
+      <div className="blood-timer">
+        {drips}
+        {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+      </div>
+      <div className="access-status-container">
+        <span className="access-status blink">Статус доступа: закрыто</span>
+      </div>
     </div>
   );
 };
@@ -205,7 +209,7 @@ const AccessScreen = ({ onAccessGranted }) => {
   const checkUserBlock = async (userId) => {
     try {
       const { data, error } = await supabase
-        .table('access_blocks')
+        .from('access_blocks')
         .select('blocked_until')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
