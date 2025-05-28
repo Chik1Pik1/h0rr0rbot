@@ -85,7 +85,8 @@ body::after {
 }
 
 /* Помехи для окна и чата */
-.crt-window::after, .chat-fullscreen::after {
+.crt-window::after,
+.chat-fullscreen::after {
   content: '';
   position: absolute;
   top: 0;
@@ -98,7 +99,8 @@ body::after {
 }
 
 /* Полноэкранные оверлеи */
-.error-overlay-fullscreen, .hack-overlay-fullscreen {
+.error-overlay-fullscreen,
+.hack-overlay-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
@@ -112,7 +114,7 @@ body::after {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #FF0000;
+  color: #ff0000;
   font-size: 3rem;
   text-align: center;
   animation: error-blink 0.5s infinite;
@@ -132,7 +134,8 @@ body::after {
 }
 
 /* Стили для форм */
-input, button {
+input,
+button {
   font-family: 'Special Elite', monospace;
   background: #000;
   border: 2px solid #00ff00;
@@ -250,49 +253,113 @@ button:disabled {
 }
 
 .demon-effect {
-  animation: 
-    text-glitch 0.8s steps(2) infinite,
-    blood-drip 1.2s ease-in-out;
+  animation: text-glitch 0.8s steps(2) infinite, blood-drip 1.2s ease-in-out;
+}
+
+/* Контейнер для таймера и статуса */
+.timer-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Контейнер для статуса доступа */
+.access-status-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  padding-left: 20px;
+}
+
+/* Стиль для текста статуса */
+.access-status {
+  color: #ff0000;
+  font-size: 1.2rem;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Анимации */
 @keyframes blink {
-  50% { opacity: 0; }
+  50% {
+    opacity: 0;
+  }
 }
 
 @keyframes scanline {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(100vh); }
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
 }
 
 @keyframes flicker {
-  0% { opacity: 1; }
-  50% { opacity: 0.98; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.98;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes error-blink {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes crt-static {
-  0% { background-position: 0 0; }
-  100% { background-position: 100px 100px; }
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 100px 100px;
+  }
 }
 
 @keyframes text-glitch {
-  0% { clip-path: inset(10% 0 90% 0); }
-  25% { clip-path: inset(30% 0 15% 0); opacity: 0.8; }
-  50% { clip-path: inset(5% 0 80% 0); }
-  75% { clip-path: inset(60% 0 5% 0); opacity: 0.5; }
+  0% {
+    clip-path: inset(10% 0 90% 0);
+  }
+  25% {
+    clip-path: inset(30% 0 15% 0);
+    opacity: 0.8;
+  }
+  50% {
+    clip-path: inset(5% 0 80% 0);
+  }
+  75% {
+    clip-path: inset(60% 0 5% 0);
+    opacity: 0.5;
+  }
 }
 
 @keyframes blood-drip {
-  0% { text-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
-  50% { transform: translateY(8px); text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7); }
-  100% { transform: translateY(0); }
+  0% {
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+  }
+  50% {
+    transform: translateY(8px);
+    text-shadow: 0 8px 20px rgba(255, 0, 0, 0.7);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }
 
 /* Адаптивность для мобильных устройств */
@@ -307,7 +374,8 @@ button:disabled {
     padding: 10px;
   }
 
-  input, button {
+  input,
+  button {
     font-size: 1rem;
     padding: 6px;
   }
@@ -316,7 +384,10 @@ button:disabled {
     max-height: 75vh;
   }
 
-  h1, p, input, button {
+  h1,
+  p,
+  input,
+  button {
     font-size: 1rem !important;
   }
 
@@ -327,6 +398,10 @@ button:disabled {
   .hack-code {
     font-size: 0.8rem;
   }
+
+  .access-status {
+    font-size: 1rem;
+  }
 }
 
 /* Анимация матричного кода */
@@ -336,11 +411,7 @@ button:disabled {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 255, 0, 0.2) 0%,
-    rgba(0, 255, 0, 0.05) 100%
-  );
+  background: linear-gradient(to bottom, rgba(0, 255, 0, 0.2) 0%, rgba(0, 255, 0, 0.05) 100%);
   animation: matrix-rain 10s linear infinite;
 }
 
@@ -354,13 +425,21 @@ button:disabled {
 }
 
 @keyframes hack-scroll {
-  0% { transform: translateY(100%); }
-  100% { transform: translateY(-100%); }
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
 }
 
 @keyframes matrix-rain {
-  0% { transform: translateY(-100vh); }
-  100% { transform: translateY(100vh); }
+  0% {
+    transform: translateY(-100vh);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
 }
 
 /* Стили для кнопок управления и SVG-иконок */
@@ -436,23 +515,51 @@ button:disabled {
 }
 
 @keyframes noise {
-  0% { transform: translate(0,0) }
-  10% { transform: translate(-5%,-5%) }
-  20% { transform: translate(-10%,5%) }
-  30% { transform: translate(5%,-10%) }
-  40% { transform: translate(-5%,15%) }
-  50% { transform: translate(-10%,5%) }
-  60% { transform: translate(15%,0) }
-  70% { transform: translate(0,10%) }
-  80% { transform: translate(-15%,0) }
-  90% { transform: translate(10%,5%) }
-  100% { transform: translate(5%,0) }
+  0% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-5%, -5%);
+  }
+  20% {
+    transform: translate(-10%, 5%);
+  }
+  30% {
+    transform: translate(5%, -10%);
+  }
+  40% {
+    transform: translate(-5%, 15%);
+  }
+  50% {
+    transform: translate(-10%, 5%);
+  }
+  60% {
+    transform: translate(15%, 0);
+  }
+  70% {
+    transform: translate(0, 10%);
+  }
+  80% {
+    transform: translate(-15%, 0);
+  }
+  90% {
+    transform: translate(10%, 5%);
+  }
+  100% {
+    transform: translate(5%, 0);
+  }
 }
 
 @keyframes distortion {
-  0% { filter: blur(0.3px) contrast(105%); }
-  50% { filter: blur(0.6px) contrast(95%); }
-  100% { filter: blur(0.3px) contrast(105%); }
+  0% {
+    filter: blur(0.3px) contrast(105%);
+  }
+  50% {
+    filter: blur(0.6px) contrast(95%);
+  }
+  100% {
+    filter: blur(0.3px) contrast(105%);
+  }
 }
 
 /* Стили для таймера */
@@ -460,9 +567,8 @@ button:disabled {
   font-family: 'Special Elite', monospace;
   font-size: 3rem;
   color: #ff0000;
-  text-shadow: 0 0 10px rgba(255, 0, 0, 0.5),
-               0 0 20px rgba(255, 0, 0, 0.3),
-               0 0 30px rgba(255, 0, 0, 0.2);
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.5), 0 0 20px rgba(255, 0, 0, 0.3),
+    0 0 30px rgba(255, 0, 0, 0.2);
   position: relative;
   padding: 20px;
   border: 2px solid #ff000055;
@@ -479,9 +585,18 @@ button:disabled {
 }
 
 @keyframes drip {
-  0% { transform: translateY(-100%); opacity: 0; }
-  50% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(100%); opacity: 0; }
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
 }
 
 .blocked-timer {
@@ -489,38 +604,4 @@ button:disabled {
   font-size: 1.2rem;
   margin-top: 20px;
   text-align: center;
-}
-
-/* Контейнер для таймера и статуса */
-.timer-container {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Контейнер для статуса доступа */
-.access-status-container {
-  position: relative;
-  width: 100%;
-  display: flex;
-  justify-content: flex-start;
-  padding-left: 20px;
-}
-
-/* Стиль для текста статуса */
-.access-status {
-  color: #ff0000;
-  font-size: 1.2rem;
-  text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Медиа-запрос для мобильных устройств */
-@media (max-width: 600px) {
-  .access-status {
-    font-size: 1rem;
-  }
 }
