@@ -204,7 +204,7 @@ const AccessScreen = ({ onAccessGranted }) => {
   const checkUserBlock = async (userId) => {
     try {
       const { data, error } = await supabase
-        .from('access_blocks')
+        .table('access_blocks')
         .select('blocked_until')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
