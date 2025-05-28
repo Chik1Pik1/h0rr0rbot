@@ -219,7 +219,7 @@ const AccessScreen = ({ onAccessGranted }) => {
   const checkUserBlock = async (userId) => {
     try {
       const { data, error } = await supabase
-        .from('access_blocks')
+        .table('access_blocks')
         .select('blocked_until')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
@@ -247,7 +247,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
     try {
       const { error } = await supabase
-        .from('access_blocks')
+        .table('access_blocks')
         .insert({
           user_id: userId,
           blocked_until: blockUntil.toISOString()
