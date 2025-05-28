@@ -491,13 +491,36 @@ button:disabled {
   text-align: center;
 }
 
+/* Контейнер для таймера и статуса */
+.timer-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Контейнер для статуса доступа */
+.access-status-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  padding-left: 20px;
+}
+
+/* Стиль для текста статуса */
 .access-status {
-  position: absolute;
-  left: 14px;
-  bottom: 10px;
-  font-size: 1.1rem;
-  color: #ff5555;
-  pointer-events: none;
-  text-align: left;
-  text-shadow: 0 0 6px #000, 0 0 2px #ff0000;
+  color: #ff0000;
+  font-size: 1.2rem;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Медиа-запрос для мобильных устройств */
+@media (max-width: 600px) {
+  .access-status {
+    font-size: 1rem;
+  }
 }
