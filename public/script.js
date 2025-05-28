@@ -32,23 +32,28 @@ const DEMON_KEYS = [
 const AudioProvider = ({ children }) => {
   const [signalAudio, setSignalAudio] = useState(null);
   const [backgroundAudio, setBackgroundAudio] = useState(null);
+  const [clockAudio, setClockAudio] = useState(null);
 
   useEffect(() => {
     const signal = new Audio('/music/signal.mp3');
     const background = new Audio('/music/fon.mp3');
+    const clock = new Audio('/music/clock.mp3');
     background.loop = true;
-    
+    clock.loop = true;
+
     setSignalAudio(signal);
     setBackgroundAudio(background);
+    setClockAudio(clock);
 
     return () => {
       signal.pause();
       background.pause();
+      clock.pause();
     };
   }, []);
 
   return (
-    <AudioContext.Provider value={{ signalAudio, backgroundAudio }}>
+    <AudioContext.Provider value={{ signalAudio, backgroundAudio, clockAudio }}>
       {children}
     </AudioContext.Provider>
   );
@@ -103,6 +108,7 @@ const getUserId = () => {
 };
 
 const CountdownTimer = ({ targetTime, onComplete }) => {
+  const { clockAudio } = React.useContext(AudioContext);
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
   function calculateTimeLeft() {
@@ -136,6 +142,17 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
     return () => clearInterval(timer);
   }, [targetTime]);
 
+  useEffect(() => {
+    if (clockAudio) {
+      clockAudio.play().catch(e => console.log('Error playing clock:', e));
+      
+      return () => {
+        clockAudio.pause();
+        clockAudio.currentTime = 0;
+      };
+    }
+  }, [clockAudio]);
+
   const drips = Array.from({ length: 20 }).map((_, i) => (
     <div 
       key={i}
@@ -148,14 +165,9 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
   ));
 
   return (
-    <div className="timer-container">
-      <div className="blood-timer">
-        {drips}
-        {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
-      </div>
-      <div className="access-status-container">
-        <span className="access-status blink">Статус доступа: закрыто</span>
-      </div>
+    <div className="blood-timer">
+      {drips}
+      {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
     </div>
   );
 };
