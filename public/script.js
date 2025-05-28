@@ -5,27 +5,27 @@ const AudioContext = React.createContext(null);
 
 // Список всех возможных ключей
 const DEMON_KEYS = [
-  "Astaroth", "Baphomet", "Choronzon", "Dantalion", "Eligos", "Furfur", "Gremory",
-  "Haagenti", "Incubus", "Jinn", "Kobold", "Leviathan", "Mammon", "Naberius",
-  "Oriax", "Paimon", "Raum", "Samael", "Tannin", "Ukobach", "Valac", "Wendigo",
-  "Xaphan", "Yaksha", "Zagan", "Necronomicon", "Goetia", "Qliphoth", "ArsGoetia",
-  "Azazel", "Belial", "Beelzebub", "Asmodeus", "Lilith", "Moloch", "Abaddon",
-  "Amon", "Andras", "Agares", "Barbatos", "Buer", "Caim", "Decarabia", "Forneus",
-  "Gamigin", "Ipos", "Leraje", "Malphas", "Orobas", "Phenex", "Ronove", "Sabnock",
-  "Seere", "Shax", "Stolas", "Vepar", "Zepar", "Nyarlathotep", "Cthulhu",
-  "YogSothoth", "Dagon", "ShubNiggurath", "Akuma", "Oni", "Kitsune", "Djinn",
-  "Ifrit", "Marid", "Ghul", "Dybbuk", "Nephilim", "Grigori", "Archon", "Aeon",
-  "Egregore", "Goetic", "Enochian", "Theurgy", "Necromancy", "Thaumaturgy",
-  "Solomonic", "Hexagram", "Pentacle", "Sigil", "Abraxas", "Akasha", "Chthonic",
-  "Erebus", "Hecate", "Infernal", "Lemegethon", "Mephisto", "Pandemonium",
-  "Stygian", "Tartarus", "Zoroaster", "Banshee", "Doppelganger", "Poltergeist",
-  "Wraith", "Shadowman", "Skinwalker", "Wendigo", "Ouija", "Exorcism",
-  "Possession", "Divination", "Scrying", "Familiar", "Coven", "Sabbat",
-  "Akelarre", "Athame", "Boline", "Chalice", "Grimoire", "Mandrake", "Obsidian",
-  "Runes", "Talisman", "Vortex", "Ziggurat", "BlackMass", "BloodPact",
-  "DarkRite", "Infernum", "Nocturnal", "Occultus", "Phantasm", "Seraphim",
-  "Tenebrae", "Umbra", "Voodoo", "Witching", "Xibalba", "Yatagarasu",
-  "Zephyrus", "Maleficium", "Strigoi", "Karcist", "Qlippoth", "Sephirot",
+  "Astaroth", "Baphomet", "Choronzon", "Dantalion", "Eligos", "Furfur", "Gremory", 
+  "Haagenti", "Incubus", "Jinn", "Kobold", "Leviathan", "Mammon", "Naberius", 
+  "Oriax", "Paimon", "Raum", "Samael", "Tannin", "Ukobach", "Valac", "Wendigo", 
+  "Xaphan", "Yaksha", "Zagan", "Necronomicon", "Goetia", "Qliphoth", "ArsGoetia", 
+  "Azazel", "Belial", "Beelzebub", "Asmodeus", "Lilith", "Moloch", "Abaddon", 
+  "Amon", "Andras", "Agares", "Barbatos", "Buer", "Caim", "Decarabia", "Forneus", 
+  "Gamigin", "Ipos", "Leraje", "Malphas", "Orobas", "Phenex", "Ronove", "Sabnock", 
+  "Seere", "Shax", "Stolas", "Vepar", "Zepar", "Nyarlathotep", "Cthulhu", 
+  "YogSothoth", "Dagon", "ShubNiggurath", "Akuma", "Oni", "Kitsune", "Djinn", 
+  "Ifrit", "Marid", "Ghul", "Dybbuk", "Nephilim", "Grigori", "Archon", "Aeon", 
+  "Egregore", "Goetic", "Enochian", "Theurgy", "Necromancy", "Thaumaturgy", 
+  "Solomonic", "Hexagram", "Pentacle", "Sigil", "Abraxas", "Akasha", "Chthonic", 
+  "Erebus", "Hecate", "Infernal", "Lemegethon", "Mephisto", "Pandemonium", 
+  "Stygian", "Tartarus", "Zoroaster", "Banshee", "Doppelganger", "Poltergeist", 
+  "Wraith", "Shadowman", "Skinwalker", "Wendigo", "Ouija", "Exorcism", 
+  "Possession", "Divination", "Scrying", "Familiar", "Coven", "Sabbat", 
+  "Akelarre", "Athame", "Boline", "Chalice", "Grimoire", "Mandrake", "Obsidian", 
+  "Runes", "Talisman", "Vortex", "Ziggurat", "BlackMass", "BloodPact", 
+  "DarkRite", "Infernum", "Nocturnal", "Occultus", "Phantasm", "Seraphim", 
+  "Tenebrae", "Umbra", "Voodoo", "Witching", "Xibalba", "Yatagarasu", 
+  "Zephyrus", "Maleficium", "Strigoi", "Karcist", "Qlippoth", "Sephirot", 
   "Demogorgon", "Nyx", "Erebos", "Hypnos", "Moros", "Oneiroi", "Thanatos", "Lethe"
 ];
 
@@ -37,7 +37,7 @@ const AudioProvider = ({ children }) => {
     const signal = new Audio('/music/signal.mp3');
     const background = new Audio('/music/fon.mp3');
     background.loop = true;
-
+    
     setSignalAudio(signal);
     setBackgroundAudio(background);
 
@@ -102,11 +102,6 @@ const getUserId = () => {
   return userId;
 };
 
-const isChatAllowedNow = () => {
-  const now = new Date();
-  return now.getHours() === 0; // true only from 00:00 to 00:59
-};
-
 const CountdownTimer = ({ targetTime, onComplete }) => {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
@@ -142,7 +137,7 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
   }, [targetTime]);
 
   const drips = Array.from({ length: 20 }).map((_, i) => (
-    <div
+    <div 
       key={i}
       className="blood-drip"
       style={{
@@ -172,7 +167,7 @@ const App = () => {
     <AudioProvider>
       <div className="root-container">
         {isAccessGranted ? (
-          <ChatScreen onForceExit={() => setIsAccessGranted(false)} />
+          <ChatScreen />
         ) : (
           <AccessScreen onAccessGranted={() => setIsAccessGranted(true)} />
         )}
@@ -193,16 +188,19 @@ const AccessScreen = ({ onAccessGranted }) => {
   const [blockedUntil, setBlockedUntilState] = useState(getBlockedUntil());
 
   const checkAccessTime = () => {
-    return isChatAllowedNow();
+    const now = new Date();
+    return now.getHours() === 0; // 00:00 - 01:00
   };
 
   const calculateNextAccessTime = () => {
     const now = new Date();
     const nextAccess = new Date(now);
+    
     if (now.getHours() >= 1) {
       nextAccess.setDate(now.getDate() + 1);
     }
     nextAccess.setHours(0, 0, 0, 0);
+    
     return nextAccess;
   };
 
@@ -325,7 +323,7 @@ const AccessScreen = ({ onAccessGranted }) => {
     setError('Проверка ключа...');
 
     const correctKey = generateDailyKey();
-
+    
     if (key === correctKey) {
       setShowErrorOverlay(true);
       if (signalAudio) {
@@ -353,7 +351,7 @@ const AccessScreen = ({ onAccessGranted }) => {
       const newAttempts = attemptsLeft - 1;
       setAttempts(newAttempts);
       setAttemptsLeft(newAttempts);
-
+      
       if (newAttempts <= 0) {
         await setUserBlock(userId);
       } else {
@@ -369,7 +367,7 @@ const AccessScreen = ({ onAccessGranted }) => {
       return (
         <div className="blocked-timer blink">
           <p>ДОСТУП ВОССТАНОВИТСЯ ЧЕРЕЗ:</p>
-          <CountdownTimer
+          <CountdownTimer 
             targetTime={blockedDate}
             onComplete={() => {
               localStorage.removeItem('blockedUntil');
@@ -386,7 +384,7 @@ const AccessScreen = ({ onAccessGranted }) => {
       return (
         <div className="text-center">
           <p className="text-demon mb-4">ДОСТУП ОТКРОЕТСЯ ЧЕРЕЗ:</p>
-          <CountdownTimer
+          <CountdownTimer 
             targetTime={calculateNextAccessTime()}
             onComplete={() => setIsAccessTime(true)}
           />
@@ -415,7 +413,7 @@ const AccessScreen = ({ onAccessGranted }) => {
           <h1 className="text-3xl text-demon mb-2 dash-line">СИСТЕМА «ЗЕРКАЛО-1» ────────────────</h1>
           <p className="text-xl text-demon mb-2">ДОСТУП К СУЩНОСТЯМ ЗАПРЕЩЁН.</p>
           <p className="text-xl text-demon mb-4">ГРИФ «СОВ.СЕКРЕТНО»: КГБ-784-ДА</p>
-
+          
           {renderTimers()}
 
           {!blockedUntil && isAccessTime && attemptsLeft > 0 && (
@@ -459,7 +457,7 @@ const AccessScreen = ({ onAccessGranted }) => {
   );
 };
 
-const ChatScreen = ({ onForceExit }) => {
+const ChatScreen = () => {
   const { backgroundAudio } = React.useContext(AudioContext);
   const [messages, setMessages] = useState([
     { sender: 'demon', text: 'Теперь я знаю кто ты! Я вижу тебя... через твою камеру).' }
@@ -472,20 +470,20 @@ const ChatScreen = ({ onForceExit }) => {
   const inactivityTimer = useRef(null);
   const [globalEffects, setGlobalEffects] = useState(false);
   const userId = getUserId();
-  const [effects, setEffects] = useState({
-    blood: false,
-    glitch: false
+  const [effects, setEffects] = useState({ 
+    blood: false, 
+    glitch: false 
   });
 
   const startFearTimer = () => {
     resetFearTimer();
     inactivityTimer.current = setTimeout(() => {
-      setMessages(prev => [...prev, {
-        sender: 'demon',
-        text: 'Тишина... Ты испугался? Чего затих вдруг?'
+      setMessages(prev => [...prev, { 
+        sender: 'demon', 
+        text: 'Тишина... Ты испугался? Чего затих вдруг?' 
       }]);
       triggerGlobalEffects();
-    }, 300000); // 5 minutes
+    }, 300000); // 5 минут
   };
 
   const resetFearTimer = () => {
@@ -535,15 +533,6 @@ const ChatScreen = ({ onForceExit }) => {
       }
     };
   }, [backgroundAudio]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isChatAllowedNow()) {
-        if (typeof onForceExit === 'function') onForceExit();
-      }
-    }, 10000); // Check every 10 seconds
-    return () => clearInterval(interval);
-  }, [onForceExit]);
 
   const toggleAudio = async () => {
     if (backgroundAudio) {
@@ -609,8 +598,8 @@ const ChatScreen = ({ onForceExit }) => {
 
   return (
     <div className={`flex flex-col h-full p-4 relative chat-fullscreen ${globalEffects ? 'global-noise' : ''}`}>
-      <div
-        id="chat-container"
+      <div 
+        id="chat-container" 
         className={`chat-container ${isDisconnected ? 'chat-disabled' : ''}`}
       >
         {messages.map((msg, index) => {
@@ -618,12 +607,12 @@ const ChatScreen = ({ onForceExit }) => {
           if (effects.glitch) {
             text = text.split('').map(c => Math.random() < 0.15 ? '█' : c).join('');
           }
-
+          
           const messageStyle = {
             color: msg.sender === 'user' ? '#00ff00' : (effects.blood ? '#ff2222' : '#ff0000'),
             transform: effects.blood ? 'skew(-2deg)' : 'none'
           };
-
+          
           return (
             <p
               key={index}
@@ -663,14 +652,15 @@ const ChatScreen = ({ onForceExit }) => {
         </form>
 
         <div className="drawer-container">
-          <div
+          <div 
             className="drawer-handle"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             style={{
               transform: isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
             }}
           />
-          <div
+          
+          <div 
             className="drawer-content"
             style={{
               height: isDrawerOpen ? '60px' : '0'
@@ -703,6 +693,7 @@ const ChatScreen = ({ onForceExit }) => {
                 </svg>
                 Звук
               </button>
+              
               <button
                 onClick={toggleFullscreen}
                 className="control-button"
