@@ -256,6 +256,53 @@ button:disabled {
   animation: text-glitch 0.8s steps(2) infinite, blood-drip 1.2s ease-in-out;
 }
 
+/* Стили для уведомления о наушниках */
+.headphone-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.95);
+  border: 2px solid #00ff00;
+  padding: 30px;
+  text-align: center;
+  color: #00ff00;
+  z-index: 2000;
+  animation: fadeIn 0.5s ease, fadeOut 0.5s ease 3.5s forwards;
+}
+
+.headphone-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+/* Статус доступа */
+.access-status {
+  color: #ff0000;
+  text-align: center;
+  margin-top: 10px;
+  font-size: 1.2rem;
+  animation: blink 1s step-end infinite;
+}
+
+/* Кнопка звука часов */
+.clock-sound-button {
+  background: none;
+  border: 1px solid #00ff00;
+  color: #00ff00;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+.clock-sound-button:hover {
+  background: rgba(0, 255, 0, 0.1);
+}
+
 /* Анимации */
 @keyframes blink {
   50% {
@@ -335,6 +382,16 @@ button:disabled {
   }
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; visibility: hidden; }
+}
+
 /* Адаптивность для мобильных устройств */
 @media (max-width: 600px) {
   .crt-window {
@@ -370,6 +427,23 @@ button:disabled {
 
   .hack-code {
     font-size: 0.8rem;
+  }
+
+  .headphone-notification {
+    padding: 20px;
+  }
+
+  .headphone-icon {
+    font-size: 36px;
+  }
+
+  .access-status {
+    font-size: 1rem;
+  }
+
+  .clock-sound-button {
+    font-size: 0.8rem;
+    padding: 4px 8px;
   }
 }
 
