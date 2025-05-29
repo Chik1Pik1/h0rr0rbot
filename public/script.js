@@ -110,6 +110,7 @@ const getUserId = () => {
 const CountdownTimer = ({ targetTime, onComplete }) => {
   const { clockAudio } = React.useContext(AudioContext);
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+  const [isClockPlaying, setIsClockPlaying] = useState(false);
 
   function calculateTimeLeft() {
     const now = new Date();
@@ -145,13 +146,25 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
   useEffect(() => {
     if (clockAudio) {
       clockAudio.play().catch(e => console.log('Error playing clock:', e));
+      setIsClockPlaying(true);
       
       return () => {
         clockAudio.pause();
         clockAudio.currentTime = 0;
+        setIsClockPlaying(false);
       };
     }
   }, [clockAudio]);
+
+  const toggleClockSound = () => {
+    if (isClockPlaying) {
+      clockAudio.pause();
+      setIsClockPlaying(false);
+    } else {
+      clockAudio.play().catch(e => console.log('Error playing clock:', e));
+      setIsClockPlaying(true);
+    }
+  };
 
   const drips = Array.from({ length: 20 }).map((_, i) => (
     <div 
@@ -165,19 +178,51 @@ const CountdownTimer = ({ targetTime, onComplete }) => {
   ));
 
   return (
-    <div className="blood-timer">
-      {drips}
-      {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+    <div className="timer-container">
+      <div className="blood-timer">
+        {drips}
+        {`${timeLeft.hours.toString().padStart(2, '0')}:${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}`}
+      </div>
+      <div className="access-status">
+        СТАТУС ДОСТУПА: ЗАКРЫТО
+      </div>
+      <button 
+        className="clock-sound-button"
+        onClick={toggleClockSound}
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path fill="currentColor" d={isClockPlaying ? 
+            "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" :
+            "M3 9v6h4l5 5V4L7 9H3z M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"}
+          />
+        </svg>
+        {isClockPlaying ? 'Выключить звук часов' : 'Включить звук часов'}
+      </button>
     </div>
   );
 };
 
 const App = () => {
   const [isAccessGranted, setIsAccessGranted] = useState(false);
+  const [showHeadphoneNotification, setShowHeadphoneNotification] = useState(true);
+
+  useEffect(() => {
+    if (showHeadphoneNotification) {
+      setTimeout(() => {
+        setShowHeadphoneNotification(false);
+      }, 4000);
+    }
+  }, []);
 
   return (
     <AudioProvider>
       <div className="root-container">
+        {showHeadphoneNotification && (
+          <div className="headphone-notification">
+            <div className="headphone-icon">🎧</div>
+            <div>Для лучшего эффекта наденьте наушники</div>
+          </div>
+        )}
         {isAccessGranted ? (
           <ChatScreen />
         ) : (
