@@ -279,10 +279,11 @@ button:disabled {
 /* Статус доступа */
 .access-status {
   color: #ff0000;
-  text-align: center;
+  text-align: left;
   margin-top: 10px;
   font-size: 1.2rem;
   animation: blink 1s step-end infinite;
+  padding-left: 10px;
 }
 
 /* Кнопка звука часов */
@@ -297,10 +298,18 @@ button:disabled {
   cursor: pointer;
   margin-top: 10px;
   font-size: 0.9rem;
+  transition: all 0.3s ease;
 }
 
 .clock-sound-button:hover {
   background: rgba(0, 255, 0, 0.1);
+}
+
+.clock-sound-button svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  transition: all 0.3s ease;
 }
 
 /* Анимации */
